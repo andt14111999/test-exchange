@@ -1,0 +1,70 @@
+services:
+  web:
+    platform: linux/amd64
+    build:
+      context: .
+      args:
+        RAILS_ENV: ${RAILS_ENV-development}
+        RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+        DATABASE_URL: ${DATABASE_URL-postgresql://postgres:postgres@db:5432/snowfox_dev}
+        REDIS_URL: ${REDIS_URL-redis://redis:6379/0}
+    volumes:
+      - .:/app
+    ports:
+      - "3969:3969"
+    depends_on:
+      - db
+      - redis
+    environment:
+      PORT: 3969
+      # RAILS_ENV: production
+      RAILS_ENV: ${RAILS_ENV-development}
+      # SOLID_QUEUE_IN_PUMA: true
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+      DATABASE_URL: ${DATABASE_URL-postgresql://postgres:postgres@db:5432/snowfox_dev}
+      REDIS_URL: ${REDIS_URL-redis://redis:6379/0}
+    command: "bundle exec puma -C config/puma.rb"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3969/up"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  clockwork:
+    platform: linux/amd64
+    build:
+      context: .
+      args:
+        RAILS_ENV: ${RAILS_ENV-development}
+        RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+        DATABASE_URL: ${DATABASE_URL-postgresql://postgres:postgres@db:5432/snowfox_dev}
+        REDIS_URL: ${REDIS_URL-redis://redis:6379/0}
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    environment:
+      RAILS_ENV: ${RAILS_ENV-development}
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+      DATABASE_URL: ${DATABASE_URL-postgresql://postgres:postgres@db:5432/snowfox_dev}
+      REDIS_URL: ${REDIS_URL-redis://redis:6379/0}
+    command: "bundle exec clockwork config/clockwork.rb"
+
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: snowfox_dev
+    volumes:
+      - ./storage/db:/var/lib/postgresql/data
+  redis:
+    image: redis:latest
+    volumes:
+      - ./storage/redis:/data
+
+volumes:
+  db_data:
+  redis_data:

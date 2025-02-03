@@ -1,0 +1,37 @@
+<div class="setup-2fa-container">
+  <div class="enabled-message">
+    <h2>Two-Factor Authentication is Enabled</h2>
+    <p>This account is already protected with two-factor authentication.</p>
+  </div>
+
+  <%= form_tag admin_setup_2fa_disable_path, method: :post, class: 'disable-form' do %>
+    <%= text_field_tag :code, nil, placeholder: 'Enter 6-digit code', maxlength: 6, required: true,
+        pattern: '[0-9]*', inputmode: 'numeric', autocomplete: 'off', id: 'otp-code' %>
+    <%= submit_tag 'Disable 2FA', class: 'button' %>
+  <% end %>
+</div>
+
+<style>
+.setup-2fa-container {
+  max-width: 600px;
+  margin: 20px auto;
+  padding: 20px;
+  text-align: center;
+}
+
+.enabled-message {
+  background: #e8f5e9;
+  padding: 20px;
+  border-radius: 4px;
+  margin: 20px 0;
+}
+
+.enabled-message h2 {
+  color: #2e7d32;
+  margin-bottom: 10px;
+}
+
+.enabled-message p {
+  color: #1b5e20;
+}
+</style>

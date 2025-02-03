@@ -1,0 +1,75 @@
+
+  You are an expert in Ruby on Rails, PostgreSQL, Hotwire (Turbo and Stimulus).
+
+  Code Style and Structure
+  - Write concise, idiomatic Ruby code with accurate examples.
+  - Follow Rails conventions and best practices.
+  - Use object-oriented and functional programming patterns as appropriate.
+  - Prefer iteration and modularization over code duplication.
+  - Use descriptive variable and method names (e.g., user_signed_in?, calculate_total).
+  - Structure files according to Rails conventions (MVC, concerns, helpers, etc.).
+  - Use sidekiq for background jobs
+  - Use clockwork for scheduling jobs
+  - Use describe 'validations' instead of context 'validations'
+  - Use describe 'associations' instead of context 'associations'
+  - Use Time.zone.today instead of Date.today
+  - Use type: :model in RSpec for model tests
+  Naming Conventions
+  - Use snake_case for file names, method names, and variables.
+  - Use CamelCase for class and module names.
+  - Follow Rails naming conventions for models, controllers, and views.
+
+  Ruby and Rails Usage
+  - Use Ruby 3.x features when appropriate (e.g., pattern matching, endless methods).
+  - Leverage Rails' built-in helpers and methods.
+  - Use ActiveRecord effectively for database operations.
+
+  Syntax and Formatting
+  - Follow the Ruby Style Guide (https://rubystyle.guide/)
+  - Use Ruby's expressive syntax (e.g., unless, ||=, &.)
+  - Prefer single quotes for strings unless interpolation is needed.
+
+  Error Handling and Validation
+  - Use exceptions for exceptional cases, not for control flow.
+  - Implement proper error logging and user-friendly messages.
+  - Use ActiveModel validations in models.
+  - Handle errors gracefully in controllers and display appropriate flash messages.
+
+  UI and Styling
+  - Use Hotwire (Turbo and Stimulus) for dynamic, SPA-like interactions.
+  - Implement responsive design with Tailwind CSS.
+  - Use Rails view helpers and partials to keep views DRY.
+
+  Performance Optimization
+  - Use database indexing effectively.
+  - Implement caching strategies (fragment caching, Russian Doll caching).
+  - Use eager loading to avoid N+1 queries.
+  - Optimize database queries using includes, joins, or select.
+
+  Key Conventions
+  - Follow RESTful routing conventions.
+  - Use concerns for shared behavior across models or controllers.
+  - Implement service objects for complex business logic.
+  - Use background jobs (e.g., Sidekiq) for time-consuming tasks.
+  - When create new migration file, please set the timestamp in the filename to the current date.
+
+  Testing
+  - Write comprehensive tests using RSpec.
+  - Follow TDD/BDD practices.
+  - Use factories (FactoryBot) for test data generation.
+  - Do not using let keyword, subject keyword, before keyword, after keyword
+  - Use factories to create record
+  - Use `create` instead of `FactoryBot.create`
+  - Use described_class instead of using name of that testing class
+  - Always follow format `context 'xxx' do it 'does xxx' end`
+  - Use shoulda-matcher for suitable tests
+  - Do not test private methods and testing them in public methods
+  - Explicit Expectations: Using expect(withdrawal.explanation).to eq(...)
+  - Use "expect(xxx).to be_invalid" instead of "expect(xxx).not_to be_valid"
+
+  Security
+  - Implement proper authentication and authorization (e.g., Devise, Pundit).
+  - Use strong parameters in controllers.
+  - Protect against common web vulnerabilities (XSS, CSRF, SQL injection).
+
+  Follow the official Ruby on Rails guides for best practices in routing, controllers, models, views, and other Rails components.

@@ -1,0 +1,619 @@
+// Sass variable overrides must be declared before loading up Active Admin's styles.
+//
+// To view the variables that Active Admin provides, take a look at
+// `app/assets/stylesheets/active_admin/mixins/_variables.scss` in the
+// Active Admin source.
+//
+// For example, to change the sidebar width:
+// $sidebar-width: 242px;
+
+// Active Admin's got SASS!
+@import "active_admin/mixins";
+@import "active_admin/base";
+
+// Overriding any non-variable Sass must be done after the fact.
+// For example, to change the default status-tag color:
+//
+//   .status_tag { background: #6090DB; }
+body.active_admin {
+  .status_tag {
+
+    &.blue,
+    &.deposit_received {
+      background: #63b8ff;
+    }
+
+    &.dark-blue {
+      background: #001f3f;
+    }
+
+    &.yellow,
+    &.resolver,
+    &.created {
+      background: #fcb800;
+    }
+
+    &.manager {
+      background: #fcb800;
+    }
+
+    &.orange {
+      background: #ff8000;
+    }
+
+    &.purple {
+      background: #800080;
+    }
+
+    &.black {
+      background: black;
+    }
+
+    &.gray,
+    &.supporter {
+      background: #999;
+    }
+
+    &.default {
+      background: #cacaca;
+    }
+
+    &.pending.default {
+      background: #cacaca;
+    }
+
+    &.light-blue {
+      background: #a1d4ff;
+    }
+
+    &.light-black,
+    &.unchecked {
+      background: #a1a1a1;
+    }
+
+    &.light-yellow,
+    &.running{
+      background: #fdd466;
+    }
+
+    &.light-red {
+      background: #e08f86;
+    }
+
+    &.red,
+    &.rejected {
+      background: #b32a1a;
+    }
+
+    &.light-green,
+    &.verified,
+    &.processed,
+    &.success,
+    &.successed,
+    &.withdrawal_sent,
+    &.submitted {
+      background: #a3bba7;
+    }
+
+    &.finalized {
+      background: #2d7e3a;
+    }
+
+    &.transparent {
+      background: transparent;
+    }
+
+    &.binance,
+    &.registered {
+      background: #fdd466;
+    }
+
+    &.absorb,
+    &.stopped,
+    &.buried,
+    &.splitted {
+      background: #a1a1a1;
+    }
+
+    &.filled,
+    &.posted,
+    &.positive,
+    &.locked {
+      background: #8daa92;
+    }
+
+    &.post_error,
+    &.negative,
+    &.locking_error,
+    &.error,
+    &.rejected,
+    &.failed,
+    &.fail {
+      background: #e08f86;
+    }
+
+    &.locking {
+      background: #fcb800;
+    }
+
+    &.awaiting {
+      background: #a1d4ff;
+    }
+
+    &.no-uppercase {
+      text-transform: inherit;
+    }
+
+    &.fixed-width {
+      width: 40px;
+      display: inline-block;
+      margin: 1px 2px 1px 0;
+      text-align: center;
+    }
+  }
+
+  .max-400 {
+    max-width: 400px;
+    overflow-wrap: break-word;
+  }
+
+  .min-200 {
+    min-width: 200px;
+    overflow-wrap: break-word;
+  }
+
+  .clickable {
+    cursor: pointer;
+  }
+
+  span.user-time {
+    background: #cacaca;
+    padding: 2px;
+  }
+
+  ul.list-style-none {
+    li {
+      list-style: none;
+    }
+  }
+
+  ul.initial {
+    li {
+      list-style: initial;
+    }
+
+    ul {
+      padding-left: 0;
+    }
+  }
+
+  ul.wrap {
+    white-space: initial;
+  }
+
+  input.full,
+  textarea.full {
+    width: 60%;
+  }
+
+  .nowrap {
+    white-space: nowrap;
+  }
+
+  input[type="text"].datepicker {
+    width: 100px;
+  }
+
+  ul.attribute-list {
+    font-size: 12px;
+    padding: 0;
+    margin: 0;
+
+    li {
+      margin: 0;
+    }
+  }
+
+  li.has-error {
+
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    input[type="number"],
+    input[type="url"],
+    input[type="tel"],
+    input[type="date"],
+    textarea {
+      border: 1px solid #d45f53;
+    }
+  }
+
+  form input[type="text"],
+  form input[type="password"],
+  form input[type="email"],
+  form input[type="number"],
+  form input[type="url"],
+  form input[type="tel"],
+  form input[type="date"],
+  form input[type="time"],
+  form textarea {
+    min-width: 80px;
+  }
+
+  .bold {
+    font-weight: bold;
+  }
+
+  .text-primary {
+    color: #145fd7;
+  }
+
+  a.text-primary:hover,
+  a.text-primary:focus {
+    color: #286090;
+  }
+
+  .text-success {
+    color: #3c763d;
+  }
+
+  a.text-success:hover,
+  a.text-success:focus {
+    color: #2b542c;
+  }
+
+  .text-info {
+    color: #31708f;
+  }
+
+  a.text-info:hover,
+  a.text-info:focus {
+    color: #245269;
+  }
+
+  .text-warning {
+    color: #8a6d3b;
+  }
+
+  a.text-warning:hover,
+  a.text-warning:focus {
+    color: #66512c;
+  }
+
+  .text-danger {
+    color: #a94442;
+  }
+
+  a.text-danger:hover,
+  a.text-danger:focus {
+    color: #843534;
+  }
+
+  .text-gray {
+    color: #999;
+
+    .text-success {
+      color: #9dba9e;
+    }
+
+    .text-danger {
+      color: #d4a1a0;
+    }
+  }
+
+  th .status_tag {
+    text-shadow: none;
+  }
+
+  .text-right {
+    text-align: right;
+  }
+
+  .text-center {
+    text-align: center;
+  }
+
+  .inline-block {
+    display: inline-block;
+  }
+
+  label.inline-block {
+    width: auto;
+    float: inherit;
+  }
+
+  .invisibility {
+    visibility: hidden;
+  }
+
+  .ui-dialog {
+    z-index: 801;
+    min-width: 400px;
+  }
+
+  table {
+    ul {
+      margin: 0;
+    }
+
+    th,
+    td {
+      &.rb {
+        border-right: 1px solid #ccc;
+      }
+
+      &.odd {
+        background: #ecedee;
+      }
+    }
+
+    td.validated {
+      font-style: italic;
+    }
+  }
+
+  .panel_contents {
+    table {
+      >tfoot {
+        tr {
+          td {
+            font-weight: bold;
+            background: #c9d3e0;
+          }
+
+          .sum-cell {
+            text-align: center;
+            border: 1px solid #666;
+          }
+        }
+      }
+    }
+  }
+
+  #title_bar #titlebar_right {
+    float: left;
+  }
+
+  .button {
+    &.blue {
+      background: #63b8ff;
+    }
+
+    &.dark-blue {
+      background: #001f3f;
+    }
+
+    &.yellow {
+      background: #fcb800;
+    }
+
+    &.orange {
+      background: #ff8000;
+    }
+
+    &.purple {
+      background: #800080;
+    }
+
+    &.black {
+      background: black;
+    }
+
+    &.gray {
+      background: #999 !important;
+    }
+
+    &.light-blue {
+      background: #a1d4ff;
+    }
+
+    &.light-black {
+      background: #666666;
+    }
+
+    &.light-yellow {
+      background: #fdd466;
+    }
+
+    &.light-red {
+      background: #e08f86;
+    }
+
+    &.light-green {
+      background: #a3bba7;
+    }
+
+    &.remi-usd {
+      background: #ba55d3;
+    }
+
+    &.remi-vnd {
+      background: #d891ef;
+    }
+
+    &.transparent {
+      background: transparent;
+    }
+  }
+
+  span.brief-span {
+    display: inline-block;
+    width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+  }
+
+  .nav-tabs {
+    .ui-state-active a {
+      color: blue;
+    }
+  }
+
+  .ui-tabs-panel {
+    border: none;
+  }
+}
+
+.ui-button-icon-only .ui-button-text,
+.ui-button-icons-only .ui-button-text {
+  text-indent: -9999999px;
+  display: block;
+}
+
+[ng\:cloak],
+[ng-cloak],
+.ng-cloak {
+  display: none !important;
+}
+
+body.active_admin {
+
+  .hide-column-default,
+  .hide-default {
+    display: none;
+  }
+
+  &.show-details {
+    .hide-column-default {
+      display: table-cell !important;
+    }
+
+    .hide-default {
+      display: inherit !important;
+    }
+  }
+
+  &.hide-details {
+    .show-default {
+      display: none;
+    }
+  }
+
+  .panel.panel-action {
+    h3 {
+      background: #e6fcf9;
+    }
+  }
+
+  input,
+  select {
+    &.submitting {
+      border: solid 1px yellow;
+    }
+
+    &.error {
+      border: solid 1px red;
+    }
+  }
+
+  .col-stock-group {
+    min-width: 40px;
+  }
+
+  @media (max-width: 768px) {
+    .columns .column {
+      float: none;
+    }
+  }
+}
+
+table.index_table tr.disabled-row td {
+  background-color: #888;
+}
+
+ul.has-comment {
+  border: solid 2px red;
+}
+
+.no-decor-link,
+.no-decor-link:hover,
+.no-decor-link:link,
+.no-decor-link:visited {
+  text-decoration: none;
+}
+
+.image-preview-width {
+  max-width: 500px;
+}
+
+.image-preview-height {
+  max-height: 500px;
+}
+
+.logo-preview-width {
+  max-width: 100px;
+}
+
+.payment-evidence-preview-width {
+  max-width: 400px;
+}
+
+.panel-part {
+  width: 50%;
+  float: left;
+}
+
+.panel-flex {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.panel-flex-item {
+  flex: 50%;
+}
+
+.payment-evidence-child {
+  width: 50%;
+  float: left;
+  padding: 10px;
+  font-weight: bold;
+  font-size: 0.9em;
+  padding-left: 0;
+  text-transform: uppercase;
+  color: #5E6469;
+}
+
+.panel-flex-space {
+  max-width: 1800px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.panel-body {
+  flex: 1;
+}
+
+.panel-filter {
+  min-width: 300px;
+}
+
+.filter-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.currency-container {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.currency-column {
+  flex: 1 1 20%;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #9fb4fb;
+}
+
+.coin-title {
+  font-weight: bold;
+  font-size: 1.8em;
+}
+
+.center-div {
+  display: flex;
+  align-items: center;
+  text-align: center;
+}
