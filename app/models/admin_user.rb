@@ -40,7 +40,7 @@ class AdminUser < ApplicationRecord
   def generate_provisioning_uri
     return '' if authenticator_key.blank? || email.blank?
 
-    ROTP::TOTP.new(authenticator_key, issuer: 'SnowFox AdminPortal').provisioning_uri(email)
+    ROTP::TOTP.new(authenticator_key, issuer: 'SnowFox BasePortal').provisioning_uri(email)
   end
 
   def disable_authenticator!
@@ -59,9 +59,9 @@ class AdminUser < ApplicationRecord
 
     self.roles = if roles.is_a?(Array)
                    roles.filter_map(&:strip).reject(&:empty?).join(',')
-                 else
+    else
                    roles.split(',').map(&:strip).reject(&:empty?).join(',')
-                 end
+    end
   end
 
   def validate_roles

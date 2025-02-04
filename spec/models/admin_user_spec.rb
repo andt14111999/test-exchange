@@ -96,9 +96,9 @@ RSpec.describe AdminUser, type: :model do
       uri = admin_user.generate_provisioning_uri
 
       start_str = 'otpauth://totp/'
-      end_str = '&issuer=SnowFox%20AdminPortal'
+      end_str = '&issuer=SnowFox%20BasePortal'
       expect(uri).to eq(
-        "#{start_str}SnowFox%20AdminPortal:admin%40snowfox.com?secret=BKXLI7VHSHKIMPVBKJAZGLJ5OOFVWKSR#{end_str}"
+        "#{start_str}SnowFox%20BasePortal:admin%40snowfox.com?secret=BKXLI7VHSHKIMPVBKJAZGLJ5OOFVWKSR#{end_str}"
       )
     end
   end
