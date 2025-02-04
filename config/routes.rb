@@ -22,4 +22,6 @@ Rails.application.routes.draw do
   authenticate :admin_user do
     mount Sidekiq::Web => '/admin/sidekiq'
   end
+
+  mount ApiRoot => '/'
 end
