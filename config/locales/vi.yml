@@ -1,0 +1,22 @@
+vi:
+  hello: "Xin chào thế giới"
+  error:
+    record_not_found: "Không tìm thấy bản ghi"
+    api_limit_exceeded: "Hết số lượng truy cập API"
+    email_missing: "Email không được để trống"
+    unauthorized: "Không được phép"
+    forbidden: "Không được phép"
+    invalid_signature: "Chữ ký không hợp lệ"
+    invalid_timestamp_format: "Định dạng thời gian không hợp lệ"
+    retry_action: "Vui lòng thử lại"
+    user_not_found: "Không tìm thấy người dùng"
+    something_went_wrong: "Có lỗi xảy ra"
+    service_unavailable: "Service không khả dụng"
+    not_found: "%{model} không tồn tại"
+    not_image: "không phải là hình ảnh"
+    too_large: "quá lớn"
+  activerecord:
+    errors:
+      models:
+        admin_user:
+          not_found: "Admin user không tồn tại"
