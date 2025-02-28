@@ -60,7 +60,7 @@ Rails.application.configure do
   # config.action_mailer.raise_delivery_errors = false
 
   # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: ENV.fetch('BASE_PORTAL_DOMAIN', 'snowfoxglobal.org') }
+  config.action_mailer.default_url_options = { host: ENV.fetch('EXCHANGE_BACKEND_DOMAIN', 'snowfoxglobal.org') }
 
   # Configure AWS SES for email delivery via SMTP
   config.action_mailer.delivery_method = :smtp
