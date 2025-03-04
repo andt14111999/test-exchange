@@ -48,6 +48,8 @@ group :test do
   gem 'capybara'
   gem 'database_cleaner'
   gem 'factory_bot_rails'
+  gem 'pg_query'
+  gem 'prosopite'
   gem 'rspec-json_expectations'
   gem 'rspec-rails'
   gem 'rspec-sidekiq'

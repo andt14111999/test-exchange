@@ -212,6 +212,9 @@ GEM
       raabro (~> 1.4)
     globalid (1.2.1)
       activesupport (>= 6.1)
+    google-protobuf (4.29.3)
+      bigdecimal
+      rake (>= 13)
     grape (2.2.0)
       activesupport (>= 6)
       dry-types (>= 1.1)
@@ -355,11 +358,14 @@ GEM
       ast (~> 2.4.1)
       racc
     pg (1.5.9)
+    pg_query (5.1.0)
+      google-protobuf (>= 3.22.3)
     propshaft (1.1.0)
       actionpack (>= 7.0.0)
       activesupport (>= 7.0.0)
       rack
       railties (>= 7.0.0)
+    prosopite (1.4.2)
     pry (0.14.2)
       coderay (~> 1.1)
       method_source (~> 1.0)
@@ -648,7 +654,9 @@ DEPENDENCIES
   oj
   paper_trail (~> 16.0)
   pg (~> 1.5)
+  pg_query
   propshaft
+  prosopite
   pry-byebug
   puma (>= 5.0)
   rails (~> 8.0.0)
