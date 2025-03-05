@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_05_055328) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_05_132741) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -42,6 +42,34 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_05_055328) do
     t.string "authenticator_key"
     t.index ["email"], name: "index_admin_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_admin_users_on_reset_password_token", unique: true
+  end
+
+  create_table "coin_accounts", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "coin_type", null: false
+    t.string "layer", null: false
+    t.decimal "balance", precision: 32, scale: 16, default: "0.0", null: false
+    t.decimal "frozen_balance", precision: 32, scale: 16, default: "0.0", null: false
+    t.decimal "total_balance", precision: 32, scale: 16, default: "0.0", null: false
+    t.decimal "available_balance", precision: 32, scale: 16, default: "0.0", null: false
+    t.string "address"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "coin_type", "layer"], name: "index_coin_accounts_on_user_id_and_coin_type_and_layer", unique: true
+    t.index ["user_id"], name: "index_coin_accounts_on_user_id"
+  end
+
+  create_table "fiat_accounts", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "currency", null: false
+    t.decimal "balance", precision: 32, scale: 16, default: "0.0", null: false
+    t.decimal "frozen_balance", precision: 32, scale: 16, default: "0.0", null: false
+    t.decimal "total_balance", precision: 32, scale: 16, default: "0.0", null: false
+    t.decimal "available_balance", precision: 32, scale: 16, default: "0.0", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "currency"], name: "index_fiat_accounts_on_user_id_and_currency", unique: true
+    t.index ["user_id"], name: "index_fiat_accounts_on_user_id"
   end
 
   create_table "settings", force: :cascade do |t|
@@ -93,5 +121,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_05_055328) do
     t.index ["item_type", "item_id"], name: "index_versions_on_item_type_and_item_id"
   end
 
+  add_foreign_key "coin_accounts", "users"
+  add_foreign_key "fiat_accounts", "users"
   add_foreign_key "social_accounts", "users"
 end

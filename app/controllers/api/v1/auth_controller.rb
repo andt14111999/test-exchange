@@ -195,11 +195,13 @@ module Api
       end
 
       def generate_jwt_token(user)
+        secret = Rails.application.secret_key_base
         payload = {
           user_id: user.id,
-          exp: 30.days.from_now.to_i
+          email: user.email,
+          exp: 24.hours.from_now.to_i
         }
-        JWT.encode(payload, Rails.application.credentials.secret_key_base)
+        JWT.encode(payload, secret, 'HS256')
       end
     end
   end

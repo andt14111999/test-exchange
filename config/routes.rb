@@ -31,6 +31,7 @@ Rails.application.routes.draw do
       post '/auth/facebook', to: 'auth#facebook'
       post '/auth/google', to: 'auth#google'
       post '/auth/apple', to: 'auth#apple'
+      resources :balances, only: [ :index ]
     end
   end
 end

@@ -2,6 +2,8 @@
 
 class User < ApplicationRecord
   has_many :social_accounts, dependent: :destroy
+  has_many :coin_accounts, dependent: :destroy
+  has_many :fiat_accounts, dependent: :destroy
 
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :role, inclusion: { in: %w[merchant user] }
@@ -39,6 +41,8 @@ class User < ApplicationRecord
     %w[social_accounts]
   end
 
+  after_create :create_default_accounts
+
   def self.from_social_auth(auth)
     social_account = SocialAccount.find_or_initialize_by(
       provider: auth.provider,
@@ -67,5 +71,34 @@ class User < ApplicationRecord
     end
 
     social_account.user
+  end
+
+  private
+
+  def create_default_accounts
+    # Create coin accounts for each coin type and its supported layers
+    CoinAccount::SUPPORTED_NETWORKS.each do |coin_type, layers|
+      layers.each do |layer|
+        coin_accounts.create!(
+          coin_type: coin_type,
+          layer: layer,
+          balance: 0,
+          frozen_balance: 0,
+          total_balance: 0,
+          available_balance: 0
+        )
+      end
+    end
+
+    # Create fiat accounts for each supported currency
+    FiatAccount::SUPPORTED_CURRENCIES.each_key do |currency|
+      fiat_accounts.create!(
+        currency: currency,
+        balance: 0,
+        frozen_balance: 0,
+        total_balance: 0,
+        available_balance: 0
+      )
+    end
   end
 end
