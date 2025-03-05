@@ -31,5 +31,16 @@ module BasePortal
     config.active_record.encryption.deterministic_key = ENV.fetch('ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY', nil)
     config.active_record.encryption.key_derivation_salt = ENV.fetch('ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT', nil)
     config.active_record.encryption.support_unencrypted_data = true
+
+    # Cấu hình CORS
+    config.middleware.insert_before 0, Rack::Cors do
+      allow do
+        origins '*' # Trong production nên giới hạn domain cụ thể
+        resource '*',
+          headers: :any,
+          methods: %i[get post options],
+          expose: [ 'Authorization' ]
+      end
+    end
   end
 end

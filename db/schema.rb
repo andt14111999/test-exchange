@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_01_09_105321) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_05_055328) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -52,6 +52,37 @@ ActiveRecord::Schema[8.0].define(version: 2025_01_09_105321) do
     t.index ["var"], name: "index_settings_on_var", unique: true
   end
 
+  create_table "social_accounts", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "provider", null: false
+    t.string "provider_user_id", null: false
+    t.string "email", null: false
+    t.string "name"
+    t.string "access_token"
+    t.string "refresh_token"
+    t.datetime "token_expires_at"
+    t.string "avatar_url"
+    t.jsonb "profile_data"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["provider", "provider_user_id"], name: "index_social_accounts_on_provider_and_provider_user_id", unique: true
+    t.index ["user_id"], name: "index_social_accounts_on_user_id"
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.string "email", null: false
+    t.string "display_name"
+    t.string "avatar_url"
+    t.string "role", default: "user"
+    t.boolean "phone_verified", default: false, null: false
+    t.boolean "document_verified", default: false, null: false
+    t.integer "kyc_level", default: 0
+    t.string "status", default: "active"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_users_on_email", unique: true
+  end
+
   create_table "versions", force: :cascade do |t|
     t.string "whodunnit"
     t.datetime "created_at"
@@ -61,4 +92,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_01_09_105321) do
     t.text "object"
     t.index ["item_type", "item_id"], name: "index_versions_on_item_type_and_item_id"
   end
+
+  add_foreign_key "social_accounts", "users"
 end
