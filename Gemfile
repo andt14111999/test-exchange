@@ -71,9 +71,21 @@ gem 'grape-active_model_serializers'
 gem 'grape-entity'
 gem 'grape-rails-cache'
 gem 'kaminari'
+gem 'omniauth'
+gem 'omniauth-apple'
+gem 'omniauth-facebook'
+gem 'omniauth-google-oauth2'
+gem 'omniauth-rails_csrf_protection'
 gem 'redis', '~> 4.0'
 gem 'rqrcode', '~> 2.0'
 gem 'sassc-rails'
 gem 'sidekiq'
 gem 'sidekiq-status'
 gem 'strong_migrations'
+
+# Social login
+gem 'google-id-token'          # Google ID token verification
+gem 'jwt'                      # JWT token handling
+gem 'koala'                    # Facebook API
+
+gem 'rack-cors'
