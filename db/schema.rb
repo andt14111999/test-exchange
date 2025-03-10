@@ -50,8 +50,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_05_132741) do
     t.string "layer", null: false
     t.decimal "balance", precision: 32, scale: 16, default: "0.0", null: false
     t.decimal "frozen_balance", precision: 32, scale: 16, default: "0.0", null: false
-    t.decimal "total_balance", precision: 32, scale: 16, default: "0.0", null: false
-    t.decimal "available_balance", precision: 32, scale: 16, default: "0.0", null: false
+    t.string "account_type", default: "deposit", null: false
     t.string "address"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -64,8 +63,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_05_132741) do
     t.string "currency", null: false
     t.decimal "balance", precision: 32, scale: 16, default: "0.0", null: false
     t.decimal "frozen_balance", precision: 32, scale: 16, default: "0.0", null: false
-    t.decimal "total_balance", precision: 32, scale: 16, default: "0.0", null: false
-    t.decimal "available_balance", precision: 32, scale: 16, default: "0.0", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_id", "currency"], name: "index_fiat_accounts_on_user_id_and_currency", unique: true

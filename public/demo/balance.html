@@ -70,19 +70,6 @@
       <div class="mb-12">
         <h3 class="text-xl font-bold mb-6 text-gray-900">Fiat Accounts</h3>
 
-        <!-- Fiat Totals -->
-        <div class="mb-6">
-          <h4 class="text-lg font-semibold mb-4 text-gray-700">
-            Total by Currency
-          </h4>
-          <div
-            id="fiatTotals"
-            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-          >
-            <!-- Fiat totals will be inserted here -->
-          </div>
-        </div>
-
         <!-- Fiat Details -->
         <div>
           <h4 class="text-lg font-semibold mb-4 text-gray-700">
@@ -161,106 +148,77 @@
 
       // Render balances
       function renderBalances(data) {
-        // Render Coin Totals
-        const coinTotalsDiv = document.getElementById("coinTotals");
-        coinTotalsDiv.innerHTML = data.coin_accounts.totals
-          .map(
-            (total) => `
-          <div class="balance-card rounded-lg p-4">
-            <div class="flex justify-between items-center mb-3">
-              <h5 class="text-lg font-bold text-gray-900">${total.coin_type}</h5>
-            </div>
-            <div class="grid grid-cols-3 gap-3">
-              <div class="text-center">
-                <p class="text-gray-600 text-sm mb-1">Total</p>
-                <p class="font-bold text-gray-900">${total.total_balance}</p>
-              </div>
-              <div class="text-center">
-                <p class="text-gray-600 text-sm mb-1">Available</p>
-                <p class="font-bold text-gray-900">${total.available_balance}</p>
-              </div>
-              <div class="text-center">
-                <p class="text-gray-600 text-sm mb-1">Frozen</p>
-                <p class="font-bold text-gray-900">${total.frozen_balance}</p>
-              </div>
-            </div>
-          </div>
-        `
-          )
-          .join("");
-
-        // Render Coin Account Details
+        // Render Coin Accounts
         const coinAccountsDiv = document.getElementById("coinAccounts");
-        coinAccountsDiv.innerHTML = data.coin_accounts.details
+        coinAccountsDiv.innerHTML = data.coin_accounts
           .map(
-            (account) => `
-          <div class="balance-card rounded-lg p-4">
-            <div class="flex justify-between items-center mb-3">
-              <h5 class="text-lg font-bold text-gray-900">${
-                account.coin_type
-              }</h5>
-              <span class="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
-                ${account.layer}
-              </span>
+            (coin) => `
+          <div class="mb-8">
+            <!-- Main Account (Total) -->
+            <div class="balance-card rounded-lg p-4 mb-4">
+              <div class="flex justify-between items-center mb-3">
+                <h5 class="text-lg font-bold text-gray-900">${
+                  coin.coin_type
+                } Total</h5>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="text-center">
+                  <p class="text-gray-600 text-sm mb-1">Balance</p>
+                  <p class="font-bold text-gray-900">${coin.main.balance}</p>
+                </div>
+                <div class="text-center">
+                  <p class="text-gray-600 text-sm mb-1">Frozen</p>
+                  <p class="font-bold text-gray-900">${
+                    coin.main.frozen_balance
+                  }</p>
+                </div>
+              </div>
             </div>
-            <p class="text-sm text-gray-600 mb-3 break-all">${
-              account.address || "No address"
-            }</p>
-            <div class="grid grid-cols-3 gap-3">
-              <div class="text-center">
-                <p class="text-gray-600 text-sm mb-1">Total</p>
-                <p class="font-bold text-gray-900">${account.total_balance}</p>
-              </div>
-              <div class="text-center">
-                <p class="text-gray-600 text-sm mb-1">Available</p>
-                <p class="font-bold text-gray-900">${
-                  account.available_balance
-                }</p>
-              </div>
-              <div class="text-center">
-                <p class="text-gray-600 text-sm mb-1">Frozen</p>
-                <p class="font-bold text-gray-900">${account.frozen_balance}</p>
-              </div>
+
+            <!-- Deposit Accounts -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              ${coin.deposit_accounts
+                .map(
+                  (account) => `
+                <div class="balance-card rounded-lg p-4">
+                  <div class="flex justify-between items-center mb-3">
+                    <h5 class="text-lg font-bold text-gray-900">${
+                      coin.coin_type
+                    }</h5>
+                    <span class="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
+                      ${account.layer}
+                    </span>
+                  </div>
+                  ${
+                    account.address
+                      ? `<p class="text-sm text-gray-600 mb-3 break-all">${account.address}</p>`
+                      : ""
+                  }
+                  <div class="grid grid-cols-2 gap-3">
+                    <div class="text-center">
+                      <p class="text-gray-600 text-sm mb-1">Balance</p>
+                      <p class="font-bold text-gray-900">${account.balance}</p>
+                    </div>
+                    <div class="text-center">
+                      <p class="text-gray-600 text-sm mb-1">Frozen</p>
+                      <p class="font-bold text-gray-900">${
+                        account.frozen_balance
+                      }</p>
+                    </div>
+                  </div>
+                </div>
+              `
+                )
+                .join("")}
             </div>
           </div>
         `
           )
           .join("");
 
-        // Render Fiat Totals
-        const fiatTotalsDiv = document.getElementById("fiatTotals");
-        fiatTotalsDiv.innerHTML = data.fiat_accounts.totals
-          .map(
-            (total) => `
-          <div class="balance-card rounded-lg p-4">
-            <div class="flex justify-between items-center mb-3">
-              <h5 class="text-lg font-bold text-gray-900">${total.currency}</h5>
-              <span class="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
-                ${total.currency_name}
-              </span>
-            </div>
-            <div class="grid grid-cols-3 gap-3">
-              <div class="text-center">
-                <p class="text-gray-600 text-sm mb-1">Total</p>
-                <p class="font-bold text-gray-900">${total.total_balance}</p>
-              </div>
-              <div class="text-center">
-                <p class="text-gray-600 text-sm mb-1">Available</p>
-                <p class="font-bold text-gray-900">${total.available_balance}</p>
-              </div>
-              <div class="text-center">
-                <p class="text-gray-600 text-sm mb-1">Frozen</p>
-                <p class="font-bold text-gray-900">${total.frozen_balance}</p>
-              </div>
-            </div>
-          </div>
-        `
-          )
-          .join("");
-
-        // Render Fiat Account Details
+        // Render Fiat Accounts
         const fiatAccountsDiv = document.getElementById("fiatAccounts");
-        fiatAccountsDiv.innerHTML = data.fiat_accounts.details
+        fiatAccountsDiv.innerHTML = data.fiat_accounts
           .map(
             (account) => `
           <div class="balance-card rounded-lg p-4">
@@ -270,14 +228,10 @@
                 ${account.currency_name}
               </span>
             </div>
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-2 gap-3">
               <div class="text-center">
-                <p class="text-gray-600 text-sm mb-1">Total</p>
-                <p class="font-bold text-gray-900">${account.total_balance}</p>
-              </div>
-              <div class="text-center">
-                <p class="text-gray-600 text-sm mb-1">Available</p>
-                <p class="font-bold text-gray-900">${account.available_balance}</p>
+                <p class="text-gray-600 text-sm mb-1">Balance</p>
+                <p class="font-bold text-gray-900">${account.balance}</p>
               </div>
               <div class="text-center">
                 <p class="text-gray-600 text-sm mb-1">Frozen</p>

@@ -11,47 +11,28 @@ class CoinAccount < ApplicationRecord
     'BTC' => %w[bitcoin bep20]
   }.freeze
 
+  ACCOUNT_TYPES = %w[main deposit].freeze
+
   validates :coin_type, presence: true, inclusion: { in: SUPPORTED_NETWORKS.keys }
   validates :layer, presence: true
   validates :balance, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :frozen_balance, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :total_balance, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :available_balance, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :layer, uniqueness: { scope: %i[user_id coin_type] }
-  validate :validate_layer_for_coin_type
+  validates :account_type, presence: true, inclusion: { in: ACCOUNT_TYPES }
+  validates :layer, inclusion: { in: lambda { |account|
+    account.main? ? [ 'all' ] : SUPPORTED_NETWORKS[account.coin_type]
+  } }, if: -> { coin_type.present? }
   validate :validate_balances
 
   scope :of_coin, ->(coin_type) { where(coin_type: coin_type) }
-
-  scope :total_balances, lambda {
-    select(
-      'COALESCE(SUM(balance), 0) as balance',
-      'COALESCE(SUM(frozen_balance), 0) as frozen_balance',
-      'COALESCE(SUM(total_balance), 0) as total_balance',
-      'COALESCE(SUM(available_balance), 0) as available_balance'
-    ).reorder(nil)
-  }
-
-  before_validation :calculate_balances
-
-  BalanceInfo = Struct.new(:balance, :frozen_balance, :total_balance, :available_balance)
+  scope :main, -> { where(account_type: 'main') }
+  scope :deposit, -> { where(account_type: 'deposit') }
 
   class << self
-    def main
-      result = total_balances.take
-
-      BalanceInfo.new(
-        balance: result&.balance || 0,
-        frozen_balance: result&.frozen_balance || 0,
-        total_balance: result&.total_balance || 0,
-        available_balance: result&.available_balance || 0
-      )
-    end
-
     def ransackable_attributes(_auth_object = nil)
       %w[
-        id user_id coin_type layer
-        balance frozen_balance total_balance available_balance
+        id user_id coin_type layer account_type
+        balance frozen_balance
         address created_at updated_at
       ]
     end
@@ -61,26 +42,26 @@ class CoinAccount < ApplicationRecord
     end
   end
 
-  private
-
-  def calculate_balances
-    self.total_balance = balance + frozen_balance
-    self.available_balance = balance - frozen_balance
+  def main?
+    account_type == 'main'
   end
 
+  def deposit?
+    account_type == 'deposit'
+  end
+
+  private
+
   def validate_balances
-    errors.add(:frozen_balance, 'cannot be greater than balance') if frozen_balance > balance
+    return unless frozen_balance > balance
 
-    errors.add(:available_balance, 'cannot be negative') if available_balance.negative?
-
-    return unless total_balance != (balance + frozen_balance)
-
-      errors.add(:total_balance, 'must equal balance + frozen_balance')
+    errors.add(:frozen_balance, 'cannot be greater than balance')
   end
 
   def validate_layer_for_coin_type
     return if coin_type.blank?
-    return if SUPPORTED_NETWORKS[coin_type]&.include?(layer)
+    return if main? && layer == 'all'
+    return if deposit? && SUPPORTED_NETWORKS[coin_type]&.include?(layer)
 
     errors.add(:layer,
       "is not supported for #{coin_type}. Supported layers are: #{SUPPORTED_NETWORKS[coin_type]&.join(', ')}")

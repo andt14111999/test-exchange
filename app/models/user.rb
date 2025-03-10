@@ -76,28 +76,31 @@ class User < ApplicationRecord
   private
 
   def create_default_accounts
-    # Create coin accounts for each coin type and its supported layers
     CoinAccount::SUPPORTED_NETWORKS.each do |coin_type, layers|
+      coin_accounts.create!(
+        coin_type: coin_type,
+        layer: 'all',
+        balance: 0,
+        frozen_balance: 0,
+        account_type: 'main'
+      )
+
       layers.each do |layer|
         coin_accounts.create!(
           coin_type: coin_type,
           layer: layer,
           balance: 0,
           frozen_balance: 0,
-          total_balance: 0,
-          available_balance: 0
+          account_type: 'deposit'
         )
       end
     end
 
-    # Create fiat accounts for each supported currency
     FiatAccount::SUPPORTED_CURRENCIES.each_key do |currency|
       fiat_accounts.create!(
         currency: currency,
         balance: 0,
-        frozen_balance: 0,
-        total_balance: 0,
-        available_balance: 0
+        frozen_balance: 0
       )
     end
   end

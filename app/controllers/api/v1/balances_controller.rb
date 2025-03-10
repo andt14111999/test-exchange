@@ -7,83 +7,38 @@ module Api
 
       def index
         balances = {
-          coin_accounts: {
-            totals: coin_totals_by_type,
-            details: coin_account_details
-          },
-          fiat_accounts: {
-            totals: fiat_totals_by_currency,
-            details: fiat_account_details
-          }
+          coin_accounts: CoinAccount::SUPPORTED_NETWORKS.keys.map do |coin_type|
+            main_account = current_user.coin_accounts.main.of_coin(coin_type).first
+            deposit_accounts = current_user.coin_accounts.deposit.of_coin(coin_type)
+
+            {
+              coin_type: coin_type,
+              main: {
+                balance: main_account&.balance || 0,
+                frozen_balance: main_account&.frozen_balance || 0
+              },
+              deposit_accounts: deposit_accounts.map do |account|
+                {
+                  layer: account.layer,
+                  address: account.address,
+                  balance: account.balance,
+                  frozen_balance: account.frozen_balance
+                }
+              end
+            }
+          end,
+          fiat_accounts: FiatAccount::SUPPORTED_CURRENCIES.keys.map do |currency|
+            account = current_user.fiat_accounts.find_by(currency: currency)
+            {
+              currency: currency,
+              currency_name: FiatAccount::SUPPORTED_CURRENCIES[currency],
+              balance: account&.balance || 0,
+              frozen_balance: account&.frozen_balance || 0
+            }
+          end
         }
 
         render json: { status: 'success', data: balances }
-      end
-
-      private
-
-      def coin_totals_by_type
-        current_user.coin_accounts
-          .group(:coin_type)
-          .select(
-            'coin_type',
-            'COALESCE(SUM(balance), 0) as total_balance',
-            'COALESCE(SUM(frozen_balance), 0) as frozen_balance',
-            'COALESCE(SUM(available_balance), 0) as available_balance'
-          )
-          .map do |total|
-            {
-              coin_type: total.coin_type,
-              total_balance: total.total_balance,
-              available_balance: total.available_balance,
-              frozen_balance: total.frozen_balance
-            }
-          end
-      end
-
-      def fiat_totals_by_currency
-        current_user.fiat_accounts
-          .group(:currency)
-          .select(
-            'currency',
-            'COALESCE(SUM(balance), 0) as total_balance',
-            'COALESCE(SUM(frozen_balance), 0) as frozen_balance',
-            'COALESCE(SUM(available_balance), 0) as available_balance'
-          )
-          .map do |total|
-            {
-              currency: total.currency,
-              currency_name: FiatAccount::SUPPORTED_CURRENCIES[total.currency],
-              total_balance: total.total_balance,
-              available_balance: total.available_balance,
-              frozen_balance: total.frozen_balance
-            }
-          end
-      end
-
-      def coin_account_details
-        current_user.coin_accounts.map do |account|
-          {
-            coin_type: account.coin_type,
-            layer: account.layer,
-            address: account.address,
-            total_balance: account.total_balance,
-            available_balance: account.available_balance,
-            frozen_balance: account.frozen_balance
-          }
-        end
-      end
-
-      def fiat_account_details
-        current_user.fiat_accounts.map do |account|
-          {
-            currency: account.currency,
-            currency_name: FiatAccount::SUPPORTED_CURRENCIES[account.currency],
-            total_balance: account.total_balance,
-            available_balance: account.available_balance,
-            frozen_balance: account.frozen_balance
-          }
-        end
       end
     end
   end

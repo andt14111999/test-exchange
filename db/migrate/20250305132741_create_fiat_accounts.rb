@@ -7,8 +7,6 @@ class CreateFiatAccounts < ActiveRecord::Migration[7.0]
       t.string :currency, null: false
       t.decimal :balance, null: false, default: 0, precision: 32, scale: 16
       t.decimal :frozen_balance, null: false, default: 0, precision: 32, scale: 16
-      t.decimal :total_balance, null: false, default: 0, precision: 32, scale: 16
-      t.decimal :available_balance, null: false, default: 0, precision: 32, scale: 16
 
       t.timestamps
 

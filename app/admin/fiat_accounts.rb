@@ -18,12 +18,6 @@ ActiveAdmin.register FiatAccount do
     column :frozen_balance do |account|
       number_with_precision(account.frozen_balance, precision: 2)
     end
-    column :total_balance do |account|
-      number_with_precision(account.total_balance, precision: 2)
-    end
-    column :available_balance do |account|
-      number_with_precision(account.available_balance, precision: 2)
-    end
     column :created_at
     actions
   end
@@ -46,12 +40,6 @@ ActiveAdmin.register FiatAccount do
       end
       row :frozen_balance do |account|
         number_with_precision(account.frozen_balance, precision: 2)
-      end
-      row :total_balance do |account|
-        number_with_precision(account.total_balance, precision: 2)
-      end
-      row :available_balance do |account|
-        number_with_precision(account.available_balance, precision: 2)
       end
       row :created_at
       row :updated_at
