@@ -24,4 +24,14 @@ Rails.application.routes.draw do
   end
 
   mount ApiRoot => '/'
+
+  namespace :api do
+    namespace :v1 do
+      get '/auth/:provider/callback', to: 'auth#callback'
+      post '/auth/facebook', to: 'auth#facebook'
+      post '/auth/google', to: 'auth#google'
+      post '/auth/apple', to: 'auth#apple'
+      resources :balances, only: [ :index ]
+    end
+  end
 end

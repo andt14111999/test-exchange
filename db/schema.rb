@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_01_09_105321) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_10_110123) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -44,12 +44,129 @@ ActiveRecord::Schema[8.0].define(version: 2025_01_09_105321) do
     t.index ["reset_password_token"], name: "index_admin_users_on_reset_password_token", unique: true
   end
 
+  create_table "coin_accounts", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "coin_type", null: false
+    t.string "layer", null: false
+    t.decimal "balance", precision: 32, scale: 16, default: "0.0", null: false
+    t.decimal "frozen_balance", precision: 32, scale: 16, default: "0.0", null: false
+    t.string "account_type", default: "deposit", null: false
+    t.string "address"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "coin_type", "layer"], name: "index_coin_accounts_on_user_id_and_coin_type_and_layer", unique: true
+    t.index ["user_id"], name: "index_coin_accounts_on_user_id"
+  end
+
+  create_table "coin_deposits", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "coin_account_id", null: false
+    t.string "coin_type", null: false
+    t.decimal "amount", precision: 32, scale: 16, null: false
+    t.decimal "fee", precision: 32, scale: 16, default: "0.0"
+    t.string "tx_hash"
+    t.string "reference_id"
+    t.integer "confirmations", default: 0
+    t.string "status", default: "pending"
+    t.decimal "blockchain_fee", precision: 32, scale: 16
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["coin_account_id"], name: "index_coin_deposits_on_coin_account_id"
+    t.index ["created_at"], name: "index_coin_deposits_on_created_at"
+    t.index ["reference_id"], name: "index_coin_deposits_on_reference_id"
+    t.index ["status"], name: "index_coin_deposits_on_status"
+    t.index ["tx_hash"], name: "index_coin_deposits_on_tx_hash", unique: true
+    t.index ["user_id"], name: "index_coin_deposits_on_user_id"
+  end
+
+  create_table "coin_transactions", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "coin_type", null: false
+    t.decimal "amount", precision: 32, scale: 16, null: false
+    t.decimal "fee", precision: 32, scale: 16, default: "0.0"
+    t.string "status", default: "pending", null: false
+    t.string "reference_type"
+    t.bigint "reference_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["coin_type"], name: "index_coin_transactions_on_coin_type"
+    t.index ["created_at"], name: "index_coin_transactions_on_created_at"
+    t.index ["reference_type", "reference_id"], name: "index_coin_transactions_on_reference_type_and_reference_id"
+    t.index ["status"], name: "index_coin_transactions_on_status"
+    t.index ["user_id"], name: "index_coin_transactions_on_user_id"
+  end
+
+  create_table "coin_withdrawals", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "coin_account_id", null: false
+    t.string "coin_type", null: false
+    t.decimal "amount", precision: 32, scale: 16, null: false
+    t.decimal "fee", precision: 32, scale: 16, default: "0.0"
+    t.decimal "blockchain_fee", precision: 32, scale: 16
+    t.string "destination_address", null: false
+    t.string "memo"
+    t.string "network"
+    t.string "tx_hash"
+    t.string "reference_id"
+    t.string "status", default: "pending"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["coin_account_id"], name: "index_coin_withdrawals_on_coin_account_id"
+    t.index ["created_at"], name: "index_coin_withdrawals_on_created_at"
+    t.index ["reference_id"], name: "index_coin_withdrawals_on_reference_id"
+    t.index ["status"], name: "index_coin_withdrawals_on_status"
+    t.index ["tx_hash"], name: "index_coin_withdrawals_on_tx_hash"
+    t.index ["user_id"], name: "index_coin_withdrawals_on_user_id"
+  end
+
+  create_table "fiat_accounts", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "currency", null: false
+    t.decimal "balance", precision: 32, scale: 16, default: "0.0", null: false
+    t.decimal "frozen_balance", precision: 32, scale: 16, default: "0.0", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "currency"], name: "index_fiat_accounts_on_user_id_and_currency", unique: true
+    t.index ["user_id"], name: "index_fiat_accounts_on_user_id"
+  end
+
   create_table "settings", force: :cascade do |t|
     t.string "var", null: false
     t.text "value"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["var"], name: "index_settings_on_var", unique: true
+  end
+
+  create_table "social_accounts", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "provider", null: false
+    t.string "provider_user_id", null: false
+    t.string "email", null: false
+    t.string "name"
+    t.string "access_token"
+    t.string "refresh_token"
+    t.datetime "token_expires_at"
+    t.string "avatar_url"
+    t.jsonb "profile_data"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["provider", "provider_user_id"], name: "index_social_accounts_on_provider_and_provider_user_id", unique: true
+    t.index ["user_id"], name: "index_social_accounts_on_user_id"
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.string "email", null: false
+    t.string "display_name"
+    t.string "avatar_url"
+    t.string "role", default: "user"
+    t.boolean "phone_verified", default: false, null: false
+    t.boolean "document_verified", default: false, null: false
+    t.integer "kyc_level", default: 0
+    t.string "status", default: "active"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_users_on_email", unique: true
   end
 
   create_table "versions", force: :cascade do |t|
@@ -61,4 +178,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_01_09_105321) do
     t.text "object"
     t.index ["item_type", "item_id"], name: "index_versions_on_item_type_and_item_id"
   end
+
+  add_foreign_key "coin_accounts", "users"
+  add_foreign_key "coin_deposits", "coin_accounts"
+  add_foreign_key "coin_deposits", "users"
+  add_foreign_key "coin_transactions", "users"
+  add_foreign_key "coin_withdrawals", "coin_accounts"
+  add_foreign_key "coin_withdrawals", "users"
+  add_foreign_key "fiat_accounts", "users"
+  add_foreign_key "social_accounts", "users"
 end

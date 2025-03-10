@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SnowFox Exchange - Balance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .balance-card {
+        background: white;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      }
+    </style>
+  </head>
+  <body
+    class="min-h-screen bg-white text-gray-900 flex items-center justify-center"
+  >
+    <div class="w-full max-w-6xl mx-auto p-8">
+      <!-- User Info Section -->
+      <div class="text-center mb-8">
+        <img
+          id="userAvatar"
+          src=""
+          alt="User Avatar"
+          class="w-20 h-20 rounded-full mx-auto mb-4 border-2 border-gray-200"
+        />
+        <h2 id="userName" class="text-2xl font-bold text-gray-900"></h2>
+        <p id="userEmail" class="text-gray-600"></p>
+      </div>
+
+      <!-- User Status -->
+      <div
+        class="bg-gray-50 rounded-lg p-4 mb-8 text-center border border-gray-200"
+      >
+        <p id="userRole" class="mb-2 text-gray-700"></p>
+        <p id="userKycLevel" class="mb-2 text-gray-700"></p>
+        <p id="userStatus" class="text-gray-700"></p>
+      </div>
+
+      <!-- Coin Accounts Section -->
+      <div class="mb-12">
+        <h3 class="text-xl font-bold mb-6 text-gray-900">Coin Accounts</h3>
+
+        <!-- Coin Totals -->
+        <div class="mb-6">
+          <h4 class="text-lg font-semibold mb-4 text-gray-700">
+            Total by Coin Type
+          </h4>
+          <div
+            id="coinTotals"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
+            <!-- Coin totals will be inserted here -->
+          </div>
+        </div>
+
+        <!-- Coin Details -->
+        <div>
+          <h4 class="text-lg font-semibold mb-4 text-gray-700">
+            Account Details
+          </h4>
+          <div id="coinAccounts" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Coin account details will be inserted here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Fiat Accounts Section -->
+      <div class="mb-12">
+        <h3 class="text-xl font-bold mb-6 text-gray-900">Fiat Accounts</h3>
+
+        <!-- Fiat Details -->
+        <div>
+          <h4 class="text-lg font-semibold mb-4 text-gray-700">
+            Account Details
+          </h4>
+          <div id="fiatAccounts" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Fiat account details will be inserted here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Logout Button -->
+      <div class="text-center">
+        <button
+          onclick="logout()"
+          class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg w-full max-w-md"
+        >
+          Logout
+        </button>
+      </div>
+    </div>
+
+    <script>
+      // Check if user is logged in
+      const token = localStorage.getItem("auth_token");
+      if (!token) {
+        window.location.href = "/demo/login.html";
+      }
+
+      // Load user info
+      const userData = JSON.parse(localStorage.getItem("userData"));
+      if (userData) {
+        document.getElementById("userAvatar").src =
+          userData.avatar_url || "https://via.placeholder.com/150";
+        document.getElementById("userName").textContent = userData.display_name;
+        document.getElementById("userEmail").textContent = userData.email;
+        document.getElementById(
+          "userRole"
+        ).textContent = `Role: ${userData.role}`;
+        document.getElementById(
+          "userKycLevel"
+        ).textContent = `KYC Level: ${userData.kyc_level}`;
+        document.getElementById(
+          "userStatus"
+        ).textContent = `Status: ${userData.status}`;
+      }
+
+      // Fetch balances
+      async function fetchBalances() {
+        try {
+          const response = await fetch(
+            "http://localhost:3969/api/v1/balances",
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: "application/json",
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch balances");
+          }
+
+          const result = await response.json();
+
+          if (result.status === "success" && result.data) {
+            renderBalances(result.data);
+          } else {
+            console.error("Invalid response format:", result);
+          }
+        } catch (error) {
+          console.error("Error:", error);
+        }
+      }
+
+      // Render balances
+      function renderBalances(data) {
+        // Render Coin Accounts
+        const coinAccountsDiv = document.getElementById("coinAccounts");
+        coinAccountsDiv.innerHTML = data.coin_accounts
+          .map(
+            (coin) => `
+          <div class="mb-8">
+            <!-- Main Account (Total) -->
+            <div class="balance-card rounded-lg p-4 mb-4">
+              <div class="flex justify-between items-center mb-3">
+                <h5 class="text-lg font-bold text-gray-900">${
+                  coin.coin_type
+                } Total</h5>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="text-center">
+                  <p class="text-gray-600 text-sm mb-1">Balance</p>
+                  <p class="font-bold text-gray-900">${coin.main.balance}</p>
+                </div>
+                <div class="text-center">
+                  <p class="text-gray-600 text-sm mb-1">Frozen</p>
+                  <p class="font-bold text-gray-900">${
+                    coin.main.frozen_balance
+                  }</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Deposit Accounts -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              ${coin.deposit_accounts
+                .map(
+                  (account) => `
+                <div class="balance-card rounded-lg p-4">
+                  <div class="flex justify-between items-center mb-3">
+                    <h5 class="text-lg font-bold text-gray-900">${
+                      coin.coin_type
+                    }</h5>
+                    <span class="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
+                      ${account.layer}
+                    </span>
+                  </div>
+                  ${
+                    account.address
+                      ? `<p class="text-sm text-gray-600 mb-3 break-all">${account.address}</p>`
+                      : ""
+                  }
+                  <div class="grid grid-cols-2 gap-3">
+                    <div class="text-center">
+                      <p class="text-gray-600 text-sm mb-1">Balance</p>
+                      <p class="font-bold text-gray-900">${account.balance}</p>
+                    </div>
+                    <div class="text-center">
+                      <p class="text-gray-600 text-sm mb-1">Frozen</p>
+                      <p class="font-bold text-gray-900">${
+                        account.frozen_balance
+                      }</p>
+                    </div>
+                  </div>
+                </div>
+              `
+                )
+                .join("")}
+            </div>
+          </div>
+        `
+          )
+          .join("");
+
+        // Render Fiat Accounts
+        const fiatAccountsDiv = document.getElementById("fiatAccounts");
+        fiatAccountsDiv.innerHTML = data.fiat_accounts
+          .map(
+            (account) => `
+          <div class="balance-card rounded-lg p-4">
+            <div class="flex justify-between items-center mb-3">
+              <h5 class="text-lg font-bold text-gray-900">${account.currency}</h5>
+              <span class="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
+                ${account.currency_name}
+              </span>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="text-center">
+                <p class="text-gray-600 text-sm mb-1">Balance</p>
+                <p class="font-bold text-gray-900">${account.balance}</p>
+              </div>
+              <div class="text-center">
+                <p class="text-gray-600 text-sm mb-1">Frozen</p>
+                <p class="font-bold text-gray-900">${account.frozen_balance}</p>
+              </div>
+            </div>
+          </div>
+        `
+          )
+          .join("");
+      }
+
+      // Logout function
+      function logout() {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("userData");
+        window.location.href = "/demo/login.html";
+      }
+
+      // Initial load
+      fetchBalances().catch((error) => {
+        console.error("Top level error:", error);
+      });
+    </script>
+  </body>
+</html>
