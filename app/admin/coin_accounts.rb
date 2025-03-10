@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register CoinAccount do
-  menu priority: 3
+  menu priority: 4, parent: 'Coin Management', label: 'Accounts'
 
   permit_params :user_id, :coin_type, :layer, :balance, :frozen_balance, :address, :account_type
 

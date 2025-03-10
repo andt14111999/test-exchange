@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_05_132741) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_10_110123) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -56,6 +56,67 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_05_132741) do
     t.datetime "updated_at", null: false
     t.index ["user_id", "coin_type", "layer"], name: "index_coin_accounts_on_user_id_and_coin_type_and_layer", unique: true
     t.index ["user_id"], name: "index_coin_accounts_on_user_id"
+  end
+
+  create_table "coin_deposits", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "coin_account_id", null: false
+    t.string "coin_type", null: false
+    t.decimal "amount", precision: 32, scale: 16, null: false
+    t.decimal "fee", precision: 32, scale: 16, default: "0.0"
+    t.string "tx_hash"
+    t.string "reference_id"
+    t.integer "confirmations", default: 0
+    t.string "status", default: "pending"
+    t.decimal "blockchain_fee", precision: 32, scale: 16
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["coin_account_id"], name: "index_coin_deposits_on_coin_account_id"
+    t.index ["created_at"], name: "index_coin_deposits_on_created_at"
+    t.index ["reference_id"], name: "index_coin_deposits_on_reference_id"
+    t.index ["status"], name: "index_coin_deposits_on_status"
+    t.index ["tx_hash"], name: "index_coin_deposits_on_tx_hash", unique: true
+    t.index ["user_id"], name: "index_coin_deposits_on_user_id"
+  end
+
+  create_table "coin_transactions", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "coin_type", null: false
+    t.decimal "amount", precision: 32, scale: 16, null: false
+    t.decimal "fee", precision: 32, scale: 16, default: "0.0"
+    t.string "status", default: "pending", null: false
+    t.string "reference_type"
+    t.bigint "reference_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["coin_type"], name: "index_coin_transactions_on_coin_type"
+    t.index ["created_at"], name: "index_coin_transactions_on_created_at"
+    t.index ["reference_type", "reference_id"], name: "index_coin_transactions_on_reference_type_and_reference_id"
+    t.index ["status"], name: "index_coin_transactions_on_status"
+    t.index ["user_id"], name: "index_coin_transactions_on_user_id"
+  end
+
+  create_table "coin_withdrawals", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "coin_account_id", null: false
+    t.string "coin_type", null: false
+    t.decimal "amount", precision: 32, scale: 16, null: false
+    t.decimal "fee", precision: 32, scale: 16, default: "0.0"
+    t.decimal "blockchain_fee", precision: 32, scale: 16
+    t.string "destination_address", null: false
+    t.string "memo"
+    t.string "network"
+    t.string "tx_hash"
+    t.string "reference_id"
+    t.string "status", default: "pending"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["coin_account_id"], name: "index_coin_withdrawals_on_coin_account_id"
+    t.index ["created_at"], name: "index_coin_withdrawals_on_created_at"
+    t.index ["reference_id"], name: "index_coin_withdrawals_on_reference_id"
+    t.index ["status"], name: "index_coin_withdrawals_on_status"
+    t.index ["tx_hash"], name: "index_coin_withdrawals_on_tx_hash"
+    t.index ["user_id"], name: "index_coin_withdrawals_on_user_id"
   end
 
   create_table "fiat_accounts", force: :cascade do |t|
@@ -119,6 +180,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_05_132741) do
   end
 
   add_foreign_key "coin_accounts", "users"
+  add_foreign_key "coin_deposits", "coin_accounts"
+  add_foreign_key "coin_deposits", "users"
+  add_foreign_key "coin_transactions", "users"
+  add_foreign_key "coin_withdrawals", "coin_accounts"
+  add_foreign_key "coin_withdrawals", "users"
   add_foreign_key "fiat_accounts", "users"
   add_foreign_key "social_accounts", "users"
 end
