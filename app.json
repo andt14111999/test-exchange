@@ -1,0 +1,32 @@
+{
+  "name": "exchange-backend",
+  "description": "Fox Exchange Backend Application",
+  "keywords": ["dokku", "rails", "exchange"],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "standard-1x"
+    },
+    "worker": {
+      "quantity": 1,
+      "size": "standard-1x"
+    },
+    "clockwork": {
+      "quantity": 1,
+      "size": "standard-1x"
+    }
+  },
+  "environments": {
+    "production": {
+      "addons": ["postgres", "redis"],
+      "scripts": {
+        "postdeploy": "bundle exec rails db:migrate"
+      }
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/ruby"
+    }
+  ]
+}

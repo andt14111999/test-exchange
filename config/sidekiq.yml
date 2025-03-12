@@ -1,0 +1,20 @@
+:concurrency: <%= ENV.fetch("SIDEKIQ_CONCURRENCY", 5) %>
+:timeout: 8
+
+# Sidekiq will run this many threads in parallel
+# Each thread will use about 128MB memory on average
+:max_retries: 3
+
+:queues:
+  - [critical, 3] # Critical jobs get processed with higher priority
+  - [default, 2] # Default queue for most jobs
+  - [low, 1] # Low priority background tasks
+
+development:
+  :concurrency: 2
+
+staging:
+  :concurrency: 3
+
+production:
+  :concurrency: <%= ENV.fetch("SIDEKIQ_CONCURRENCY", 5) %>

@@ -1,93 +1,69 @@
-FROM --platform=linux/amd64 ruby:3.2.2-alpine as BaseImage
+# syntax=docker/dockerfile:1
+# check=error=true
 
-LABEL maintainer="trathailoi@gmail.com"
-# ARG NPM_AUTH_TOKEN
-# ENV NPM_AUTH_TOKEN=${NPM_AUTH_TOKEN}
-ENV BUNDLER_VERSION=2.3.26
-# ENV NODE_VERSION 18.12.1
-# ENV NODE_PACKAGE_URL https://unofficial-builds.nodejs.org/download/release/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64-musl.tar.gz
+# This Dockerfile is designed for production, not development. Use with Kamal or build'n'run by hand:
+# docker build -t api .
+# docker run -d -p 80:80 -e RAILS_MASTER_KEY=<value from config/master.key> --name api api
 
-RUN gem install bundler -v $BUNDLER_VERSION
+# For a containerized dev environment, see Dev Containers: https://guides.rubyonrails.org/getting_started_with_devcontainer.html
 
-RUN ["apk", "add", "--update", "--no-cache", "build-base", "postgresql-dev", "postgresql-client", "tzdata", "git", "yarn", "gcompat", "automake", "libtool", "autoconf", "libsodium-dev", "imagemagick", "gcc", "musl-dev", "make", "curl-dev", "openssl-dev", "ca-certificates"]
-# RUN update-ca-certificates
-# RUN wget $NODE_PACKAGE_URL
-# RUN mkdir -p /opt && mkdir -p /opt/nodejs
-# RUN tar -zxvf *.tar.gz --directory /opt/nodejs --strip-components=1
-# RUN rm *.tar.gz
-# RUN ln -s /opt/nodejs/bin/node /usr/local/bin/node
-# RUN ln -s /opt/nodejs/bin/npm /usr/local/bin/npm
+# Make sure RUBY_VERSION matches the Ruby version in .ruby-version
+ARG RUBY_VERSION=3.2.2
+FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 
-WORKDIR /app
+# Rails app lives here
+WORKDIR /rails
 
-# COPY package.json yarn.lock ./
-# RUN ["yarn", "install"]
+# Install base packages
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y curl libjemalloc2 libvips postgresql-client && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
+# Set production environment
+ENV RAILS_ENV="production" \
+    BUNDLE_DEPLOYMENT="1" \
+    BUNDLE_PATH="/usr/local/bundle" \
+    BUNDLE_WITHOUT="development"
+
+# Throw-away build stage to reduce size of final image
+FROM base AS build
+
+# Install packages needed to build gems
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y build-essential git libpq-dev pkg-config && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Install application gems
 COPY Gemfile Gemfile.lock ./
-# COPY config/master.key config/master.key
-ARG BUNDLE_GITHUB__COM
-ARG RAILS_ENV="production"
-ARG RAILS_MASTER_KEY="28749d9e518d8903fb48911821b3dae1"
-ARG BUNDLE_GEM__FURY__IO
-ARG RAILS_STAGING_MASTER_KEY="28749d9e518d8903fb48911821b3dae1"
-ARG GITHUB_PACKAGE_TOKEN
-ARG BUNDLE_RUBYGEMS__PKG__GITHUB__COM
-ARG DATABASE_URL
-# ARG TIMESCALE_URL
-ARG REDIS_URL
-
-RUN ["bundle", "config", "set", "without", "development test"]
-RUN ["bundle", "install", "--jobs", "20", "--retry", "4"]
+RUN bundle install && \
+    rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
+    bundle exec bootsnap precompile --gemfile
 
 # Copy application code
-ADD . /app
+COPY . .
 
-# Remove the database migration from here since we'll run it manually
-# RUN ["bin/rails", "db:migrate"]
+# Precompile bootsnap code for faster boot times
+RUN bundle exec bootsnap precompile app/ lib/
 
-# Remove these lines since we'll handle the master key through environment variables
-# COPY config/master.key /app/config/
-# RUN chmod 600 /app/config/master.key
 
-#######################################
-# Stage: EXECUTABLE
 
-FROM --platform=linux/amd64 ruby:3.2.2-alpine as Executable
-RUN ["apk", "add", "--update", "--no-cache", "build-base", "postgresql-dev", "postgresql-client", "tzdata", "git", "yarn", "libsodium-dev", "libjxl", "aom", "imagemagick", "freetype-dev", "libpng-dev", "jpeg-dev", "libjpeg-turbo-dev", "ca-certificates"]
-COPY --from=BaseImage /usr/local/bundle /usr/local/bundle
-COPY --from=BaseImage /app /app
 
-# ARG NPM_AUTH_TOKEN
-# ENV NPM_AUTH_TOKEN=${NPM_AUTH_TOKEN}
-ENV LC_ALL "C.UTF-8"
-ENV LANG "en_uC.UTF-8"
-ENV LANGUAGE "en_US.UTF-8"
+# Final stage for app image
+FROM base
 
-ENV RAILS_LOG_TO_STDOUT true
-ENV RAILS_SERVE_STATIC_FILES true
-ARG RAILS_ENV="production"
-ARG RAILS_MASTER_KEY
-ARG BUNDLE_GEM__FURY__IO
-ARG RAILS_STAGING_MASTER_KEY
-ARG GITHUB_PACKAGE_TOKEN
-ARG BUNDLE_RUBYGEMS__PKG__GITHUB__COM
-ARG DATABASE_URL
-# ARG TIMESCALE_URL
-ARG REDIS_URL
+# Copy built artifacts: gems, application
+COPY --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
+COPY --from=build /rails /rails
 
-# ENV NODE_VERSION 18.12.1
-# ENV NODE_PACKAGE_URL https://unofficial-builds.nodejs.org/download/release/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64-musl.tar.gz
+# Run and own only the runtime files as a non-root user for security
+RUN groupadd --system --gid 1000 rails && \
+    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
+    chown -R rails:rails db log storage tmp
+USER 1000:1000
 
-# RUN update-ca-certificates
-# RUN wget $NODE_PACKAGE_URL
-# RUN mkdir -p /opt && mkdir -p /opt/nodejs
-# RUN tar -zxvf *.tar.gz --directory /opt/nodejs --strip-components=1
-# RUN rm *.tar.gz
-# RUN ln -s /opt/nodejs/bin/node /usr/local/bin/node
-# RUN ln -s /opt/nodejs/bin/npm /usr/local/bin/npm
+# Entrypoint prepares the database.
+ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
-WORKDIR /app
-RUN ["bin/rails", "assets:clobber"]
-RUN ["bundle", "exec", "rails", "assets:precompile"]
-
-EXPOSE 3969
+# Start server via Thruster by default, this can be overwritten at runtime
+EXPOSE 80
+CMD ["./bin/thrust", "./bin/rails", "server"]

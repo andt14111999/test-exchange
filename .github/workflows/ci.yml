@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    env:
+      RAILS_ENV: test
+      POSTGRES_HOST: localhost
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      CI: true
+      DEVISE_JWT_SECRET_KEY: "dummy_key_for_ci_testing_only_123456789"
+      REDIS_URL: redis://localhost:6379/0
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ai_marketing_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+      - name: Install backend dependencies
+        run: bundle install
+      - name: Set up database
+        run: |
+          cp config/database.yml.ci config/database.yml
+          bundle exec rails db:create db:schema:load
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..20}; do
+            pg_isready -h localhost -p 5432 && echo "Database is ready" && exit 0
+            echo "Waiting for database..."
+            sleep 2
+          done
+          echo "Database not ready, exiting." && exit 1
+      # TODO: Uncomment this when we have a Rubocop config
+      # - name: Run Rubocop
+      #   run: bundle exec rubocop
+      - name: Run backend tests
+        run: bin/rspec
+
+  deploy:
+    if: github.ref == 'refs/heads/master'
+    name: Deploy Backend to Production
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to dokku
+        uses: dokku/github-action@master
+        with:
+          git_remote_url: ${{ secrets.DOKKU_SSH_URL }}/exchange-backend
+          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          git_push_flags: "--force"
+          branch: "master"
