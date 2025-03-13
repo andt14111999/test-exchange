@@ -1,71 +1,79 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register CoinTransaction do
-  menu priority: 7, parent: 'Coin Management', label: 'Transactions'
+  menu priority: 6, parent: 'Coin Management', label: 'Transactions'
 
-  permit_params :user_id, :coin_type, :amount, :fee, :status,
-    :reference_type, :reference_id
+  actions :index, :show
+
+  filter :coin_account
+  filter :coin_currency
+  filter :amount
+  filter :operation_type
+  filter :created_at
 
   index do
     selectable_column
     id_column
-    column :user
-    column :coin_type
-    column :amount do |transaction|
-      number_with_precision(transaction.amount, precision: 8)
+    column :coin_account
+    column :coin_currency
+    column :amount do |tx|
+      number_with_precision(tx.amount, precision: 8)
     end
-    column :fee do |transaction|
-      number_with_precision(transaction.fee, precision: 8)
+    column :snapshot_balance do |tx|
+      number_with_precision(tx.snapshot_balance, precision: 8)
     end
-    column :status do |transaction|
-      status_tag transaction.status
+    column :snapshot_frozen_balance do |tx|
+      number_with_precision(tx.snapshot_frozen_balance, precision: 8)
     end
-    column :reference_type
-    column :reference_id
+    column :operation_type
+    column :operation do |tx|
+      link_to "#{tx.operation_type} ##{tx.operation_id}",
+        polymorphic_path([ :admin, tx.operation ])
+    end
     column :created_at
     actions
   end
 
-  filter :user
-  filter :coin_type
-  filter :amount
-  filter :status
-  filter :reference_type
-  filter :reference_id
-  filter :created_at
-  filter :updated_at
-
   show do
     attributes_table do
       row :id
-      row :user
-      row :coin_type
-      row :amount do |transaction|
-        number_with_precision(transaction.amount, precision: 8)
+      row :coin_account
+      row :coin_currency
+      row :amount do |tx|
+        number_with_precision(tx.amount, precision: 8)
       end
-      row :fee do |transaction|
-        number_with_precision(transaction.fee, precision: 8)
+      row :snapshot_balance do |tx|
+        number_with_precision(tx.snapshot_balance, precision: 8)
       end
-            row :status do |transaction|
-        status_tag transaction.status
-            end
-      row :reference_type
-      row :reference_id
+      row :snapshot_frozen_balance do |tx|
+        number_with_precision(tx.snapshot_frozen_balance, precision: 8)
+      end
+      row :snapshot_payment_quota do |tx|
+        code tx.snapshot_payment_quota
+      end
+      row :operation_type
+      row :operation do |tx|
+        link_to "#{tx.operation_type} ##{tx.operation_id}",
+          polymorphic_path([ :admin, tx.operation ])
+      end
       row :created_at
       row :updated_at
     end
   end
 
-  form do |f|
-    f.inputs do
-      f.input :user
-      f.input :coin_type
-      f.input :amount
-      f.input :fee
-      f.input :status
-      f.input :reference_type, as: :select, collection: CoinTransaction::REFERENCE_TYPES
-      f.input :reference_id
+  sidebar 'Balance Changes', only: :show do
+    attributes_table do
+      row 'Previous Balance' do |tx|
+        number_with_precision(tx.snapshot_balance, precision: 8)
+      end
+      row 'Change' do |tx|
+        status_tag(tx.amount.positive? ? 'increase' : 'decrease',
+          class: tx.amount.positive? ? 'green' : 'red')
+        number_with_precision(tx.amount.abs, precision: 8)
+      end
+      row 'New Balance' do |tx|
+        number_with_precision(tx.snapshot_balance + tx.amount, precision: 8)
+      end
     end
-    f.actions
   end
 end
