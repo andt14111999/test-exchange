@@ -1,37 +1,60 @@
 # frozen_string_literal: true
 
 class CoinTransaction < ApplicationRecord
-  belongs_to :user
-  belongs_to :reference, polymorphic: true, optional: true
+  belongs_to :coin_account, optional: true
+  belongs_to :operation, polymorphic: true, optional: true
+  alias_attribute :currency, :coin_currency
 
-  REFERENCE_TYPES = %w[deposit withdrawal trade transfer].freeze
-  STATUSES = %w[pending processing completed failed cancelled].freeze
+  validates :coin_account, presence: true
+  validates :operation, presence: true
+  validates :amount, presence: true, numericality: { other_than: 0 }, allow_nil: false
 
-  validates :coin_type, presence: true, inclusion: { in: CoinAccount::SUPPORTED_NETWORKS.keys }
-  validates :amount, presence: true
-  validates :fee, numericality: { greater_than_or_equal_to: 0 }
-  validates :status, presence: true, inclusion: { in: STATUSES }
-  validates :reference_type, inclusion: { in: REFERENCE_TYPES }, allow_nil: true
+  delegate :user, to: :coin_account
 
-  scope :deposits, -> { where(reference_type: 'deposit') }
-  scope :withdrawals, -> { where(reference_type: 'withdrawal') }
-  scope :trades, -> { where(reference_type: 'trade') }
-  scope :transfers, -> { where(reference_type: 'transfer') }
+  scope :sorted, -> { order(created_at: :desc) }
+  scope :of_currency, ->(currency) { where(coin_currency: currency) }
 
-  scope :pending, -> { where(status: 'pending') }
-  scope :processing, -> { where(status: 'processing') }
-  scope :completed, -> { where(status: 'completed') }
-  scope :failed, -> { where(status: 'failed') }
-  scope :cancelled, -> { where(status: 'cancelled') }
+  before_create :take_balance_snapshot
+  after_create :update_account_balance
+
+  BALANCE_UPDATING_OPERATIONS = %w[
+    CoinDepositOperation
+    CoinWithdrawalOperation
+  ].freeze
 
   def self.ransackable_attributes(_auth_object = nil)
     %w[
-      id user_id coin_type amount fee status
-      reference_type reference_id created_at updated_at
+      id coin_account_id coin_currency amount
+      snapshot_balance snapshot_frozen_balance
+      operation_type operation_id
+      created_at updated_at
     ]
   end
 
   def self.ransackable_associations(_auth_object = nil)
-    %w[user reference]
+    %w[coin_account operation]
+  end
+
+  private
+
+  def take_balance_snapshot
+    self.snapshot_balance = coin_account.balance + amount
+    self.snapshot_frozen_balance = coin_account.frozen_balance
+  end
+
+  def update_account_balance
+    return unless should_update_balance?
+
+    coin_account.with_lock do
+      new_balance = coin_account.balance + amount
+      coin_account.update!(balance: new_balance)
+    end
+  rescue StandardError => e
+    Rails.logger.error("Failed to update balance: #{e.message}")
+    raise
+  end
+
+  def should_update_balance?
+    operation_type.in?(BALANCE_UPDATING_OPERATIONS)
   end
 end

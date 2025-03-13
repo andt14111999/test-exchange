@@ -1,50 +1,98 @@
 # frozen_string_literal: true
 
 class CoinDeposit < ApplicationRecord
-  belongs_to :user
-  belongs_to :coin_account
-  has_one :coin_transaction, as: :reference, dependent: :nullify
+  include AASM
 
-  STATUSES = %w[pending processing completed failed cancelled].freeze
+  belongs_to :coin_account, optional: true
+  belongs_to :user, optional: true
+  has_one :coin_deposit_operation, autosave: false, dependent: :destroy
 
-  validates :coin_type, presence: true, inclusion: { in: CoinAccount::SUPPORTED_NETWORKS.keys }
-  validates :amount, presence: true, numericality: { greater_than: 0 }
-  validates :fee, numericality: { greater_than_or_equal_to: 0 }
-  validates :blockchain_fee, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
-  validates :status, presence: true, inclusion: { in: STATUSES }
-  validates :tx_hash, uniqueness: true, allow_nil: true
-  validates :confirmations, numericality: { greater_than_or_equal_to: 0 }
+  before_validation -> { self.user = coin_account&.user }, on: :create
+  before_validation :calculate_coin_fee, on: :create
 
-  scope :pending, -> { where(status: 'pending') }
-  scope :processing, -> { where(status: 'processing') }
-  scope :completed, -> { where(status: 'completed') }
-  scope :failed, -> { where(status: 'failed') }
-  scope :cancelled, -> { where(status: 'cancelled') }
+  validates :tx_hash, presence: true
+  validates :coin_amount, presence: true, numericality: { greater_than: 0 }
+  validates :coin_fee, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :coin_account, presence: true
+  validates :out_index, numericality: { less_than_or_equal_to: 0 }, if: -> { coin_currency == 'eth' }
+  validates :tx_hash, uniqueness: { scope: %i[out_index coin_currency coin_account_id] }
 
-  after_create :create_transaction_record
+  delegate :address, :version, to: :coin_account
+
+  scope :sorted, -> { order('id DESC') }
+
+  # State Machine
+  aasm column: 'status', whiny_transitions: false do
+    state :pending, initial: true
+    state :verified, after_enter: %i[
+      set_verified_at
+      create_operation_and_notify_user
+    ]
+    state :locked
+    state :rejected
+    state :forged
+
+    event :forge do
+      transitions from: [ :pending ], to: :forged
+    end
+
+    event :verify do
+      transitions from: %i[pending rejected], to: :locked do
+        # guard do
+        #   unsafe_cross_deposit? || fragmented? || exploited? || coin_deposit_restricted?
+        # end
+      end
+
+      transitions from: %i[pending rejected], to: :verified do
+        # guard do
+        #   !unsafe_cross_deposit? && !fragmented? && !coin_deposit_restricted?
+        # end
+      end
+    end
+
+    event :reject do
+      transitions from: [ :pending ], to: :rejected
+    end
+
+    event :release do
+      transitions from: [ :locked ], to: :verified
+    end
+  end
 
   def self.ransackable_attributes(_auth_object = nil)
     %w[
-      id user_id coin_account_id coin_type amount fee blockchain_fee
-      tx_hash reference_id confirmations status created_at updated_at
+      id user_id coin_account_id coin_currency coin_amount coin_fee
+      tx_hash out_index confirmations_count required_confirmations_count
+      status locked_reason last_seen_ip verified_at created_at updated_at
     ]
   end
 
   def self.ransackable_associations(_auth_object = nil)
-    %w[user coin_account coin_transaction]
+    %w[user coin_account coin_deposit_operation]
   end
 
   private
 
-    def create_transaction_record
-    coin_transaction.create!(
-      user: user,
-      coin_type: coin_type,
-      amount: amount,
-      fee: fee,
-      status: status,
-      reference_type: 'deposit',
-      reference_id: id
+  def calculate_coin_fee
+    self.coin_fee = 0
+  end
+
+  def set_verified_at
+    update(verified_at: Time.current) if verified? && verified_at.nil?
+  end
+
+  def create_operation_and_notify_user
+    CoinDepositOperation.create!(
+      coin_account: coin_account,
+      coin_amount: coin_amount,
+      coin_currency: coin_currency,
+      coin_deposit: self,
+      coin_fee: coin_fee,
+      platform_fee: 0,
+      tx_hash: tx_hash,
+      out_index: out_index,
+      status: 'completed'
     )
-    end
+    # Implement notification logic
+  end
 end

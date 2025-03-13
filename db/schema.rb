@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_10_110123) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_13_072630) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -58,42 +58,66 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_10_110123) do
     t.index ["user_id"], name: "index_coin_accounts_on_user_id"
   end
 
-  create_table "coin_deposits", force: :cascade do |t|
-    t.bigint "user_id", null: false
-    t.bigint "coin_account_id", null: false
-    t.string "coin_type", null: false
-    t.decimal "amount", precision: 32, scale: 16, null: false
-    t.decimal "fee", precision: 32, scale: 16, default: "0.0"
+  create_table "coin_deposit_operations", force: :cascade do |t|
+    t.bigint "coin_account_id"
+    t.decimal "coin_amount", precision: 24, scale: 8
+    t.string "coin_currency", limit: 5
+    t.bigint "coin_deposit_id"
+    t.decimal "coin_fee", precision: 24, scale: 8, default: "0.0"
+    t.decimal "platform_fee", precision: 24, scale: 8, default: "0.0"
     t.string "tx_hash"
-    t.string "reference_id"
-    t.integer "confirmations", default: 0
+    t.integer "out_index"
+    t.string "status"
+    t.text "status_explanation"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["coin_account_id"], name: "index_coin_deposit_operations_on_coin_account_id"
+    t.index ["coin_deposit_id"], name: "index_coin_deposit_operations_on_coin_deposit_id"
+    t.index ["status"], name: "index_coin_deposit_operations_on_status"
+    t.index ["tx_hash", "out_index"], name: "index_coin_deposit_operations_on_tx_hash_and_out_index", unique: true
+    t.index ["tx_hash"], name: "index_coin_deposit_operations_on_tx_hash"
+  end
+
+  create_table "coin_deposits", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "coin_account_id"
+    t.string "coin_currency", null: false
+    t.decimal "coin_amount", precision: 32, scale: 16, null: false
+    t.decimal "coin_fee", precision: 32, scale: 16, default: "0.0"
+    t.string "tx_hash"
+    t.integer "out_index", default: 0
+    t.integer "confirmations_count", default: 0
+    t.integer "required_confirmations_count"
     t.string "status", default: "pending"
-    t.decimal "blockchain_fee", precision: 32, scale: 16
+    t.string "locked_reason"
+    t.string "last_seen_ip"
+    t.datetime "verified_at"
+    t.jsonb "metadata"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["coin_account_id"], name: "index_coin_deposits_on_coin_account_id"
     t.index ["created_at"], name: "index_coin_deposits_on_created_at"
-    t.index ["reference_id"], name: "index_coin_deposits_on_reference_id"
     t.index ["status"], name: "index_coin_deposits_on_status"
-    t.index ["tx_hash"], name: "index_coin_deposits_on_tx_hash", unique: true
+    t.index ["tx_hash", "out_index", "coin_currency", "coin_account_id"], name: "index_coin_deposits_on_tx_hash_and_related", unique: true
     t.index ["user_id"], name: "index_coin_deposits_on_user_id"
+    t.index ["verified_at"], name: "index_coin_deposits_on_verified_at"
   end
 
   create_table "coin_transactions", force: :cascade do |t|
-    t.bigint "user_id", null: false
-    t.string "coin_type", null: false
-    t.decimal "amount", precision: 32, scale: 16, null: false
-    t.decimal "fee", precision: 32, scale: 16, default: "0.0"
-    t.string "status", default: "pending", null: false
-    t.string "reference_type"
-    t.bigint "reference_id"
+    t.decimal "amount", precision: 24, scale: 8
+    t.bigint "coin_account_id"
+    t.string "coin_currency", limit: 14
+    t.string "operation_type"
+    t.bigint "operation_id"
+    t.decimal "snapshot_balance", precision: 24, scale: 8
+    t.decimal "snapshot_frozen_balance", precision: 24, scale: 8
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["coin_type"], name: "index_coin_transactions_on_coin_type"
+    t.index ["coin_account_id"], name: "index_coin_transactions_on_coin_account_id"
+    t.index ["coin_currency"], name: "index_coin_transactions_on_coin_currency"
     t.index ["created_at"], name: "index_coin_transactions_on_created_at"
-    t.index ["reference_type", "reference_id"], name: "index_coin_transactions_on_reference_type_and_reference_id"
-    t.index ["status"], name: "index_coin_transactions_on_status"
-    t.index ["user_id"], name: "index_coin_transactions_on_user_id"
+    t.index ["operation_type", "operation_id"], name: "index_coin_transactions_on_operation"
+    t.index ["operation_type", "operation_id"], name: "index_coin_transactions_on_operation_type_and_operation_id"
   end
 
   create_table "coin_withdrawals", force: :cascade do |t|
@@ -180,9 +204,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_10_110123) do
   end
 
   add_foreign_key "coin_accounts", "users"
+  add_foreign_key "coin_deposit_operations", "coin_accounts"
+  add_foreign_key "coin_deposit_operations", "coin_deposits"
   add_foreign_key "coin_deposits", "coin_accounts"
   add_foreign_key "coin_deposits", "users"
-  add_foreign_key "coin_transactions", "users"
+  add_foreign_key "coin_transactions", "coin_accounts"
   add_foreign_key "coin_withdrawals", "coin_accounts"
   add_foreign_key "coin_withdrawals", "users"
   add_foreign_key "fiat_accounts", "users"
