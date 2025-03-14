@@ -1,4 +1,12 @@
 GIT
+  remote: https://github.com/kenn/redis-mutex.git
+  revision: a460549e0c2a876fd59b9197d84b909fd72eb876
+  ref: a460549e0c2a876fd59b9197d84b909fd72eb876
+  specs:
+    redis-mutex (4.0.0)
+      redis-classy (~> 2.0)
+
+GIT
   remote: https://github.com/platanus/activeadmin_addons.git
   revision: 0a19400cb305172a0568b5e35ebe74c9e8c81b01
   specs:
@@ -509,9 +517,13 @@ GEM
     rdoc (6.10.0)
       psych (>= 4.0.0)
     redcarpet (3.6.0)
-    redis (4.8.1)
+    redis (4.5.1)
+    redis-classy (2.4.1)
+      redis-namespace (~> 1.0)
     redis-client (0.23.0)
       connection_pool
+    redis-namespace (1.11.0)
+      redis (>= 4)
     regexp_parser (2.10.0)
     reline (0.6.0)
       io-console (~> 0.5)
@@ -754,7 +766,8 @@ DEPENDENCIES
   rack-cors
   rails (~> 8.0.0)
   rails-settings-cached (~> 2.9)
-  redis (~> 4.0)
+  redis (< 4.6)
+  redis-mutex!
   rollbar
   rotp
   rqrcode (~> 2.0)

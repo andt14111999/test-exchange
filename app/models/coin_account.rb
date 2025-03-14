@@ -2,6 +2,8 @@
 
 # app/models/coin_account.rb
 class CoinAccount < ApplicationRecord
+  include CategorizedAccount
+
   belongs_to :user
 
   SUPPORTED_NETWORKS = {
@@ -24,9 +26,7 @@ class CoinAccount < ApplicationRecord
   } }, if: -> { coin_type.present? }
   validate :validate_balances
 
-  scope :of_coin, ->(coin_type) { where(coin_type: coin_type) }
-  scope :main, -> { where(account_type: 'main') }
-  scope :deposit, -> { where(account_type: 'deposit') }
+  scope :of_coin, ->(coin_type) { where(coin_type: coin_type.upcase) }
 
   class << self
     def ransackable_attributes(_auth_object = nil)
@@ -48,6 +48,10 @@ class CoinAccount < ApplicationRecord
 
   def deposit?
     account_type == 'deposit'
+  end
+
+  def available_balance
+    balance - frozen_balance
   end
 
   private

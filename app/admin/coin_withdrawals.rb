@@ -1,89 +1,111 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register CoinWithdrawal do
-  menu priority: 6, parent: 'Coin Management', label: 'Withdrawals'
+  menu priority: 2, parent: 'Coin Management', label: 'Withdrawals'
 
-  permit_params :user_id, :coin_account_id, :coin_type, :amount, :fee,
-    :blockchain_fee, :destination_address, :memo, :network,
-    :tx_hash, :reference_id, :status
+  actions :index, :show
+
+  filter :id
+  filter :user
+  filter :coin_account
+  filter :coin_currency
+  filter :coin_amount
+  filter :coin_fee
+  filter :coin_address
+  filter :coin_layer
+  filter :status, as: :select, collection: -> { CoinWithdrawal.aasm.states.map(&:name) }
+  filter :created_at
+  filter :updated_at
 
   index do
-    selectable_column
     id_column
     column :user
-    column :coin_type
-    column :amount do |withdrawal|
-      number_with_precision(withdrawal.amount, precision: 8)
-    end
-    column :fee do |withdrawal|
-      number_with_precision(withdrawal.fee, precision: 8)
-    end
-    column :blockchain_fee do |withdrawal|
-      number_with_precision(withdrawal.blockchain_fee, precision: 8)
-    end
-    column :destination_address
-    column :network
+    column :coin_account
+    column :coin_currency
+    column :coin_amount
+    column :coin_fee
+    column :coin_address
+    column :coin_layer
     column :status do |withdrawal|
       status_tag withdrawal.status
     end
     column :created_at
+    column :updated_at
     actions
   end
-
-  filter :user
-  filter :coin_type
-  filter :amount
-  filter :status
-  filter :destination_address
-  filter :network
-  filter :tx_hash
-  filter :reference_id
-  filter :created_at
-  filter :updated_at
 
   show do
     attributes_table do
       row :id
       row :user
       row :coin_account
-      row :coin_type
-            row :amount do |withdrawal|
-        number_with_precision(withdrawal.amount, precision: 8)
-            end
-      row :fee do |withdrawal|
-        number_with_precision(withdrawal.fee, precision: 8)
-      end
-      row :blockchain_fee do |withdrawal|
-        number_with_precision(withdrawal.blockchain_fee, precision: 8)
-      end
-      row :destination_address
-      row :memo
-      row :network
-      row :tx_hash
-      row :reference_id
+      row :coin_currency
+      row :coin_amount
+      row :coin_fee
+      row :coin_address
+      row :coin_layer
       row :status do |withdrawal|
         status_tag withdrawal.status
       end
       row :created_at
       row :updated_at
     end
+
+    panel 'Withdrawal Operation' do
+      if withdrawal.coin_withdrawal_operation.present?
+        attributes_table_for withdrawal.coin_withdrawal_operation do
+          row :id
+          row :status do |operation|
+            status_tag operation.status
+          end
+          row :withdrawal_status
+          row :tx_hash
+          row :tx_hash_arrived_at
+          row :scheduled_at
+          row :withdrawal_data
+          row :created_at
+          row :updated_at
+        end
+      else
+        para 'No withdrawal operation found'
+      end
+    end
+
+    panel 'Transaction' do
+      if withdrawal.coin_transaction.present?
+        attributes_table_for withdrawal.coin_transaction do
+          row :id
+          row :amount
+          row :coin_currency
+          row :status do |transaction|
+            status_tag transaction.status
+          end
+          row :created_at
+          row :updated_at
+        end
+      else
+        para 'No transaction found'
+      end
+    end
+
+    active_admin_comments
   end
 
-  form do |f|
-    f.inputs do
-      f.input :user
-      f.input :coin_account
-      f.input :coin_type
-      f.input :amount
-      f.input :fee
-      f.input :blockchain_fee
-      f.input :destination_address
-      f.input :memo
-      f.input :network
-      f.input :tx_hash
-      f.input :reference_id
-      f.input :status
+  sidebar 'State Actions', only: :show do
+    if resource.pending?
+      button_to 'Cancel Withdrawal',
+        cancel_admin_coin_withdrawal_path(resource),
+        method: :put,
+        data: { confirm: 'Are you sure?' }
     end
-    f.actions
+  end
+
+  member_action :cancel, method: :put do
+    withdrawal = resource
+    if withdrawal.cancel
+      redirect_to resource_path, notice: 'Withdrawal was successfully cancelled'
+    else
+      redirect_to resource_path, alert: 'Could not cancel withdrawal'
+    end
   end
 end

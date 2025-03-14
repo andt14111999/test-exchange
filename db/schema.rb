@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_13_072630) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_13_102730) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -120,27 +120,59 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_13_072630) do
     t.index ["operation_type", "operation_id"], name: "index_coin_transactions_on_operation_type_and_operation_id"
   end
 
-  create_table "coin_withdrawals", force: :cascade do |t|
-    t.bigint "user_id", null: false
-    t.bigint "coin_account_id", null: false
-    t.string "coin_type", null: false
-    t.decimal "amount", precision: 32, scale: 16, null: false
-    t.decimal "fee", precision: 32, scale: 16, default: "0.0"
-    t.decimal "blockchain_fee", precision: 32, scale: 16
-    t.string "destination_address", null: false
-    t.string "memo"
-    t.string "network"
+  create_table "coin_withdrawal_operations", id: :serial, force: :cascade do |t|
+    t.decimal "coin_amount", precision: 24, scale: 8
+    t.string "coin_currency", limit: 14
+    t.decimal "coin_fee", precision: 24, scale: 8, default: "0.0"
+    t.bigint "coin_withdrawal_id"
+    t.datetime "scheduled_at"
+    t.string "status"
+    t.text "status_explanation"
     t.string "tx_hash"
-    t.string "reference_id"
-    t.string "status", default: "pending"
+    t.jsonb "withdrawal_data"
+    t.string "withdrawal_status"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["coin_account_id"], name: "index_coin_withdrawals_on_coin_account_id"
-    t.index ["created_at"], name: "index_coin_withdrawals_on_created_at"
-    t.index ["reference_id"], name: "index_coin_withdrawals_on_reference_id"
-    t.index ["status"], name: "index_coin_withdrawals_on_status"
-    t.index ["tx_hash"], name: "index_coin_withdrawals_on_tx_hash"
+    t.index ["coin_withdrawal_id"], name: "index_coin_withdrawal_operations_on_coin_withdrawal_id"
+    t.index ["created_at"], name: "index_coin_withdrawal_operations_on_created_at"
+    t.index ["scheduled_at"], name: "index_coin_withdrawal_operations_on_scheduled_at"
+    t.index ["status"], name: "index_coin_withdrawal_operations_on_status"
+    t.index ["tx_hash"], name: "index_coin_withdrawal_operations_on_tx_hash"
+    t.index ["withdrawal_status"], name: "index_coin_withdrawal_operations_on_withdrawal_status"
+  end
+
+  create_table "coin_withdrawals", force: :cascade do |t|
+    t.datetime "approve_scheduled_at"
+    t.string "coin_address"
+    t.decimal "coin_amount", precision: 24, scale: 8
+    t.string "coin_currency", limit: 14
+    t.decimal "coin_fee", precision: 24, scale: 8, default: "0.0"
+    t.string "coin_layer"
+    t.bigint "destination_tag"
+    t.string "explanation"
+    t.datetime "processed_at"
+    t.string "receiver_email"
+    t.string "receiver_phone_number"
+    t.string "receiver_username"
+    t.integer "receiving_coin_account_id"
+    t.string "status"
+    t.string "tx_hash"
+    t.datetime "tx_hash_arrived_at"
+    t.boolean "vpn", default: false, null: false
+    t.bigint "user_id"
+    t.string "withdrawable_type"
+    t.bigint "withdrawable_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["coin_address"], name: "index_on_coin_address_of_coin_withdrawals_if_lightning", unique: true, where: "((coin_layer)::text = 'lightning'::text)"
+    t.index ["coin_currency", "coin_layer"], name: "index_coin_withdrawals_on_coin_currency_and_coin_layer"
+    t.index ["status", "approve_scheduled_at"], name: "index_coin_withdrawals_for_delayed_approval", where: "((status)::text = 'delayed_approval'::text)"
+    t.index ["status", "updated_at"], name: "index_coin_withdrawals_for_stuck_recovery", where: "((status)::text = ANY (ARRAY[('prepared'::character varying)::text, ('verifying'::character varying)::text, ('verified'::character varying)::text]))"
+    t.index ["user_id", "coin_currency", "id"], name: "index_coin_withdrawals_on_user_id_and_coin_currency_and_id"
+    t.index ["user_id", "created_at"], name: "index_coin_withdrawals_on_user_id_and_created_at"
     t.index ["user_id"], name: "index_coin_withdrawals_on_user_id"
+    t.index ["vpn"], name: "index_coin_withdrawals_on_vpn", where: "(vpn = true)"
+    t.index ["withdrawable_type", "withdrawable_id"], name: "index_coin_withdrawals_on_withdrawable", unique: true
   end
 
   create_table "fiat_accounts", force: :cascade do |t|
@@ -209,8 +241,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_13_072630) do
   add_foreign_key "coin_deposits", "coin_accounts"
   add_foreign_key "coin_deposits", "users"
   add_foreign_key "coin_transactions", "coin_accounts"
-  add_foreign_key "coin_withdrawals", "coin_accounts"
-  add_foreign_key "coin_withdrawals", "users"
   add_foreign_key "fiat_accounts", "users"
   add_foreign_key "social_accounts", "users"
 end

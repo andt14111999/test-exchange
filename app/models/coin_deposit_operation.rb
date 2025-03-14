@@ -12,9 +12,7 @@ class CoinDepositOperation < CoinOperation
   validates :tx_hash, presence: true
   delegate :user, to: :coin_account
 
-  after_create do
-    create_coin_transactions
-  end
+  after_create :create_coin_transactions
 
   def self.ransackable_attributes(_auth_object = nil)
     %w[
@@ -33,7 +31,7 @@ class CoinDepositOperation < CoinOperation
   end
 
   def main_coin_account
-    user.coin_accounts.of_coin(coin_currency).main.last
+    user.coin_accounts.of_coin(coin_currency).main
   end
 
   private

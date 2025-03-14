@@ -95,7 +95,7 @@ module V1
         end
 
         def create_new_account(auth)
-          user = User.find_or_initialize_by(email: auth.info.email)
+          user = ::User.find_or_initialize_by(email: auth.info.email)
 
           if user.new_record?
             create_new_user(user, auth)
