@@ -64,8 +64,8 @@ jobs:
           done
           echo "Database not ready, exiting." && exit 1
       # TODO: Uncomment this when we have a Rubocop config
-      # - name: Run Rubocop
-      #   run: bundle exec rubocop
+      - name: Run Rubocop
+        run: bundle exec rubocop
       - name: Run backend tests
         run: bin/rspec
 

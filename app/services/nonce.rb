@@ -16,7 +16,9 @@ class Nonce
   end
 
   def fetch_value
-    Redis.current.get key
+    RedisFactory.single_redis.with do |redis|
+      redis.get(key)
+    end
   end
 
   def key
@@ -24,29 +26,34 @@ class Nonce
   end
 
   def ttl
-    Redis.current.ttl key
-  end
-
-  def save
-    if valid?
-      Redis.current.multi do
-        Redis.current.set key, Time.now.to_i
-        Redis.current.expire key, EXPIRE_TIME
-      end
-      @new_record = false
-      true
-    else
-      false
+    RedisFactory.single_redis.with do |redis|
+      redis.ttl(key)
     end
   end
 
+  def save
+    RedisFactory.single_redis.with do |redis|
+      redis.set(key, Time.now.to_i)
+      redis.expire(key, EXPIRE_TIME) if ttl.present?
+    end
+    @new_record = false
+    true
+  end
+
   def del
-    Redis.current.del key
+    RedisFactory.single_redis.with do |redis|
+      redis.del(key)
+    end
   end
 
   private
 
   def ensure_uniqueness_of_nonce
-    errors.add(:nonce, 'is recently used') if new_record && fetch_value
+    RedisFactory.single_redis.with do |redis|
+      return true unless redis.exists?(key)
+
+      errors.add(:base, :already_used)
+      false
+    end
   end
 end

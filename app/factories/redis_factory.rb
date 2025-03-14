@@ -30,6 +30,6 @@ class RedisFactory
     return ENV.fetch('REDIS_URL', nil) if Rails.env.production?
     return ENV.fetch('REDIS_URL', 'redis://127.0.0.1:6379') if Rails.env.development?
 
-    ENV['REDIS_TEST_URL'] || 'redis://127.0.0.1:9736'
+    ENV['REDIS_TEST_URL'] || 'redis://127.0.0.1:6379'
   end
 end
