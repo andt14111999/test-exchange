@@ -76,7 +76,7 @@ gem 'omniauth-apple'
 gem 'omniauth-facebook'
 gem 'omniauth-google-oauth2'
 gem 'omniauth-rails_csrf_protection'
-gem 'redis', '~> 4.0'
+gem 'redis', '< 4.6'
 gem 'rqrcode', '~> 2.0'
 gem 'sassc-rails'
 gem 'sidekiq'
@@ -89,3 +89,4 @@ gem 'jwt'                      # JWT token handling
 gem 'koala'                    # Facebook API
 
 gem 'rack-cors'
+gem 'redis-mutex', github: 'kenn/redis-mutex', ref: 'a460549e0c2a876fd59b9197d84b909fd72eb876'

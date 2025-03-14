@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register CoinDeposit do
-  menu priority: 5, parent: 'Coin Management', label: 'Deposits'
+  menu priority: 4, parent: 'Coin Management', label: 'Deposits'
 
   actions :index, :show
 
