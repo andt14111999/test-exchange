@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_13_102730) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_18_020803) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -186,6 +186,63 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_13_102730) do
     t.index ["user_id"], name: "index_fiat_accounts_on_user_id"
   end
 
+  create_table "fiat_transactions", force: :cascade do |t|
+    t.decimal "amount", precision: 32, scale: 16, null: false
+    t.bigint "fiat_account_id", null: false
+    t.string "currency", limit: 14, null: false
+    t.string "operation_type"
+    t.bigint "operation_id"
+    t.decimal "snapshot_balance", precision: 32, scale: 16
+    t.decimal "snapshot_frozen_balance", precision: 32, scale: 16
+    t.string "transaction_type"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_fiat_transactions_on_created_at"
+    t.index ["currency"], name: "index_fiat_transactions_on_currency"
+    t.index ["fiat_account_id"], name: "index_fiat_transactions_on_fiat_account_id"
+    t.index ["operation_type", "operation_id"], name: "index_fiat_transactions_on_operation"
+    t.index ["operation_type", "operation_id"], name: "index_fiat_transactions_on_operation_type_and_operation_id"
+  end
+
+  create_table "merchant_escrow_operations", force: :cascade do |t|
+    t.bigint "merchant_escrow_id", null: false
+    t.bigint "usdt_account_id", null: false
+    t.bigint "fiat_account_id", null: false
+    t.decimal "usdt_amount", precision: 32, scale: 16, null: false
+    t.decimal "fiat_amount", precision: 32, scale: 16, null: false
+    t.string "fiat_currency", null: false
+    t.string "operation_type", null: false
+    t.string "status", null: false
+    t.text "status_explanation"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_merchant_escrow_operations_on_created_at"
+    t.index ["fiat_account_id"], name: "index_merchant_escrow_operations_on_fiat_account_id"
+    t.index ["merchant_escrow_id"], name: "index_merchant_escrow_operations_on_merchant_escrow_id"
+    t.index ["operation_type"], name: "index_merchant_escrow_operations_on_operation_type"
+    t.index ["status"], name: "index_merchant_escrow_operations_on_status"
+    t.index ["usdt_account_id"], name: "index_merchant_escrow_operations_on_usdt_account_id"
+  end
+
+  create_table "merchant_escrows", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "usdt_account_id", null: false
+    t.bigint "fiat_account_id", null: false
+    t.decimal "usdt_amount", precision: 32, scale: 16, null: false
+    t.decimal "fiat_amount", precision: 32, scale: 16, null: false
+    t.string "fiat_currency", null: false
+    t.string "status", null: false
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_merchant_escrows_on_created_at"
+    t.index ["fiat_account_id"], name: "index_merchant_escrows_on_fiat_account_id"
+    t.index ["fiat_currency"], name: "index_merchant_escrows_on_fiat_currency"
+    t.index ["status"], name: "index_merchant_escrows_on_status"
+    t.index ["usdt_account_id"], name: "index_merchant_escrows_on_usdt_account_id"
+    t.index ["user_id"], name: "index_merchant_escrows_on_user_id"
+  end
+
   create_table "settings", force: :cascade do |t|
     t.string "var", null: false
     t.text "value"
@@ -242,5 +299,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_13_102730) do
   add_foreign_key "coin_deposits", "users"
   add_foreign_key "coin_transactions", "coin_accounts"
   add_foreign_key "fiat_accounts", "users"
+  add_foreign_key "fiat_transactions", "fiat_accounts"
+  add_foreign_key "merchant_escrow_operations", "coin_accounts", column: "usdt_account_id"
+  add_foreign_key "merchant_escrow_operations", "fiat_accounts"
+  add_foreign_key "merchant_escrow_operations", "merchant_escrows"
+  add_foreign_key "merchant_escrows", "coin_accounts", column: "usdt_account_id"
+  add_foreign_key "merchant_escrows", "fiat_accounts"
+  add_foreign_key "merchant_escrows", "users"
   add_foreign_key "social_accounts", "users"
 end
