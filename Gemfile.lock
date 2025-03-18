@@ -734,6 +734,7 @@ DEPENDENCIES
   database_cleaner
   debug
   devise
+  ed25519
   factory_bot_rails
   faker
   figaro

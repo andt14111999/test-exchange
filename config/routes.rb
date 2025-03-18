@@ -34,4 +34,6 @@ Rails.application.routes.draw do
       resources :balances, only: [ :index ]
     end
   end
+
+  post "coin_portal/#{CoinPortalController::HASH}/:type", controller: :coin_portal, action: :index
 end
