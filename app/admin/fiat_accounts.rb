@@ -3,7 +3,7 @@
 CurrencyTotal = Struct.new(:currency, :name, :total_balance, :frozen_balance, :available_balance)
 
 ActiveAdmin.register FiatAccount do
-  menu priority: 4
+  menu priority: 4, parent: 'Fiat Management', label: 'Fiat Accounts'
 
   permit_params :user_id, :currency, :balance, :frozen_balance
 
