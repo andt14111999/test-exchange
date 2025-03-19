@@ -4,7 +4,8 @@ module KafkaService
   class ConsumerManager
     def initialize
       @handlers = {
-        KafkaService::Config::Topics::BALANCE_UPDATE => KafkaService::Handlers::CoinAccountHandler.new
+        KafkaService::Config::Topics::BALANCE_UPDATE => KafkaService::Handlers::CoinAccountHandler.new,
+        KafkaService::Config::Topics::TRANSACTION_RESULT => KafkaService::Handlers::CoinDepositHandler.new
       }
       @consumers = []
       @monitor = Monitor.new
@@ -33,12 +34,12 @@ module KafkaService
 
       Thread.new do
         Rails.application.reloader.wrap do
-            consumer.start do |_topic, payload|
-              process_message_with_retry(handler, payload)
-            end
+          consumer.start do |_topic, payload|
+            process_message_with_retry(handler, payload)
+          end
         rescue StandardError => e
-            Rails.logger.error("Consumer error for topic #{topic}: #{e.message}")
-            restart_consumer(topic, handler)
+          Rails.logger.error("Failed to start consumer for topic #{topic}: #{e.message}")
+          restart_consumer(topic, handler)
         end
       end
 

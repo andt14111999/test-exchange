@@ -77,7 +77,7 @@ class User < ApplicationRecord
 
   def create_default_accounts
     CoinAccount::SUPPORTED_NETWORKS.each do |coin_type, layers|
-      coin_accounts.create!(
+      main_coin_account = coin_accounts.create!(
         coin_type: coin_type,
         layer: 'all',
         balance: 0,
@@ -85,14 +85,19 @@ class User < ApplicationRecord
         account_type: 'main'
       )
 
+      send_event_create_coin_account_to_kafka(main_coin_account)
+
       layers.each do |layer|
-        coin_accounts.create!(
+        coin_account = coin_accounts.create!(
           coin_type: coin_type,
           layer: layer,
           balance: 0,
           frozen_balance: 0,
           account_type: 'deposit'
         )
+
+        coin_address = get_coin_address(coin_account_id: coin_account.id)
+        coin_account.update!(address: coin_address)
       end
     end
 
@@ -103,5 +108,21 @@ class User < ApplicationRecord
         frozen_balance: 0
       )
     end
+  end
+
+  def send_event_create_coin_account_to_kafka(coin_account)
+    client.create(
+      user_id: id, coin: coin_account.coin_type, account_key: coin_account.id
+    )
+  end
+
+  def get_coin_address(*)
+    # TODO: Implement
+
+    '0x805040b0024cfdbD1c121CC7522209C604044c8e'
+  end
+
+  def client
+    @client ||= KafkaService::Services::Coin::CoinAccountService.new
   end
 end

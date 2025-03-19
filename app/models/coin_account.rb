@@ -45,7 +45,7 @@ class CoinAccount < ApplicationRecord
   } }, if: -> { coin_type.present? }
   validate :validate_balances
 
-  scope :of_coin, ->(coin_type) { where(coin_type: coin_type.upcase) }
+  scope :of_coin, ->(coin_type) { where(coin_type: coin_type) }
 
   class << self
     def ransackable_attributes(_auth_object = nil)

@@ -15,7 +15,6 @@ class CoinTransaction < ApplicationRecord
   scope :of_currency, ->(currency) { where(coin_currency: currency) }
 
   before_create :take_balance_snapshot
-  after_create :update_account_balance
 
   BALANCE_UPDATING_OPERATIONS = %w[
     CoinDepositOperation
@@ -40,21 +39,5 @@ class CoinTransaction < ApplicationRecord
   def take_balance_snapshot
     self.snapshot_balance = coin_account.balance + amount
     self.snapshot_frozen_balance = coin_account.frozen_balance
-  end
-
-  def update_account_balance
-    return unless should_update_balance?
-
-    coin_account.with_lock do
-      new_balance = coin_account.balance + amount
-      coin_account.update!(balance: new_balance)
-    end
-  rescue StandardError => e
-    Rails.logger.error("Failed to update balance: #{e.message}")
-    raise
-  end
-
-  def should_update_balance?
-    operation_type.in?(BALANCE_UPDATING_OPERATIONS)
   end
 end

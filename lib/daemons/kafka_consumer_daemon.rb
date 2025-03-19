@@ -4,8 +4,9 @@
 require File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'config', 'environment'))
 
 def shutdown
+  Rails.logger.info('Shutting down Kafka consumer daemon...')
   @manager&.stop
-  Process.exit(0)
+  Rails.application.exit
 end
 
 Signal.trap('TERM') { shutdown }
@@ -14,5 +15,6 @@ Signal.trap('INT') { shutdown }
 @manager = KafkaService::ConsumerManager.new
 @manager.start
 
-# Keep the script running
+Rails.logger.info('Kafka consumer daemon started')
+
 loop { sleep }

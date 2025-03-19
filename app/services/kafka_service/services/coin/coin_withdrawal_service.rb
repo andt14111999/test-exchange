@@ -6,7 +6,7 @@ module KafkaService
       class CoinWithdrawalService < KafkaService::Base::Service
         def create(identifier:, status:, user_id:, coin:, account_key:, amount:)
           send_event(
-            topic: KafkaService::Config::Topics::COIN_WITHDRAW_TOPIC,
+            topic: KafkaService::Config::Topics::COIN_WITHDRAW,
             key: identifier,
             data: {
               identifier: identifier,
@@ -28,7 +28,7 @@ module KafkaService
 
         def update_status(identifier:, operation_type:)
           send_event(
-            topic: KafkaService::Config::Topics::COIN_WITHDRAW_TOPIC,
+            topic: KafkaService::Config::Topics::COIN_WITHDRAW,
             key: identifier,
             data: {
               operationType: operation_type,
