@@ -46,7 +46,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_18_020803) do
 
   create_table "coin_accounts", force: :cascade do |t|
     t.bigint "user_id", null: false
-    t.string "coin_type", null: false
+    t.string "coin_currency", null: false
     t.string "layer", null: false
     t.decimal "balance", precision: 32, scale: 16, default: "0.0", null: false
     t.decimal "frozen_balance", precision: 32, scale: 16, default: "0.0", null: false
@@ -54,7 +54,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_18_020803) do
     t.string "address"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["user_id", "coin_type", "layer"], name: "index_coin_accounts_on_user_id_and_coin_type_and_layer", unique: true
+    t.index ["user_id", "coin_currency", "layer"], name: "index_coin_accounts_on_user_id_and_coin_currency_and_layer", unique: true
     t.index ["user_id"], name: "index_coin_accounts_on_user_id"
   end
 

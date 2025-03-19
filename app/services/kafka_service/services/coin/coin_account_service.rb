@@ -20,7 +20,7 @@ module KafkaService
 
         def query_balance(account_key:)
           send_event(
-            topic: KafkaService::Config::Topics::COIN_ACCOUNT_QUERY_TOPIC,
+            topic: KafkaService::Config::Topics::COIN_ACCOUNT_QUERY,
             key: account_key,
             data: {
               actionType: KafkaService::Config::ActionTypes::COIN_ACCOUNT,
@@ -33,7 +33,7 @@ module KafkaService
 
         def reset_balance(account_key:)
           send_event(
-            topic: KafkaService::Config::Topics::COIN_ACCOUNT_RESET_TOPIC,
+            topic: KafkaService::Config::Topics::COIN_ACCOUNT_RESET,
             key: account_key,
             data: {
               accountKey: account_key

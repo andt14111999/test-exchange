@@ -21,12 +21,14 @@ class CoinDeposit < ApplicationRecord
 
   scope :sorted, -> { order('id DESC') }
 
+  after_create :verify_deposit
+
   # State Machine
   aasm column: 'status', whiny_transitions: false do
     state :pending, initial: true
     state :verified, after_enter: %i[
       set_verified_at
-      create_operation_and_notify_user
+      send_event_deposit_to_kafka
     ]
     state :locked
     state :rejected
@@ -37,11 +39,11 @@ class CoinDeposit < ApplicationRecord
     end
 
     event :verify do
-      transitions from: %i[pending rejected], to: :locked do
-        # guard do
-        #   unsafe_cross_deposit? || fragmented? || exploited? || coin_deposit_restricted?
-        # end
-      end
+      # transitions from: %i[pending rejected], to: :locked do
+      # guard do
+      #   unsafe_cross_deposit? || fragmented? || exploited? || coin_deposit_restricted?
+      # end
+      # end
 
       transitions from: %i[pending rejected], to: :verified do
         # guard do
@@ -73,6 +75,10 @@ class CoinDeposit < ApplicationRecord
 
   private
 
+  def verify_deposit
+    verify!
+  end
+
   def calculate_coin_fee
     self.coin_fee = 0
   end
@@ -81,18 +87,21 @@ class CoinDeposit < ApplicationRecord
     update(verified_at: Time.current) if verified? && verified_at.nil?
   end
 
-  def create_operation_and_notify_user
-    CoinDepositOperation.create!(
-      coin_account: coin_account,
-      coin_amount: coin_amount,
-      coin_currency: coin_currency,
-      coin_deposit: self,
-      coin_fee: coin_fee,
-      platform_fee: 0,
-      tx_hash: tx_hash,
-      out_index: out_index,
-      status: 'completed'
+  def send_event_deposit_to_kafka
+    deposit_client.create(
+      user_id: user_id,
+      coin: coin_currency,
+      account_key: main_coin_account.id,
+      deposit: self,
+      amount: coin_amount
     )
-    # Implement notification logic
+  end
+
+  def main_coin_account
+    @main_coin_account ||= user.coin_accounts.of_coin(coin_currency).main
+  end
+
+  def deposit_client
+    @deposit_client ||= KafkaService::Services::Coin::CoinDepositService.new
   end
 end

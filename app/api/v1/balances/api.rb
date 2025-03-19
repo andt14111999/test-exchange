@@ -11,12 +11,12 @@ module V1
         desc 'Get user balances'
         get do
           balances = {
-            coin_accounts: ::CoinAccount::SUPPORTED_NETWORKS.keys.map do |coin_type|
-              main_account = current_user.coin_accounts.main.of_coin(coin_type).first
-              deposit_accounts = current_user.coin_accounts.deposit.of_coin(coin_type)
+            coin_accounts: ::CoinAccount::SUPPORTED_NETWORKS.keys.map do |coin_currency|
+              main_account = current_user.coin_accounts.main.of_coin(coin_currency).first
+              deposit_accounts = current_user.coin_accounts.deposit.of_coin(coin_currency)
 
               {
-                coin_type: coin_type,
+                coin_currency: coin_currency,
                 main: {
                   balance: main_account&.balance || 0,
                   frozen_balance: main_account&.frozen_balance || 0

@@ -4,17 +4,18 @@ module KafkaService
   module Services
     module Coin
       class CoinDepositService < KafkaService::Base::Service
-        def create(user_id:, coin:, account_key:, amount:)
-          identifier = generate_deposit_identifier
+        def create(user_id:, coin:, account_key:, deposit:, amount:)
+          identifier = generate_deposit_identifier(deposit_id: deposit.id)
 
           send_event(
-            topic: KafkaService::Config::Topics::COIN_DEPOSIT_TOPIC,
+            topic: KafkaService::Config::Topics::COIN_DEPOSIT,
             key: identifier,
             data: build_deposit_data(
               identifier: identifier,
               user_id: user_id,
               coin: coin,
               account_key: account_key,
+              deposit: deposit,
               amount: amount
             )
           )
@@ -25,7 +26,7 @@ module KafkaService
 
           messages = deposits.map do |deposit|
             {
-              topic: KafkaService::Config::Topics::COIN_DEPOSIT_TOPIC,
+              topic: KafkaService::Config::Topics::COIN_DEPOSIT,
               key: deposit[:user_id],
               payload: build_deposit_data(**deposit)
             }
@@ -36,11 +37,11 @@ module KafkaService
 
         private
 
-        def generate_deposit_identifier
-          "deposit-#{SecureRandom.hex(16)}"
+        def generate_deposit_identifier(deposit_id:)
+          "deposit-#{deposit_id}"
         end
 
-        def build_deposit_data(identifier:, user_id:, coin:, account_key:, amount:, **_opts)
+        def build_deposit_data(identifier:, user_id:, coin:, account_key:, deposit:, amount:, **_opts)
           {
             identifier: identifier,
             operationType: KafkaService::Config::OperationTypes::COIN_DEPOSIT_CREATE,
@@ -51,9 +52,9 @@ module KafkaService
             accountKey: account_key,
             amount: amount,
             coin: coin,
-            txHash: "tx-#{SecureRandom.hex(16)}",
-            layer: 'L1',
-            depositAddress: "address-#{SecureRandom.hex(16)}"
+            txHash: deposit.tx_hash,
+            layer: deposit.coin_account.layer,
+            depositAddress: deposit.coin_account.address
           }
         end
       end

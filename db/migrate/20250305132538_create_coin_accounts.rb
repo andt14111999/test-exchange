@@ -4,7 +4,7 @@ class CreateCoinAccounts < ActiveRecord::Migration[7.0]
   def change
     create_table :coin_accounts do |t|
       t.references :user, null: false, foreign_key: true
-      t.string :coin_type, null: false
+      t.string :coin_currency, null: false
       t.string :layer, null: false
       t.decimal :balance, null: false, default: 0, precision: 32, scale: 16
       t.decimal :frozen_balance, null: false, default: 0, precision: 32, scale: 16
@@ -13,7 +13,7 @@ class CreateCoinAccounts < ActiveRecord::Migration[7.0]
 
       t.timestamps
 
-      t.index %i[user_id coin_type layer], unique: true
+      t.index %i[user_id coin_currency layer], unique: true
     end
   end
 end
