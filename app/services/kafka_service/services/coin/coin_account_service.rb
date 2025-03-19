@@ -1,0 +1,46 @@
+# frozen_string_literal: true
+
+module KafkaService
+  module Services
+    module Coin
+      class CoinAccountService < KafkaService::Base::Service
+        def create(user_id:, coin:, account_key: nil)
+          send_event(
+            topic: KafkaService::Config::Topics::COIN_ACCOUNT,
+            key: account_key,
+            data: {
+              operationType: KafkaService::Config::OperationTypes::COIN_ACCOUNT_CREATE,
+              actionType: KafkaService::Config::ActionTypes::COIN_ACCOUNT,
+              userId: user_id,
+              coin: coin,
+              accountKey: account_key
+            }
+          )
+        end
+
+        def query_balance(account_key:)
+          send_event(
+            topic: KafkaService::Config::Topics::COIN_ACCOUNT_QUERY_TOPIC,
+            key: account_key,
+            data: {
+              actionType: KafkaService::Config::ActionTypes::COIN_ACCOUNT,
+              actionId: SecureRandom.uuid,
+              operationType: KafkaService::Config::OperationTypes::BALANCE_QUERY,
+              accountKey: account_key
+            }
+          )
+        end
+
+        def reset_balance(account_key:)
+          send_event(
+            topic: KafkaService::Config::Topics::COIN_ACCOUNT_RESET_TOPIC,
+            key: account_key,
+            data: {
+              accountKey: account_key
+            }
+          )
+        end
+      end
+    end
+  end
+end
