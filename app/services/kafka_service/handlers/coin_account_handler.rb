@@ -24,7 +24,7 @@ module KafkaService
       def find_or_create_account(payload)
         CoinAccount.find_or_initialize_by(
           user_id: payload['userId'],
-          coin_type: payload['coin'].downcase,
+          coin_currency: payload['coin'].downcase,
           account_type: 'main',
           layer: 'all'
         )

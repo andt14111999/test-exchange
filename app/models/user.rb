@@ -76,9 +76,9 @@ class User < ApplicationRecord
   private
 
   def create_default_accounts
-    CoinAccount::SUPPORTED_NETWORKS.each do |coin_type, layers|
+    CoinAccount::SUPPORTED_NETWORKS.each do |coin_currency, layers|
       main_coin_account = coin_accounts.create!(
-        coin_type: coin_type,
+        coin_currency: coin_currency,
         layer: 'all',
         balance: 0,
         frozen_balance: 0,
@@ -89,7 +89,7 @@ class User < ApplicationRecord
 
       layers.each do |layer|
         coin_account = coin_accounts.create!(
-          coin_type: coin_type,
+          coin_currency: coin_currency,
           layer: layer,
           balance: 0,
           frozen_balance: 0,
@@ -112,7 +112,7 @@ class User < ApplicationRecord
 
   def send_event_create_coin_account_to_kafka(coin_account)
     client.create(
-      user_id: id, coin: coin_account.coin_type, account_key: coin_account.id
+      user_id: id, coin: coin_account.coin_currency, account_key: coin_account.id
     )
   end
 

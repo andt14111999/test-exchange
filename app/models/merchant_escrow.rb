@@ -71,7 +71,7 @@ class MerchantEscrow < ApplicationRecord
   end
 
   def validate_usdt_account
-    return if usdt_account&.coin_type == 'usdt' && usdt_account&.main?
+    return if usdt_account&.coin_currency == 'usdt' && usdt_account&.main?
 
     errors.add(:usdt_account, :invalid)
   end

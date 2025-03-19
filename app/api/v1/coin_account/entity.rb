@@ -3,7 +3,7 @@
 module V1
   module CoinAccount
     class Entity < Grape::Entity
-      expose :coin_type
+      expose :coin_currency
       expose :main do
         expose :balance
         expose :frozen_balance

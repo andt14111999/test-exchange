@@ -34,23 +34,23 @@ class CoinAccount < ApplicationRecord
 
   ACCOUNT_TYPES = %w[main deposit].freeze
 
-  validates :coin_type, presence: true, inclusion: { in: SUPPORTED_NETWORKS.keys }
+  validates :coin_currency, presence: true, inclusion: { in: SUPPORTED_NETWORKS.keys }
   validates :layer, presence: true
   validates :balance, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :frozen_balance, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :layer, uniqueness: { scope: %i[user_id coin_type] }
+  validates :layer, uniqueness: { scope: %i[user_id coin_currency] }
   validates :account_type, presence: true, inclusion: { in: ACCOUNT_TYPES }
   validates :layer, inclusion: { in: lambda { |account|
-    account.main? ? [ 'all' ] : SUPPORTED_NETWORKS[account.coin_type]
-  } }, if: -> { coin_type.present? }
+    account.main? ? [ 'all' ] : SUPPORTED_NETWORKS[account.coin_currency]
+  } }, if: -> { coin_currency.present? }
   validate :validate_balances
 
-  scope :of_coin, ->(coin_type) { where(coin_type: coin_type) }
+  scope :of_coin, ->(coin_currency) { where(coin_currency: coin_currency) }
 
   class << self
     def ransackable_attributes(_auth_object = nil)
       %w[
-        id user_id coin_type layer account_type
+        id user_id coin_currency layer account_type
         balance frozen_balance
         address created_at updated_at
       ]
@@ -120,12 +120,12 @@ class CoinAccount < ApplicationRecord
     errors.add(:frozen_balance, 'cannot be greater than balance')
   end
 
-  def validate_layer_for_coin_type
-    return if coin_type.blank?
+  def validate_layer_for_coin_currency
+    return if coin_currency.blank?
     return if main? && layer == 'all'
-    return if deposit? && SUPPORTED_NETWORKS[coin_type]&.include?(layer)
+    return if deposit? && SUPPORTED_NETWORKS[coin_currency]&.include?(layer)
 
     errors.add(:layer,
-      "is not supported for #{coin_type}. Supported layers are: #{SUPPORTED_NETWORKS[coin_type]&.join(', ')}")
+      "is not supported for #{coin_currency}. Supported layers are: #{SUPPORTED_NETWORKS[coin_currency]&.join(', ')}")
   end
 end

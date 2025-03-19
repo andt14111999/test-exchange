@@ -79,7 +79,7 @@ RSpec.describe CoinPortalController, type: :request do
       params = {
         address: coin_account.address,
         amount: '100',
-        coin: coin_account.coin_type,
+        coin: coin_account.coin_currency,
         tx_hash: '0x1234567890abcdef',
         out_index: 0
       }
@@ -92,7 +92,7 @@ RSpec.describe CoinPortalController, type: :request do
       expect(response).to have_http_status(:success)
       created_deposit = CoinDeposit.last
       expect(created_deposit.coin_account).to eq(coin_account)
-      expect(created_deposit.coin_currency).to eq(coin_account.coin_type)
+      expect(created_deposit.coin_currency).to eq(coin_account.coin_currency)
       expect(created_deposit.coin_amount).to eq(100)
       expect(created_deposit.tx_hash).to eq('0x1234567890abcdef')
       expect(created_deposit.out_index).to eq(0)
@@ -108,7 +108,7 @@ RSpec.describe CoinPortalController, type: :request do
       params = {
         address: coin_account.address,
         amount: '100',
-        coin: coin_account.coin_type,
+        coin: coin_account.coin_currency,
         out_index: 0
       }
       headers = setup_valid_authentication(request_params: params)

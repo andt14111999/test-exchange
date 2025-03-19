@@ -4,7 +4,7 @@ FactoryBot.define do
   factory :coin_account do
     association :user
     sequence(:address) { |n| "address_#{n}" }
-    coin_type { 'usdt' }
+    coin_currency { 'usdt' }
     layer { 'erc20' }
     account_type { 'deposit' }
 
