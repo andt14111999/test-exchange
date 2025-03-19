@@ -2,6 +2,7 @@
 
 source 'https://rubygems.org'
 
+gem 'ed25519'
 gem 'figaro'
 gem 'httparty'
 gem 'importmap-rails'
