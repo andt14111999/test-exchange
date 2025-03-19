@@ -92,7 +92,7 @@ class CoinDeposit < ApplicationRecord
       user_id: user_id,
       coin: coin_currency,
       account_key: main_coin_account.id,
-      deposit_id: id,
+      deposit: self,
       amount: coin_amount
     )
   end

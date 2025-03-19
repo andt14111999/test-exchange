@@ -4,8 +4,8 @@ module KafkaService
   module Services
     module Coin
       class CoinDepositService < KafkaService::Base::Service
-        def create(user_id:, coin:, account_key:, deposit_id:, amount:)
-          identifier = generate_deposit_identifier(deposit_id: deposit_id)
+        def create(user_id:, coin:, account_key:, deposit:, amount:)
+          identifier = generate_deposit_identifier(deposit_id: deposit.id)
 
           send_event(
             topic: KafkaService::Config::Topics::COIN_DEPOSIT,
@@ -15,6 +15,7 @@ module KafkaService
               user_id: user_id,
               coin: coin,
               account_key: account_key,
+              deposit: deposit,
               amount: amount
             )
           )
@@ -40,7 +41,7 @@ module KafkaService
           "deposit-#{deposit_id}"
         end
 
-        def build_deposit_data(identifier:, user_id:, coin:, account_key:, amount:, **_opts)
+        def build_deposit_data(identifier:, user_id:, coin:, account_key:, deposit:, amount:, **_opts)
           {
             identifier: identifier,
             operationType: KafkaService::Config::OperationTypes::COIN_DEPOSIT_CREATE,
@@ -51,9 +52,9 @@ module KafkaService
             accountKey: account_key,
             amount: amount,
             coin: coin,
-            txHash: "tx-#{SecureRandom.hex(16)}",
-            layer: 'L1',
-            depositAddress: "address-#{SecureRandom.hex(16)}"
+            txHash: deposit.tx_hash,
+            layer: deposit.coin_account.layer,
+            depositAddress: deposit.coin_account.address
           }
         end
       end
