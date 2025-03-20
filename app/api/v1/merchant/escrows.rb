@@ -11,7 +11,7 @@ module V1
         params do
           requires :usdt_amount, type: BigDecimal, desc: 'Amount in USDT'
           requires :fiat_amount, type: BigDecimal, desc: 'Amount in fiat'
-          requires :fiat_currency, type: String, values: FiatAccount::SUPPORTED_CURRENCIES.keys,
+          requires :fiat_currency, type: String, values: ::FiatAccount::SUPPORTED_CURRENCIES.keys,
             desc: 'Fiat currency (VNDS/PHPS)'
         end
         post do
@@ -26,7 +26,7 @@ module V1
 
         desc 'Get merchant escrows'
         params do
-          optional :fiat_currency, type: String, values: FiatAccount::SUPPORTED_CURRENCIES.keys
+          optional :fiat_currency, type: String, values: ::FiatAccount::SUPPORTED_CURRENCIES.keys
         end
         get do
           escrows = current_user.merchant_escrows.sorted

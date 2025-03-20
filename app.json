@@ -14,6 +14,10 @@
     "clockwork": {
       "quantity": 1,
       "size": "standard-1x"
+    },
+    "kafka_consumer": {
+      "quantity": 1,
+      "size": "standard-1x"
     }
   },
   "environments": {
