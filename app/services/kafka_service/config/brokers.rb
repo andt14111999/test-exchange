@@ -3,7 +3,7 @@
 module KafkaService
   module Config
     module Brokers
-      BROKERS = [ ENV.fetch('KAFKA_BROKER') || '127.0.0.1:9092' ].freeze
+      BROKERS = [ ENV.fetch('KAFKA_BROKER', '127.0.0.1:9092') ].freeze
     end
 
     module Config

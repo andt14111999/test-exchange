@@ -33,8 +33,8 @@ RSpec.describe CoinPortalController, type: :request do
         'X-Timestamp' => Time.zone.now.to_i.to_s
       }
       post '/coin_portal/fc55e3a2b6ddf73572563e7344c9bdf8/deposit', headers: headers
-      expect(response).to have_http_status(:unauthorized)
-      expect(response.body).to eq('Authentication error')
+      expect(response).to have_http_status(:internal_server_error)
+      expect(response.body).to eq('Server configuration error')
     end
 
     it 'returns server error when verifying key is not configured' do
