@@ -45,3 +45,6 @@
 !.aider.conf.yml.example
 .DS_Store
 
+/coverage/
+/coverage.data
+

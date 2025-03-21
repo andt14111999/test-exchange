@@ -1,0 +1,47 @@
+name: Security Scan
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  security:
+    name: Brakeman Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+      - name: Install Brakeman
+        run: gem install brakeman
+      - name: Run Brakeman
+        run: |
+          brakeman -A -w1 -z --no-pager --format json --output tmp/brakeman.json
+      - name: Upload Brakeman report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Brakeman Report
+          path: tmp/brakeman.json
+          retention-days: 7
+      - name: Check for vulnerabilities
+        run: |
+          if [ -f tmp/brakeman.json ]; then
+            warnings_count=$(grep -o '"warning_count":' tmp/brakeman.json | wc -l)
+            if [ "$warnings_count" -gt 0 ]; then
+              echo "Security vulnerabilities found!"
+              brakeman -A -w1 --no-pager --format markdown
+              exit 1
+            else
+              echo "No security vulnerabilities found."
+              exit 0
+            fi
+          else
+            echo "Brakeman report not found!"
+            exit 1
+          fi
