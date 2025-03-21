@@ -1,0 +1,23 @@
+name: Rails Best Practices
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  best-practices:
+    name: Rails Best Practices
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+      - name: Install rails_best_practices
+        run: gem install rails_best_practices
+      - name: Check best practices
+        run: rails_best_practices .

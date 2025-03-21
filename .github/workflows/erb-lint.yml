@@ -1,0 +1,23 @@
+name: ERB Lint
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  erb-lint:
+    name: ERB Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+      - name: Install erb_lint
+        run: gem install erb_lint
+      - name: Check ERB files
+        run: erblint app/views/
