@@ -39,4 +39,4 @@ module Daemons
 end
 
 # Only run the daemon if this file is executed directly (not required/loaded)
-Daemons::KafkaConsumerDaemon.run if __FILE__ == $0
+Daemons::KafkaConsumerDaemon.run if __FILE__ == $PROGRAM_NAME
