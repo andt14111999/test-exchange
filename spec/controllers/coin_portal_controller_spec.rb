@@ -60,6 +60,15 @@ RSpec.describe CoinPortalController, type: :request do
   end
 
   describe '#handle_deposit' do
+    before do
+      allow_any_instance_of(KafkaService::Base::Service)
+        .to receive(:send_event)
+        .and_return(true)
+      allow_any_instance_of(KafkaService::Services::Coin::CoinAccountService)
+        .to receive(:create)
+        .and_return(true)
+    end
+
     it 'returns bad request when account is not found' do
       headers = setup_valid_authentication(request_params: { address: 'non_existent_address' })
 
@@ -84,6 +93,7 @@ RSpec.describe CoinPortalController, type: :request do
         out_index: 0
       }
       headers = setup_valid_authentication(request_params: params)
+
       post '/coin_portal/fc55e3a2b6ddf73572563e7344c9bdf8/deposit',
         params: params,
         headers: headers,
@@ -112,6 +122,7 @@ RSpec.describe CoinPortalController, type: :request do
         out_index: 0
       }
       headers = setup_valid_authentication(request_params: params)
+
       post '/coin_portal/fc55e3a2b6ddf73572563e7344c9bdf8/deposit',
         params: params,
         headers: headers,
