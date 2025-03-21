@@ -19,7 +19,8 @@ class CoinPortalController < ApplicationController
   protected
 
   def handle_deposit
-    coin_account = CoinAccount.find_by(address: params[:address])
+    coin_currency = CoinAccount::PORTAL_COIN_TO_COIN_CURRENCY[params[:coin]]
+    coin_account = CoinAccount.find(address: params[:address], coin_currency: coin_currency)
 
     if coin_account
       dep, ok = coin_account.handle_deposit(params)
