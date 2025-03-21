@@ -56,6 +56,9 @@ group :test do
   gem 'rspec-sidekiq'
   gem 'selenium-webdriver'
   gem 'shoulda-matchers'
+  gem 'simplecov', require: false
+  gem 'simplecov-json', require: false
+  gem 'simplecov-lcov', require: false
   gem 'webdrivers'
   gem 'webmock'
 end
@@ -92,6 +95,7 @@ gem 'koala'                    # Facebook API
 gem 'rack-cors'
 gem 'redis-mutex', github: 'kenn/redis-mutex', ref: 'a460549e0c2a876fd59b9197d84b909fd72eb876'
 
+gem 'json', '~> 2.10.2'
 gem 'retriable'
 gem 'ruby-kafka'
 gem 'snappy'
