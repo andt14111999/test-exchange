@@ -51,7 +51,27 @@ jobs:
           check-name: "ERB Lint"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
-
+      - name: Wait for Database Consistency
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: "Database Consistency Check"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+      - name: Wait for Asset Precompilation
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: "Asset Precompilation"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+      - name: Wait for Dependency Review
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: "Dependency Review"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
   deploy:
     needs: wait-for-checks
     name: Deploy to Production
