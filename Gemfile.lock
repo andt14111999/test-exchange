@@ -529,7 +529,7 @@ GEM
     redis (4.5.1)
     redis-classy (2.4.1)
       redis-namespace (~> 1.0)
-    redis-client (0.23.0)
+    redis-client (0.24.0)
       connection_pool
     redis-namespace (1.11.0)
       redis (>= 4)
@@ -627,7 +627,8 @@ GEM
       websocket (~> 1.0)
     shoulda-matchers (6.4.0)
       activesupport (>= 5.2.0)
-    sidekiq (7.3.7)
+    sidekiq (7.3.9)
+      base64
       connection_pool (>= 2.3.0)
       logger
       rack (>= 2.2.4)
