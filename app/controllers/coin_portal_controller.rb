@@ -20,18 +20,32 @@ class CoinPortalController < ApplicationController
 
   def handle_deposit
     coin_currency = CoinAccount::PORTAL_COIN_TO_COIN_CURRENCY[params[:coin]]
-    coin_account = CoinAccount.find(address: params[:address], coin_currency: coin_currency)
+    coin_account = CoinAccount.where(
+      address: params[:address],
+      coin_currency: coin_currency,
+      account_type: 'deposit'
+    ).first
 
-    if coin_account
-      dep, ok = coin_account.handle_deposit(params)
-      if ok
-        render json: { created_at: dep.created_at.to_i }
-      else
-        render plain: dep, status: :bad_request
-      end
-    else
-      render plain: 'Account not found', status: :bad_request
+    if coin_account.nil?
+      render json: { error: 'Invalid deposit address' }, status: :not_found
+      return
     end
+
+    unless coin_account.user.active?
+      render json: { error: 'Account is not active' }, status: :forbidden
+      return
+    end
+
+    result, success = coin_account.handle_deposit(params)
+    
+    if success
+      render json: { message: 'Deposit processed successfully' }, status: :ok
+    else
+      render json: { error: result }, status: :unprocessable_entity
+    end
+  rescue StandardError => e
+    Rails.logger.error("Error processing deposit: #{e.message}")
+    render json: { error: 'Internal server error' }, status: :internal_server_error
   end
 
   def authenticate_request
