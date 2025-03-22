@@ -22,6 +22,26 @@ class CoinAccount < ApplicationRecord
     }
   }.freeze
 
+  CURRENCY_AND_LAYER_TO_PORTAL_COIN = {
+    'usdt' => {
+      'erc20' => 'eth',
+      'trc20' => 'trx',
+      'bep20' => 'bnb',
+      'solana' => 'sol'
+    },
+    'eth' => {
+      'erc20' => 'eth',
+      'bep20' => 'bnb'
+    },
+    'bnb' => {
+      'bep20' => 'bnb'
+    },
+    'btc' => {
+      'bitcoin' => 'btc',
+      'bep20' => 'bnb'
+    }
+  }.freeze
+
   PORTAL_COIN_TO_COIN_CURRENCY =
     COIN_AND_LAYER_TO_PORTAL_COIN.each_with_object({}) do |(coin, layer_to_portal_coin), dict|
       layer_to_portal_coin.each_with_object(dict) { |(_layer, portal_coin), acc| acc[portal_coin] = coin }
