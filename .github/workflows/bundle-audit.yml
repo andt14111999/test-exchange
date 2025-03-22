@@ -1,0 +1,25 @@
+name: Bundle Audit
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  audit:
+    name: Bundle Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+      - name: Install bundle-audit
+        run: gem install bundle-audit
+      - name: Update vulnerability database
+        run: bundle audit update
+      - name: Check for vulnerabilities
+        run: bundle audit check

@@ -1,0 +1,58 @@
+name: Database Consistency
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  db-consistency:
+    name: Database Consistency Check
+    runs-on: ubuntu-latest
+    env:
+      RAILS_ENV: test
+      POSTGRES_HOST: localhost
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: snowfox_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+      - name: Install dependencies
+        run: bundle install
+      - name: Setup test database
+        run: |
+          cp config/database.yml.ci config/database.yml
+          bundle exec rails db:create
+      - name: Check DB schema
+        run: bundle exec rails db:schema:load
+      - name: Check pending migrations
+        run: bundle exec rails db:migrate:status
+      - name: Run migrations
+        run: bundle exec rails db:migrate
+      - name: Check if schema.rb is up to date
+        run: |
+          bundle exec rails db:schema:dump
+          if [ -n "$(git status --porcelain db/schema.rb)" ]; then
+            echo "Error: schema.rb is not up to date"
+            exit 1
+          fi

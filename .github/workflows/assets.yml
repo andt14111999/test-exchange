@@ -1,0 +1,30 @@
+name: Asset Precompilation
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  assets:
+    name: Asset Precompilation
+    runs-on: ubuntu-latest
+    env:
+      RAILS_ENV: production
+      NODE_ENV: production
+      RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+      REDIS_URL: redis://localhost:6379/0
+      SECRET_KEY_BASE: ${{ secrets.SECRET_KEY_BASE || '2d9e4a8f6b3c1e7d0a5b8c2f9e6d3a1b4c7e0f9d2a5b8c3f6e9d2a5b8c3f6e9' }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+      - name: Install dependencies
+        run: bundle install
+      - name: Precompile assets
+        run: bundle exec rails assets:precompile

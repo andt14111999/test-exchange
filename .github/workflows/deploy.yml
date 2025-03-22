@@ -30,7 +30,41 @@ jobs:
           check-name: "Brakeman Scan"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
-
+      - name: Wait for Bundle Audit
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: "Bundle Audit"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+      - name: Wait for Zeitwerk Check
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: "Zeitwerk Check"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+      - name: Wait for ERB Lint
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: "ERB Lint"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+      - name: Wait for Database Consistency
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: "Database Consistency Check"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+      - name: Wait for Asset Precompilation
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: "Asset Precompilation"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
   deploy:
     needs: wait-for-checks
     name: Deploy to Production
