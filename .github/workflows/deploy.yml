@@ -37,13 +37,6 @@ jobs:
           check-name: "Bundle Audit"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
-      - name: Wait for Rails Best Practices
-        uses: lewagon/wait-on-check-action@v1.3.1
-        with:
-          ref: ${{ github.ref }}
-          check-name: "Rails Best Practices"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 10
       - name: Wait for Zeitwerk Check
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
