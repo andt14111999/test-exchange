@@ -73,106 +73,13 @@ class User < ApplicationRecord
     social_account.user
   end
 
+  def active?
+    status == 'active'
+  end
+
   private
 
   def create_default_accounts
-    CoinAccount::SUPPORTED_NETWORKS.each do |coin_currency, layers|
-      create_main_coin_account(coin_currency)
-      create_deposit_coin_accounts(coin_currency, layers)
-    end
-
-    create_fiat_accounts
-  end
-
-  def create_main_coin_account(coin_currency)
-    main_account = coin_accounts.create!(
-      coin_currency: coin_currency,
-      layer: 'all',
-      balance: 0,
-      frozen_balance: 0,
-      account_type: 'main'
-    )
-
-    send_event_create_coin_account_to_kafka(main_account)
-  end
-
-  def create_deposit_coin_accounts(coin_currency, layers)
-    network_addresses = {}
-
-    layers.each do |layer|
-      coin_account = create_deposit_account(coin_currency, layer)
-
-      if base_network_coin?(coin_currency, layer)
-        address = generate_coin_address(coin_account)
-        network_addresses[layer] = address if address
-        coin_account.update!(address: address) if address
-      else
-        base_address = network_addresses[layer]
-        coin_account.update!(address: base_address) if base_address
-      end
-    end
-  end
-
-  def create_deposit_account(coin_currency, layer)
-    coin_accounts.create!(
-      coin_currency: coin_currency,
-      layer: layer,
-      balance: 0,
-      frozen_balance: 0,
-      account_type: 'deposit'
-    )
-  end
-
-  def generate_coin_address(coin_account)
-    result, ok = get_coin_address(coin_account: coin_account)
-
-    if ok
-      result['address']
-    else
-      Rails.logger.error("Failed to generate coin address for account #{coin_account.id}") if Rails.env.production?
-      nil
-    end
-  end
-
-  def base_network_coin?(coin_currency, layer)
-    case layer.downcase
-    when 'erc20'
-      coin_currency.downcase == 'eth'
-    when 'bep20'
-      coin_currency.downcase == 'bnb'
-    else
-      false
-    end
-  end
-
-  def create_fiat_accounts
-    FiatAccount::SUPPORTED_CURRENCIES.each_key do |currency|
-      fiat_accounts.create!(
-        currency: currency,
-        balance: 0,
-        frozen_balance: 0
-      )
-    end
-  end
-
-  def send_event_create_coin_account_to_kafka(coin_account)
-    client.create(
-      user_id: id, coin: coin_account.coin_currency, account_key: coin_account.id
-    )
-  end
-
-  def get_coin_address(coin_account:)
-    PostbackService.new(
-      target_url: 'https://coin-portal.exchange.snowfoxglobal.org/api/v1/coin_addresses',
-      payload: {
-        account_type: coin_account.account_type,
-        coin: coin_account.coin_currency,
-        account_id: coin_account.id
-      }
-    ).post
-  end
-
-  def client
-    @client ||= KafkaService::Services::Coin::CoinAccountService.new
+    AccountCreationService.new(self).create_all_accounts
   end
 end

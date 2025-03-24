@@ -46,7 +46,7 @@ class PostbackService
       'Content-Type': 'application/json',
       'X-Signature': @signature,
       'X-Timestamp': @timestamp,
-      'X-App-Name': 'coin-portal'
+      'X-App-Name': 'exchange'
     }
   end
 

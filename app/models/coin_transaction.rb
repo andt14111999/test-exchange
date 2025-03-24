@@ -37,7 +37,7 @@ class CoinTransaction < ApplicationRecord
   private
 
   def take_balance_snapshot
-    self.snapshot_balance = coin_account.balance + amount
+    self.snapshot_balance = coin_account.balance
     self.snapshot_frozen_balance = coin_account.frozen_balance
   end
 end
