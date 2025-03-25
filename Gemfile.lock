@@ -704,7 +704,8 @@ GEM
     unicode-emoji (4.0.4)
     uri (1.0.3)
     useragent (0.16.11)
-    vcr (6.1.0)
+    vcr (6.3.1)
+      base64
     version_gem (1.1.6)
     warden (1.2.9)
       rack (>= 2.0.9)
