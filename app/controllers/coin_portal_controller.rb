@@ -37,7 +37,7 @@ class CoinPortalController < ApplicationController
     end
 
     result, success = coin_account.handle_deposit(params)
-    
+
     if success
       render json: { message: 'Deposit processed successfully' }, status: :ok
     else

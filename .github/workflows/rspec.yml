@@ -19,6 +19,8 @@ jobs:
       DEVISE_JWT_SECRET_KEY: "dummy_key_for_ci_testing_only_123456789"
       REDIS_URL: redis://localhost:6379/0
       COVERAGE: true
+      EXCHANGE_SIGNING_KEY: "dummy_signing_key_for_ci_testing_only_123456789"
+      COIN_PORTAL_VERIFYING_KEY: "dummy_verifying_key_for_ci_testing_only_123456789"
     services:
       postgres:
         image: postgres:14
