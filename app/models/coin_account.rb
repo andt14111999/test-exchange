@@ -58,7 +58,7 @@ class CoinAccount < ApplicationRecord
   validates :layer, presence: true
   validates :balance, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :frozen_balance, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :layer, uniqueness: { scope: %i[user_id coin_currency] }
+  validates :layer, uniqueness: { scope: %i[user_id coin_currency account_type] }
   validates :account_type, presence: true, inclusion: { in: ACCOUNT_TYPES }
   validates :layer, inclusion: { in: lambda { |account|
     account.main? ? [ 'all' ] : SUPPORTED_NETWORKS[account.coin_currency]
@@ -90,6 +90,10 @@ class CoinAccount < ApplicationRecord
 
     def coin_and_layer_to_portal_coin(coin_currency, layer)
       COIN_AND_LAYER_TO_PORTAL_COIN.dig(coin_currency, layer) || coin_currency
+    end
+
+    def supported_networks_for(coin_currency)
+      SUPPORTED_NETWORKS[coin_currency] || []
     end
   end
 
