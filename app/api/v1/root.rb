@@ -6,6 +6,7 @@ module V1
     mount V1::Auth::Api
     mount V1::Balances::Api
     mount V1::CoinAccounts::Api
+    mount V1::CoinTransactions::Api
     mount V1::Users::Api
   end
 end
