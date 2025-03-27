@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module V1
-  module User
+  module Users
     class Entity < Grape::Entity
       expose :id
       expose :email
