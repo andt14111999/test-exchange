@@ -23,8 +23,7 @@ Rails.application.configure do
   end
 
   config.action_cable.disable_request_forgery_protection = !Rails.env.production?
-  config.action_cable.redis = {
-    url: ENV.fetch('REDIS_URL') { 'redis://localhost:6379/1' },
-    ssl_params: { verify_mode: OpenSSL::SSL::VERIFY_NONE }
-  }
+
+  # Redis configuration is now handled in config/cable.yml instead of directly in initializers
+  # Do not configure Redis adapter here
 end
