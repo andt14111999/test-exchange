@@ -40,7 +40,7 @@ class AdminUser < ApplicationRecord
   def generate_provisioning_uri
     return '' if authenticator_key.blank? || email.blank?
 
-    ROTP::TOTP.new(authenticator_key, issuer: 'SnowFox BasePortal').provisioning_uri(email)
+    ROTP::TOTP.new(authenticator_key, issuer: 'SnowFox Exchange').provisioning_uri(email)
   end
 
   def disable_authenticator!
