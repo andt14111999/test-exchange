@@ -53,6 +53,7 @@ gem 'clockwork' # Cron-like job scheduler
 gem 'redis', '< 4.6'
 gem 'redis-mutex', github: 'kenn/redis-mutex',
   ref: 'a460549e0c2a876fd59b9197d84b909fd72eb876'
+gem 'redis-client'
 gem 'sidekiq'
 gem 'sidekiq-status'
 gem 'solid_cable'

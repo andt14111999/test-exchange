@@ -38,7 +38,7 @@ module BasePortal
         origins '*' # Trong production nên giới hạn domain cụ thể
         resource '*',
           headers: :any,
-          methods: %i[get post options],
+          methods: %i[get post put patch delete options],
           expose: [ 'Authorization' ]
       end
     end
