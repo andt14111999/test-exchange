@@ -36,4 +36,6 @@ Rails.application.routes.draw do
   end
 
   post "coin_portal/#{CoinPortalController::HASH}/:type", controller: :coin_portal, action: :index
+
+  mount ActionCable.server => '/cable'
 end

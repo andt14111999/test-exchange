@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_18_020803) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_27_171954) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -243,6 +243,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_18_020803) do
     t.index ["user_id"], name: "index_merchant_escrows_on_user_id"
   end
 
+  create_table "notifications", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "title", null: false
+    t.text "content", null: false
+    t.string "notification_type", null: false
+    t.boolean "read", default: false
+    t.boolean "delivered", default: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "created_at"], name: "index_notifications_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_notifications_on_user_id"
+  end
+
   create_table "settings", force: :cascade do |t|
     t.string "var", null: false
     t.text "value"
@@ -306,5 +319,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_18_020803) do
   add_foreign_key "merchant_escrows", "coin_accounts", column: "usdt_account_id"
   add_foreign_key "merchant_escrows", "fiat_accounts"
   add_foreign_key "merchant_escrows", "users"
+  add_foreign_key "notifications", "users"
   add_foreign_key "social_accounts", "users"
 end

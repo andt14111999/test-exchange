@@ -798,6 +798,7 @@ DEPENDENCIES
   rails (~> 8.0.0)
   rails-settings-cached
   redis (< 4.6)
+  redis-client
   redis-mutex!
   retriable
   rollbar

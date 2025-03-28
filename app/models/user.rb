@@ -4,6 +4,7 @@ class User < ApplicationRecord
   has_many :social_accounts, dependent: :destroy
   has_many :coin_accounts, dependent: :destroy
   has_many :fiat_accounts, dependent: :destroy
+  has_many :notifications, dependent: :destroy
 
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :role, inclusion: { in: %w[merchant user] }
