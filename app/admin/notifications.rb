@@ -57,11 +57,11 @@ ActiveAdmin.register Notification do
     f.actions
   end
 
-  action_item :send_notification, only: :show do
-    link_to 'Send Notification', send_admin_notification_path(notification), method: :post, data: { confirm: 'Are you sure?' } if !notification.delivered
+  action_item :resend_notification, only: :show do
+    link_to 'Resend Notification', resend_admin_notification_path(notification), method: :post, data: { confirm: 'Are you sure?' } if !notification.delivered
   end
 
-  member_action :send, method: :post do
+  member_action :resend, method: :post do
     notification = Notification.find(params[:id])
 
     if notification.delivered
