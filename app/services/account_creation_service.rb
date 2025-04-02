@@ -41,13 +41,28 @@ class AccountCreationService
   end
 
   def create_deposit_accounts
+    existing_accounts = user.coin_accounts.where(account_type: 'deposit').to_a
+    existing_accounts_map = existing_accounts.group_by { |acc| [ acc.coin_currency, acc.layer ] }
+
+    accounts_to_create = []
+
     SUPPORTED_NETWORKS.each do |coin_currency, layers|
       layers.each do |layer|
+        next if existing_accounts_map.key?([ coin_currency, layer ])
+
         if NetworkConfigurationService.is_base_network?(coin_currency, layer)
-          create_base_account(coin_currency, layer)
+          accounts_to_create << { coin_currency: coin_currency, layer: layer, account_type: 'deposit' }
         else
-          create_token_account(coin_currency, layer)
+          accounts_to_create << { coin_currency: coin_currency, layer: layer, account_type: 'deposit' }
         end
+      end
+    end
+
+    return if accounts_to_create.empty?
+
+    CoinAccount.transaction do
+      accounts_to_create.each do |account_attrs|
+        create_account(account_attrs[:coin_currency], account_attrs[:layer], account_attrs[:account_type])
       end
     end
   end
