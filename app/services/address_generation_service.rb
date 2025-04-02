@@ -8,11 +8,28 @@ class AddressGenerationService
   end
 
   def generate
+    return mock_address if Rails.env.development?
+
     response = call_address_api
     parse_address(response)
   end
 
   private
+
+  def mock_address
+    base58_chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+
+    case account.layer
+    when 'erc20', 'bep20'
+      "0x#{SecureRandom.hex(20)}"
+    when 'trc20'
+      "T#{Array.new(33) { base58_chars[rand(base58_chars.length)] }.join}"
+    when 'bitcoin'
+      "1#{Array.new(rand(25..34)) { base58_chars[rand(base58_chars.length)] }.join}"
+    else
+      SecureRandom.hex(20)
+    end
+  end
 
   def call_address_api
     PostbackService.new(
