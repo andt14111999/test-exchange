@@ -58,11 +58,12 @@ class CoinAccount < ApplicationRecord
   validates :layer, presence: true
   validates :balance, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :frozen_balance, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :layer, uniqueness: { scope: %i[user_id coin_currency account_type] }
+  validates :layer, uniqueness: { scope: [ :user_id, :coin_currency, :account_type ] }
   validates :account_type, presence: true, inclusion: { in: ACCOUNT_TYPES }
   validates :layer, inclusion: { in: lambda { |account|
     account.main? ? [ 'all' ] : SUPPORTED_NETWORKS[account.coin_currency]
   } }, if: -> { coin_currency.present? }
+  validates :user_id, presence: true
   validate :validate_balances
 
   scope :of_coin, ->(coin_currency) { where(coin_currency: coin_currency) }

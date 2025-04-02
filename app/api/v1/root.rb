@@ -9,5 +9,6 @@ module V1
     mount V1::CoinTransactions::Api
     mount V1::Notifications::Api
     mount V1::Users::Api
+    mount V1::Merchant::Escrows
   end
 end

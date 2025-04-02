@@ -27,7 +27,7 @@ class CoinPortalController < ApplicationController
     ).first
 
     if coin_account.nil?
-      render json: { error: 'Invalid deposit address' }, status: :not_found
+      render json: { error: 'Account not found' }, status: :bad_request
       return
     end
 
@@ -39,9 +39,9 @@ class CoinPortalController < ApplicationController
     result, success = coin_account.handle_deposit(params)
 
     if success
-      render json: { message: 'Deposit processed successfully' }, status: :ok
+      render json: { created_at: Time.current.to_i }, status: :ok
     else
-      render json: { error: result }, status: :unprocessable_entity
+      render json: { error: result }, status: :bad_request
     end
   rescue StandardError => e
     Rails.logger.error("Error processing deposit: #{e.message}")
