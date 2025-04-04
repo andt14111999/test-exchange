@@ -5,6 +5,8 @@ class User < ApplicationRecord
   has_many :coin_accounts, dependent: :destroy
   has_many :fiat_accounts, dependent: :destroy
   has_many :notifications, dependent: :destroy
+  has_many :merchant_escrows, dependent: :destroy, inverse_of: :user
+  has_many :merchant_escrow_operations, through: :merchant_escrows
 
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :role, inclusion: { in: %w[merchant user] }
@@ -76,6 +78,10 @@ class User < ApplicationRecord
 
   def active?
     status == 'active'
+  end
+
+  def merchant?
+    role == 'merchant'
   end
 
   private

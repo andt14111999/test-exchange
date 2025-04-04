@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_27_171954) do
+ActiveRecord::Schema[8.0].define(version: 2025_04_03_105023) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -113,6 +113,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_27_171954) do
     t.decimal "snapshot_frozen_balance", precision: 24, scale: 8
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "transaction_type", default: "transfer", null: false
     t.index ["coin_account_id"], name: "index_coin_transactions_on_coin_account_id"
     t.index ["coin_currency"], name: "index_coin_transactions_on_coin_currency"
     t.index ["created_at"], name: "index_coin_transactions_on_created_at"
@@ -235,6 +236,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_27_171954) do
     t.datetime "completed_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.decimal "exchange_rate", precision: 20, scale: 8
     t.index ["created_at"], name: "index_merchant_escrows_on_created_at"
     t.index ["fiat_account_id"], name: "index_merchant_escrows_on_fiat_account_id"
     t.index ["fiat_currency"], name: "index_merchant_escrows_on_fiat_currency"

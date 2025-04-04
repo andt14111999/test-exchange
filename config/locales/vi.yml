@@ -20,3 +20,7 @@ vi:
       models:
         admin_user:
           not_found: "Admin user không tồn tại"
+        merchant_escrow:
+          attributes:
+            usdt_amount:
+              exceed_available_balance: "Số lượng USDT vượt quá số dư khả dụng"

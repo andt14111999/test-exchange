@@ -3,125 +3,78 @@
 class MerchantEscrow < ApplicationRecord
   include AASM
 
+  # Associations
   belongs_to :user
-  belongs_to :usdt_account, class_name: 'CoinAccount'
-  belongs_to :fiat_account
-  has_many :merchant_escrow_operations, dependent: :destroy, inverse_of: :merchant_escrow
-  has_one :freeze_operation, -> { where(operation_type: 'freeze') }, dependent: :destroy,
-    class_name: 'MerchantEscrowOperation', inverse_of: :merchant_escrow
-  has_one :unfreeze_operation, -> { where(operation_type: 'unfreeze') }, dependent: :destroy,
-    class_name: 'MerchantEscrowOperation', inverse_of: :merchant_escrow
+  belongs_to :usdt_account, class_name: 'CoinAccount', foreign_key: 'usdt_account_id'
+  belongs_to :fiat_account, class_name: 'FiatAccount', foreign_key: 'fiat_account_id'
+  has_many :merchant_escrow_operations, dependent: :destroy
 
+  # Validations
   validates :usdt_amount, presence: true, numericality: { greater_than: 0 }
-  validates :fiat_currency, presence: true, inclusion: { in: FiatAccount::SUPPORTED_CURRENCIES.keys }
   validates :fiat_amount, presence: true, numericality: { greater_than: 0 }
-  validates :status, presence: true
-
+  validates :fiat_currency, presence: true
+  validates :status, presence: true, inclusion: { in: %w[pending active cancelled] }
+  validates :exchange_rate, numericality: { greater_than: 0 }, allow_nil: true
   validate :validate_user_is_merchant
-  validate :validate_usdt_account
-  validate :validate_fiat_account_currency
-  validate :validate_usdt_amount
 
-  before_validation :assign_accounts, on: :create
-  after_create :create_freeze_operation
-
+  # Scopes
   scope :sorted, -> { order(created_at: :desc) }
-  scope :of_currency, ->(currency) { where(fiat_currency: currency) }
+  scope :active, -> { where(status: 'active') }
+  scope :cancelled, -> { where(status: 'cancelled') }
+  scope :pending, -> { where(status: 'pending') }
 
+  # State Machine
   aasm column: 'status', whiny_transitions: false do
     state :pending, initial: true
-    state :processing
-    state :completed
-    state :failed
+    state :active
     state :cancelled
 
-    event :process do
-      transitions from: [ :pending ], to: :processing
-    end
-
-    event :complete do
-      transitions from: [ :processing ], to: :completed,
-        after: :set_completed_at
-    end
-
-    event :fail do
-      transitions from: [ :processing ], to: :failed,
-        after: :create_unfreeze_operation
+    event :activate do
+      transitions from: :pending, to: :active
     end
 
     event :cancel do
-      transitions from: [ :pending ], to: :cancelled,
-        after: :create_unfreeze_operation
+      transitions from: :active, to: :cancelled
     end
   end
 
+  # Ransack Configuration
   def self.ransackable_attributes(_auth_object = nil)
-    %w[completed_at created_at fiat_account_id fiat_amount fiat_currency id status updated_at
-       usdt_account_id usdt_amount user_id]
+    %w[
+      id user_id usdt_account_id fiat_account_id usdt_amount fiat_amount
+      fiat_currency exchange_rate status created_at updated_at
+    ]
   end
 
   def self.ransackable_associations(_auth_object = nil)
-    %w[fiat_account freeze_operation merchant_escrow_operations unfreeze_operation usdt_account user]
+    %w[user usdt_account fiat_account merchant_escrow_operations]
+  end
+
+  # Public Methods
+  def can_cancel?
+    active?
+  end
+
+  def activate!
+    update!(status: 'active')
+  end
+
+  def cancel!
+    update!(status: 'cancelled')
+  end
+
+  # Helper methods to find related accounts
+  def find_user_usdt_account
+    user.coin_accounts.of_coin('usdt').main
+  end
+
+  def find_user_fiat_account
+    user.fiat_accounts.of_currency(fiat_currency).first
   end
 
   private
 
   def validate_user_is_merchant
-    errors.add(:user, :not_merchant) unless user&.role == 'merchant'
-  end
-
-  def validate_usdt_account
-    return if usdt_account&.coin_currency == 'usdt' && usdt_account&.main?
-
-    errors.add(:usdt_account, :invalid)
-  end
-
-  def validate_fiat_account_currency
-    return if fiat_account&.currency == fiat_currency
-
-    errors.add(:fiat_account, :currency_mismatch)
-  end
-
-  def validate_usdt_amount
-    return if usdt_amount.nil? || usdt_account.nil?
-    return unless usdt_amount > usdt_account.available_balance
-
-    errors.add(:usdt_amount, :exceed_available_balance)
-  end
-
-  def assign_accounts
-    return if usdt_account.present? && fiat_account.present?
-
-    self.usdt_account = user.coin_accounts.of_coin('usdt').main
-    self.fiat_account = user.fiat_accounts.of_currency(fiat_currency).first_or_create!(
-      balance: 0,
-      frozen_balance: 0
-    )
-  end
-
-  def create_freeze_operation
-    merchant_escrow_operations.create!(
-      usdt_account: usdt_account,
-      fiat_account: fiat_account,
-      usdt_amount: usdt_amount,
-      fiat_amount: fiat_amount,
-      fiat_currency: fiat_currency,
-      operation_type: 'freeze'
-    )
-  end
-
-  def create_unfreeze_operation
-    merchant_escrow_operations.create!(
-      usdt_account: usdt_account,
-      fiat_account: fiat_account,
-      usdt_amount: usdt_amount,
-      fiat_amount: fiat_amount,
-      fiat_currency: fiat_currency,
-      operation_type: 'unfreeze'
-    )
-  end
-
-  def set_completed_at
-    update!(completed_at: Time.current)
+    errors.add(:user, :not_merchant) unless user&.merchant?
   end
 end

@@ -5,8 +5,10 @@ module BaseApiRootModule
     base.class_eval do
       prefix 'api'
       format :json
-      formatter :json, Grape::Formatter::ActiveModelSerializers
+      formatter :json, Grape::Formatter::Json
       version :v1, using: :path
+      content_type :json, 'application/json'
+      default_format :json
 
       rescue_from ActiveRecord::RecordNotFound do |e|
         class_name = e.message.match(/^Couldn't find (.*) with?/).try(:[], 1)

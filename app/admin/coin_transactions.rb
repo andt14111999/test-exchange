@@ -25,11 +25,6 @@ ActiveAdmin.register CoinTransaction do
     column :snapshot_frozen_balance do |tx|
       number_with_precision(tx.snapshot_frozen_balance, precision: 8)
     end
-    column :operation_type
-    column :operation do |tx|
-      link_to "#{tx.operation_type} ##{tx.operation_id}",
-        polymorphic_path([ :admin, tx.operation ])
-    end
     column :created_at
     actions
   end
@@ -47,14 +42,6 @@ ActiveAdmin.register CoinTransaction do
       end
       row :snapshot_frozen_balance do |tx|
         number_with_precision(tx.snapshot_frozen_balance, precision: 8)
-      end
-      row :snapshot_payment_quota do |tx|
-        code tx.snapshot_payment_quota
-      end
-      row :operation_type
-      row :operation do |tx|
-        link_to "#{tx.operation_type} ##{tx.operation_id}",
-          polymorphic_path([ :admin, tx.operation ])
       end
       row :created_at
       row :updated_at

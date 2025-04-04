@@ -32,6 +32,7 @@ Rails.application.routes.draw do
       post '/auth/google', to: 'auth#google'
       post '/auth/apple', to: 'auth#apple'
       resources :balances, only: [ :index ]
+      get 'settings/exchange_rates', to: 'settings#exchange_rates'
     end
   end
 
