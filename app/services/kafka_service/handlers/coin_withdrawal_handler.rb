@@ -5,11 +5,11 @@ module KafkaService
     class CoinWithdrawalHandler < BaseHandler
       def handle(payload)
         case payload['operationType']
-        when Config::OperationType::COIN_WITHDRAWAL_CREATE
+        when Config::OperationTypes::COIN_WITHDRAWAL_CREATE
           process_withdrawal_create(payload)
-        when Config::OperationType::COIN_WITHDRAWAL_RELEASING
+        when Config::OperationTypes::COIN_WITHDRAWAL_RELEASING
           process_withdrawal_releasing(payload)
-        when Config::OperationType::COIN_WITHDRAWAL_FAILED
+        when Config::OperationTypes::COIN_WITHDRAWAL_FAILED
           process_withdrawal_failed(payload)
         end
       end
