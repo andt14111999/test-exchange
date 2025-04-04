@@ -38,4 +38,4 @@ RSpec.describe Admin::StatusHelper, type: :helper do
       end
     end
   end
-end 
+end

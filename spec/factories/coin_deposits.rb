@@ -9,4 +9,4 @@ FactoryBot.define do
     out_index { 0 }
     status { 'pending' }
   end
-end 
+end

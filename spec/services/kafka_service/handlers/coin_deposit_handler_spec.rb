@@ -114,4 +114,4 @@ RSpec.describe KafkaService::Handlers::CoinDepositHandler, type: :service do
       end
     end
   end
-end 
+end

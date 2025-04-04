@@ -111,4 +111,4 @@ RSpec.describe PostbackService, type: :service do
       expect(service.send(:public_key_hex)).to eq('6279746573')
     end
   end
-end 
+end
