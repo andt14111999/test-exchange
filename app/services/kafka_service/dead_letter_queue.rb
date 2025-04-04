@@ -3,7 +3,7 @@
 module KafkaService
   class DeadLetterQueue
     def self.publish(topic:, payload:, error:)
-      producer = Producer.new
+      producer = KafkaService::Base::Producer.new
       producer.send_message(
         topic: "#{topic}.dlq",
         key: payload['identifier'] || SecureRandom.uuid,
