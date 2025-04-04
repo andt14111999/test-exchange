@@ -43,4 +43,4 @@ RSpec.describe Admin::BlockchainHelper, type: :helper do
       expect(helper.blockchain_explorer_url('bnb')).to eq('https://bscscan.com')
     end
   end
-end 
+end

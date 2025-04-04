@@ -53,4 +53,4 @@ RSpec.describe MerchantRegistrationService, type: :service do
       expect(user.reload.role).to eq('user')
     end
   end
-end 
+end

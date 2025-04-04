@@ -24,4 +24,4 @@ RSpec.describe ApplicationJob, type: :job do
       expect(described_class.instance_methods).not_to include(:discard_on)
     end
   end
-end 
+end
