@@ -102,8 +102,8 @@ class MerchantEscrowOperation < ApplicationRecord
   end
 
   def handle_operation_error(error)
-    update!(error_message: error.message)
     fail!
+    update!(status_explanation: error.message)
     Rails.logger.error "Failed to process merchant escrow operation: #{error.message}"
     raise error
   end

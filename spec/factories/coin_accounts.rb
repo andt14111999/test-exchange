@@ -2,11 +2,12 @@
 
 FactoryBot.define do
   factory :coin_account do
-    association :user
-    sequence(:address) { |n| "address_#{n}" }
+    user
     coin_currency { 'usdt' }
     layer { 'erc20' }
     account_type { 'deposit' }
+    balance { 0 }
+    frozen_balance { 0 }
 
     trait :with_deposits do
       after(:create) do |account|

@@ -39,8 +39,10 @@ class BalanceBroadcastService
   end
 
   def coin_account_data
+    coin_accounts = @user.coin_accounts.main.where(coin_currency: ::CoinAccount::SUPPORTED_NETWORKS.keys)
+
     ::CoinAccount::SUPPORTED_NETWORKS.keys.map do |coin_currency|
-      main_account = @user.coin_accounts.of_coin(coin_currency).main
+      main_account = coin_accounts.find { |account| account.coin_currency == coin_currency }
 
       {
         coin_currency: coin_currency,
@@ -51,8 +53,10 @@ class BalanceBroadcastService
   end
 
   def fiat_account_data
+    fiat_accounts = @user.fiat_accounts.where(currency: ::FiatAccount::SUPPORTED_CURRENCIES.keys)
+
     ::FiatAccount::SUPPORTED_CURRENCIES.keys.map do |currency|
-      account = @user.fiat_accounts.find_by(currency: currency)
+      account = fiat_accounts.find { |account| account.currency == currency }
       {
         currency: currency,
         balance: account&.balance || 0,

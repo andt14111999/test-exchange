@@ -2,7 +2,7 @@
 
 FactoryBot.define do
   factory :user do
-    sequence(:email) { |n| "user#{n}@example.com" }
+    email { Faker::Internet.email }
     display_name { "User #{SecureRandom.hex(4)}" }
     avatar_url { "https://example.com/avatar.jpg" }
     role { 'user' }

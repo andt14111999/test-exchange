@@ -12,6 +12,7 @@ class MerchantEscrowService
 
   def create
     validate_merchant!
+    validate_accounts!
 
     escrow = build_escrow
     execute_escrow_transaction(escrow) do
@@ -34,14 +35,6 @@ class MerchantEscrowService
     escrow
   end
 
-  def list
-    @user.merchant_escrows.sorted
-  end
-
-  def find(id)
-    @user.merchant_escrows.find_by(id: id)
-  end
-
   private
 
   # Validations
@@ -53,6 +46,23 @@ class MerchantEscrowService
   def validate_cancelable_escrow!(escrow)
     raise 'Escrow not found' unless escrow
     raise 'Cannot cancel this escrow' unless escrow.can_cancel?
+  end
+
+  def validate_accounts!
+    @usdt_account = find_usdt_account
+    @fiat_account = find_fiat_account
+  end
+
+  def find_usdt_account
+    account = @user.coin_accounts.of_coin('usdt').main
+    raise 'USDT account not found' unless account
+    account
+  end
+
+  def find_fiat_account
+    account = @user.fiat_accounts.of_currency(@params[:fiat_currency]).first
+    raise "Fiat account with currency #{@params[:fiat_currency]} not found" unless account
+    account
   end
 
   # Transaction Handling
@@ -90,10 +100,7 @@ class MerchantEscrowService
     rate = calculate_exchange_rate
     fiat_amount = calculate_fiat_amount(@params[:usdt_amount], @params[:fiat_currency])
 
-    usdt_account = find_usdt_account
-    fiat_account = find_fiat_account
-
-    build_escrow_record(usdt_account, fiat_account, rate, fiat_amount)
+    build_escrow_record(@usdt_account, @fiat_account, rate, fiat_amount)
   end
 
   def calculate_exchange_rate
@@ -112,26 +119,10 @@ class MerchantEscrowService
     )
   end
 
-  # Account Finders
-
-  def find_usdt_account
-    account = @user.coin_accounts.of_coin('usdt').main
-    raise 'USDT account not found' if account.nil?
-    account
-  end
-
-  def find_fiat_account
-    account = @user.fiat_accounts.of_currency(@params[:fiat_currency]).first
-    raise "Fiat account with currency #{@params[:fiat_currency]} not found" if account.nil?
-    account
-  end
-
   def calculate_fiat_amount(usdt_amount, fiat_currency)
     rate = Setting.get_exchange_rate('usdt', fiat_currency)
     usdt_amount * rate
   end
-
-  # Escrow Operation Creation
 
   def create_escrow_operation(escrow, operation_type)
     operation_attributes = {
