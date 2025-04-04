@@ -51,4 +51,4 @@ RSpec.describe Setting, type: :model do
       expect(described_class.ransackable_attributes).to match_array(%w[var value created_at updated_at])
     end
   end
-end 
+end

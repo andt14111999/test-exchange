@@ -22,4 +22,4 @@ RSpec.describe V1::Users::Entity, type: :entity do
       )
     end
   end
-end 
+end

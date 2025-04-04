@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe V1::Merchant::EscrowEntity, type: :entity do
   describe 'exposed attributes' do
     it 'exposes the correct attributes' do
-      escrow = create(:merchant_escrow)
+      escrow = create(:merchant_escrow, :with_includes)
       entity = described_class.represent(escrow)
       serialized = entity.as_json
 

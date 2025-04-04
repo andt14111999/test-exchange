@@ -3,7 +3,7 @@
 FactoryBot.define do
   factory :fiat_account do
     association :user
-    currency { 'USD' }
+    currency { 'VND' }
     balance { 0.0 }
     created_at { Time.zone.now }
     updated_at { Time.zone.now }

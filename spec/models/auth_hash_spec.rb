@@ -85,4 +85,4 @@ RSpec.describe AuthHash, type: :model do
       expect(auth_hash.extra.raw_info).to eq({ id: 123 })
     end
   end
-end 
+end

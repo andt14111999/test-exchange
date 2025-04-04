@@ -5,4 +5,4 @@ FactoryBot.define do
     layer { 'bitcoin' }
     user
   end
-end 
+end
