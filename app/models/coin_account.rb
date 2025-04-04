@@ -5,6 +5,7 @@ class CoinAccount < ApplicationRecord
   include CategorizedAccount
 
   belongs_to :user
+  has_many :coin_transactions, dependent: :destroy
 
   SUPPORTED_NETWORKS = {
     'usdt' => %w[erc20 bep20 trc20],
@@ -80,7 +81,7 @@ class CoinAccount < ApplicationRecord
     end
 
     def ransackable_associations(_auth_object = nil)
-      %w[user]
+      %w[user coin_transactions]
     end
 
     def portal_coin_to_coin_currency(portal_coin)
@@ -110,6 +111,30 @@ class CoinAccount < ApplicationRecord
 
   def available_balance
     balance - frozen_balance
+  end
+
+  def lock_amount!(amount)
+    return if amount <= 0
+
+    with_lock do
+      raise 'Insufficient balance' if amount > available_balance
+
+      self.frozen_balance += amount
+      save!
+      create_coin_transaction(amount, 'lock')
+    end
+  end
+
+  def unlock_amount!(amount)
+    return if amount <= 0
+
+    with_lock do
+      raise 'Insufficient frozen balance' if amount > frozen_balance
+
+      self.frozen_balance -= amount
+      save!
+      create_coin_transaction(amount, 'unlock')
+    end
   end
 
   def handle_deposit(deposit_params)
@@ -184,5 +209,13 @@ class CoinAccount < ApplicationRecord
         notification_type: 'balance_decrease'
       )
     end
+  end
+
+  def create_coin_transaction(amount, transaction_type)
+    coin_transactions.create!(
+      amount: amount,
+      transaction_type: transaction_type,
+      coin_currency: coin_currency
+    )
   end
 end

@@ -20,3 +20,7 @@ en:
       models:
         admin_user:
           not_found: "Admin user not found"
+        merchant_escrow:
+          attributes:
+            usdt_amount:
+              exceed_available_balance: "USDT amount exceeds available balance"

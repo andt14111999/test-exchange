@@ -15,17 +15,7 @@ module V1
           create_new_account(auth)
         end
 
-        private
-
         def validate_existing_account(social_account)
-          user = social_account.user
-
-          if params[:account_type] == 'merchant' && user.role != 'merchant'
-            error!('You are not registered as a merchant', 422)
-          elsif params[:account_type] == 'user' && user.role == 'merchant'
-            error!('This account is registered as a merchant', 422)
-          end
-
           social_account
         end
 
@@ -34,11 +24,8 @@ module V1
 
           if user.new_record?
             create_new_user(user, auth)
-          else
-            validate_existing_user(user)
+            create_social_account(user, auth)
           end
-
-          create_social_account(user, auth)
         end
 
         def create_new_user(user, auth)
@@ -50,14 +37,6 @@ module V1
             kyc_level: 0
           )
           user.save!
-        end
-
-        def validate_existing_user(user)
-          if params[:account_type] == 'merchant' && user.role != 'merchant'
-            error!('This email is already registered as a regular user', 422)
-          elsif params[:account_type] == 'user' && user.role == 'merchant'
-            error!('This email is already registered as a merchant', 422)
-          end
         end
 
         def create_social_account(user, auth)

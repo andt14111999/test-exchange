@@ -1,32 +1,22 @@
 # frozen_string_literal: true
 
 class CoinTransaction < ApplicationRecord
-  belongs_to :coin_account, optional: true
+  belongs_to :coin_account
   belongs_to :operation, polymorphic: true, optional: true
-  alias_attribute :currency, :coin_currency
 
-  validates :coin_account, presence: true
-  validates :operation, presence: true
-  validates :amount, presence: true, numericality: { other_than: 0 }, allow_nil: false
-
-  delegate :user, to: :coin_account
+  validates :amount, presence: true, numericality: { other_than: 0 }
+  validates :coin_currency, presence: true, inclusion: { in: CoinAccount::SUPPORTED_NETWORKS.keys }
+  validates :transaction_type, presence: true, inclusion: { in: %w[transfer lock unlock] }
 
   scope :sorted, -> { order(created_at: :desc) }
-  scope :of_currency, ->(currency) { where(coin_currency: currency) }
 
-  before_create :take_balance_snapshot
-
-  BALANCE_UPDATING_OPERATIONS = %w[
-    CoinDepositOperation
-    CoinWithdrawalOperation
-  ].freeze
+  # Use these if snapshot_balance and snapshot_frozen_balance are not set explicitly
+  before_create :set_balance_snapshot, unless: -> { snapshot_balance.present? && snapshot_frozen_balance.present? }
 
   def self.ransackable_attributes(_auth_object = nil)
     %w[
-      id coin_account_id coin_currency amount
-      snapshot_balance snapshot_frozen_balance
-      operation_type operation_id
-      created_at updated_at
+      amount coin_account_id coin_currency created_at id operation_id operation_type
+      transaction_type updated_at snapshot_balance snapshot_frozen_balance
     ]
   end
 
@@ -36,7 +26,7 @@ class CoinTransaction < ApplicationRecord
 
   private
 
-  def take_balance_snapshot
+  def set_balance_snapshot
     self.snapshot_balance = coin_account.balance
     self.snapshot_frozen_balance = coin_account.frozen_balance
   end

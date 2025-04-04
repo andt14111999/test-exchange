@@ -29,7 +29,13 @@ class AccountCreationService
   end
 
   def create_fiat_accounts
-    FiatAccount::SUPPORTED_CURRENCIES.each_key do |currency|
+    supported_currencies = if FiatAccount::SUPPORTED_CURRENCIES.is_a?(Hash)
+                            FiatAccount::SUPPORTED_CURRENCIES.keys
+    else
+                            FiatAccount::SUPPORTED_CURRENCIES
+    end
+
+    supported_currencies.each do |currency|
       create_fiat_account(currency)
     end
   end

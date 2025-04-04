@@ -3,47 +3,72 @@
 module V1
   module Merchant
     class Escrows < Grape::API
-      before { authenticate_user! }
-      before { authorize_merchant! }
+      include V1::Merchant::Defaults
 
       resource :merchant_escrows do
-        desc 'Create a new merchant escrow'
+        desc 'Create a new escrow'
         params do
-          requires :usdt_amount, type: BigDecimal, desc: 'Amount in USDT'
-          requires :fiat_amount, type: BigDecimal, desc: 'Amount in fiat'
-          requires :fiat_currency, type: String, values: ::FiatAccount::SUPPORTED_CURRENCIES.keys,
-            desc: 'Fiat currency (VNDS/PHPS)'
+          requires :usdt_amount, type: BigDecimal, desc: 'Amount of USDT to lock'
+          requires :fiat_currency, type: String, desc: 'Fiat currency to receive'
         end
         post do
-          escrow = MerchantEscrowService.create_escrow(
-            user: current_user,
-            usdt_amount: params[:usdt_amount],
-            fiat_amount: params[:fiat_amount],
-            fiat_currency: params[:fiat_currency]
-          )
-          present escrow, with: V1::Entities::MerchantEscrow
+          authorize_merchant!
+
+          service = MerchantEscrowService.new(current_user, declared(params))
+          escrow = service.create
+
+          if escrow.save
+            present escrow, with: V1::Merchant::EscrowEntity
+          else
+            error!(escrow.errors.full_messages.join(', '), 422)
+          end
         end
 
-        desc 'Get merchant escrows'
-        params do
-          optional :fiat_currency, type: String, values: ::FiatAccount::SUPPORTED_CURRENCIES.keys
-        end
+        desc 'List all escrows'
         get do
-          escrows = current_user.merchant_escrows.sorted
-          escrows = escrows.of_currency(params[:fiat_currency]) if params[:fiat_currency].present?
-          present escrows, with: V1::Entities::MerchantEscrow
+          authorize_merchant!
+
+          escrows = MerchantEscrowService.new(current_user).list
+          present escrows, with: V1::Merchant::EscrowEntity
         end
 
-        desc 'Cancel merchant escrow'
+        desc 'Get a specific escrow'
+        params do
+          requires :id, type: Integer, desc: 'Escrow ID'
+        end
+        get ':id' do
+          authorize_merchant!
+
+          escrow = MerchantEscrowService.new(current_user).find(params[:id])
+          if escrow
+            present escrow, with: V1::Merchant::EscrowEntity
+          else
+            error!('Escrow not found', 404)
+          end
+        end
+
+        desc 'Cancel an escrow'
         params do
           requires :id, type: Integer, desc: 'Escrow ID'
         end
         post ':id/cancel' do
-          escrow = current_user.merchant_escrows.find(params[:id])
-          error!('Cannot cancel escrow', 422) unless escrow.may_cancel?
+          authorize_merchant!
 
-          escrow.cancel!
-          present escrow, with: V1::Entities::MerchantEscrow
+          service = MerchantEscrowService.new(current_user)
+          escrow = service.find(params[:id])
+
+          if escrow.nil?
+            error!('Escrow not found', 404)
+          elsif !escrow.can_cancel?
+            error!('Cannot cancel this escrow', 422)
+          else
+            begin
+              cancelled_escrow = service.cancel(escrow)
+              present cancelled_escrow, with: V1::Merchant::EscrowEntity
+            rescue StandardError => e
+              error!(e.message, 422)
+            end
+          end
         end
       end
 
