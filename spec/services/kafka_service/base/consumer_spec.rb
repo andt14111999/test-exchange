@@ -1,3 +1,4 @@
+# rubocop:disable RSpec/VerifiedDoubles
 require 'rails_helper'
 require 'kafka'
 
@@ -8,7 +9,7 @@ end
 
 RSpec.describe KafkaService::Base::Consumer, type: :service do
   let(:group_id) { 'test_group' }
-  let(:topics) { ['test_topic'] }
+  let(:topics) { [ 'test_topic' ] }
   let(:kafka_class) { class_double(Kafka).as_stubbed_const }
   let(:kafka) { double('Kafka') }
   let(:consumer) { double('Kafka::Consumer') }
@@ -107,4 +108,4 @@ RSpec.describe KafkaService::Base::Consumer, type: :service do
       expect(logger).to have_received(:info).with('Kafka Consumer stopped')
     end
   end
-end 
+end
