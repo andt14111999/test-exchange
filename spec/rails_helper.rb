@@ -50,6 +50,11 @@ RSpec.configure do |config|
   config.before { Prosopite.scan }
   config.after { Prosopite.finish }
 
+  # Mock Kafka service for all tests
+  config.before do
+    allow_any_instance_of(KafkaService::Services::Coin::CoinAccountService).to receive(:create)
+  end
+
   # You can uncomment this line to turn off ActiveRecord support entirely.
   # config.use_active_record = false
 
