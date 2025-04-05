@@ -141,7 +141,7 @@ group :test do
   # Test Utilities
   gem 'capybara'                      # Integration testing
   gem 'database_cleaner'              # Clean test database
-  gem 'pg_query'                      # Query analysis
+  gem 'pg_query', '~> 6.1.0'                      # Query analysis
   gem 'prosopite'                     # N+1 query detection
   gem 'selenium-webdriver'            # Browser automation
   gem 'vcr' # HTTP interaction recording

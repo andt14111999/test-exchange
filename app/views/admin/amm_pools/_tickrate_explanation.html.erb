@@ -1,0 +1,211 @@
+<div class="tickrate-explanation">
+  <h3 class="explanation-title">
+    <span class="toggle-explanation" data-state="hidden">▶ Giải thích về Tick Rate và Pricing trong AMM Pool</span>
+  </h3>
+
+  <div class="explanation-content" style="display: none;">
+    <div class="explanation-section">
+      <h4>Tick là gì?</h4>
+      <p>
+        Trong AMM (Automated Market Maker), "tick" là đơn vị nhỏ nhất của thay đổi giá.
+        Mỗi tick tương ứng với một thay đổi giá theo hệ số 1.0001.
+      </p>
+      <p>
+        <strong>Công thức tính giá:</strong> price = 1.0001<sup>tick</sup>
+      </p>
+    </div>
+
+    <div class="explanation-section">
+      <h4>Tick Spacing là gì?</h4>
+      <p>
+        Tick spacing xác định khoảng cách giữa các mức giá có thể cung cấp thanh khoản.
+        Giá trị càng nhỏ thì dải giá càng mịn (và phí càng thấp).
+      </p>
+      <table class="tickrate-table">
+        <thead>
+          <tr>
+            <th>Tick Spacing</th>
+            <th>Phí</th>
+            <th>Ứng dụng</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>10</td>
+            <td>0.01%</td>
+            <td>Cho cặp stablecoin-stablecoin rất ổn định (ví dụ: USDT/USDC)</td>
+          </tr>
+          <tr>
+            <td>60</td>
+            <td>0.05%</td>
+            <td>Cho cặp stablecoin-stablecoin ổn định</td>
+          </tr>
+          <tr>
+            <td>200</td>
+            <td>0.3%</td>
+            <td>Cho hầu hết các cặp tiền điện tử</td>
+          </tr>
+          <tr>
+            <td>2000</td>
+            <td>1%</td>
+            <td>Cho các cặp biến động cao (ví dụ: altcoin mới)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="explanation-section">
+      <h4>Ví dụ thực tế: 1 USDT = 26,000 VND</h4>
+      <p>
+        Để đặt giá 1 USDT = 26,000 VND, tick cần có giá trị là:
+        <br>
+        <strong>tick = log(26000) / log(1.0001) ≈ 101,663</strong>
+      </p>
+      <p>
+        <strong>Lưu ý:</strong> Khi tạo pool, giá trị tick ban đầu rất quan trọng vì nó xác định tỷ giá khởi điểm.
+        Nhưng sau đó, giá sẽ được điều chỉnh tự động bởi thị trường.
+      </p>
+    </div>
+
+    <!-- Thay thế phần hiển thị price range bằng ví dụ cụ thể -->
+    <div class="explanation-section">
+      <h4>Ví dụ khoảng giá với các Tick Spacing khác nhau</h4>
+      <p>
+        Với current tick = 101663 (tương ứng với 1 USDT = 26,000 VND), đây là các khoảng giá có thể thiết lập được tùy theo tick spacing:
+      </p>
+
+      <table class="price-range-table">
+        <thead>
+          <tr>
+            <th>Tick Spacing</th>
+            <th>Low Tick</th>
+            <th>High Tick</th>
+            <th>Giá thấp nhất (VND)</th>
+            <th>Giá cao nhất (VND)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>10</td>
+            <td>101660</td>
+            <td>101670</td>
+            <td>25,990.64</td>
+            <td>26,016.90</td>
+          </tr>
+          <tr>
+            <td>20</td>
+            <td>101660</td>
+            <td>101680</td>
+            <td>25,990.64</td>
+            <td>26,042.67</td>
+          </tr>
+          <tr>
+            <td>60</td>
+            <td>101640</td>
+            <td>101700</td>
+            <td>25,934.24</td>
+            <td>26,107.32</td>
+          </tr>
+          <tr>
+            <td>100</td>
+            <td>101600</td>
+            <td>101700</td>
+            <td>25,838.49</td>
+            <td>26,107.32</td>
+          </tr>
+          <tr>
+            <td>200</td>
+            <td>101600</td>
+            <td>101800</td>
+            <td>25,838.49</td>
+            <td>26,257.94</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="explanation-note">
+        <strong>Lưu ý:</strong> Giá trị Low Tick và High Tick phải là bội số của Tick Spacing.
+        Bảng trên thể hiện các khoảng tick nhỏ nhất có thể chọn với mỗi Tick Spacing.
+      </p>
+    </div>
+  </div>
+
+  <style>
+    .tickrate-explanation {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      border: 1px solid #e9ecef;
+      font-size: 16px;
+    }
+    .explanation-title {
+      cursor: pointer;
+      margin-bottom: 0;
+      color: #0066cc;
+      font-size: 18px;
+    }
+    .toggle-explanation {
+      font-weight: bold;
+    }
+    .explanation-section {
+      margin-bottom: 20px;
+    }
+    .explanation-section h4 {
+      font-size: 17px;
+      color: #333;
+      margin-top: 15px;
+    }
+    .tickrate-table, .price-range-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      margin-bottom: 15px;
+      font-size: 15px;
+    }
+    .tickrate-table th, .tickrate-table td,
+    .price-range-table th, .price-range-table td {
+      border: 1px solid #dee2e6;
+      padding: 10px;
+      text-align: center;
+    }
+    .tickrate-table th, .price-range-table th {
+      background-color: #e9ecef;
+      font-weight: bold;
+    }
+    .price-range-table th:first-child,
+    .price-range-table td:first-child {
+      font-weight: bold;
+    }
+    .explanation-note {
+      font-style: italic;
+      margin-top: 15px;
+      padding: 10px;
+      background-color: #fff3cd;
+      border-left: 4px solid #ffc107;
+      border-radius: 0 4px 4px 0;
+      font-size: 15px;
+    }
+  </style>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const toggleExplanation = document.querySelector('.toggle-explanation');
+      const explanationContent = document.querySelector('.explanation-content');
+
+      toggleExplanation.addEventListener('click', function() {
+        const currentState = this.getAttribute('data-state');
+
+        if (currentState === 'hidden') {
+          explanationContent.style.display = 'block';
+          this.setAttribute('data-state', 'shown');
+          this.textContent = this.textContent.replace('▶', '▼');
+        } else {
+          explanationContent.style.display = 'none';
+          this.setAttribute('data-state', 'hidden');
+          this.textContent = this.textContent.replace('▼', '▶');
+        }
+      });
+    });
+  </script>
+</div>

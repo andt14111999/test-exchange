@@ -5,12 +5,14 @@ require 'rails_helper'
 RSpec.describe KafkaService::ConsumerManager, type: :service do
   let(:coin_account_handler) { instance_double(KafkaService::Handlers::CoinAccountHandler) }
   let(:coin_deposit_handler) { instance_double(KafkaService::Handlers::CoinDepositHandler) }
+  let(:amm_pool_handler) { instance_double(KafkaService::Handlers::AmmPoolHandler) }
   let(:consumer) { instance_double(KafkaService::Base::Consumer) }
   let(:payload) { { 'data' => 'test' } }
 
   before do
     allow(KafkaService::Handlers::CoinAccountHandler).to receive(:new).and_return(coin_account_handler)
     allow(KafkaService::Handlers::CoinDepositHandler).to receive(:new).and_return(coin_deposit_handler)
+    allow(KafkaService::Handlers::AmmPoolHandler).to receive(:new).and_return(amm_pool_handler)
     allow(KafkaService::Base::Consumer).to receive(:new).and_return(consumer)
     allow(consumer).to receive(:start)
     allow(consumer).to receive(:stop)
@@ -22,7 +24,8 @@ RSpec.describe KafkaService::ConsumerManager, type: :service do
 
       expect(manager.instance_variable_get(:@handlers)).to eq({
         KafkaService::Config::Topics::BALANCE_UPDATE => coin_account_handler,
-        KafkaService::Config::Topics::TRANSACTION_RESULT => coin_deposit_handler
+        KafkaService::Config::Topics::TRANSACTION_RESULT => coin_deposit_handler,
+        KafkaService::Config::Topics::AMM_POOL_UPDATE_TOPIC => amm_pool_handler
       })
     end
   end
@@ -39,6 +42,10 @@ RSpec.describe KafkaService::ConsumerManager, type: :service do
         group_id: "#{Rails.env}_#{KafkaService::Config::Topics::TRANSACTION_RESULT}_processor",
         topics: [ KafkaService::Config::Topics::TRANSACTION_RESULT ]
       )
+      expect(KafkaService::Base::Consumer).to receive(:new).with(
+        group_id: "#{Rails.env}_#{KafkaService::Config::Topics::AMM_POOL_UPDATE_TOPIC}_processor",
+        topics: [ KafkaService::Config::Topics::AMM_POOL_UPDATE_TOPIC ]
+      )
 
       manager.start
     end
@@ -49,7 +56,7 @@ RSpec.describe KafkaService::ConsumerManager, type: :service do
       manager = described_class.new
       manager.start
 
-      expect(consumer).to receive(:stop).twice
+      expect(consumer).to receive(:stop).exactly(3).times
       manager.stop
     end
   end
@@ -87,6 +94,7 @@ RSpec.describe KafkaService::ConsumerManager, type: :service do
       # Stop after first consumer
       expect(manager).to receive(:start_consumer_with_monitor).once.with(KafkaService::Config::Topics::BALANCE_UPDATE, coin_account_handler).and_call_original
       allow(manager).to receive(:start_consumer_with_monitor).with(KafkaService::Config::Topics::TRANSACTION_RESULT, coin_deposit_handler)
+      allow(manager).to receive(:start_consumer_with_monitor).with(KafkaService::Config::Topics::AMM_POOL_UPDATE_TOPIC, amm_pool_handler)
 
       manager.start
     end
