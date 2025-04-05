@@ -2,6 +2,7 @@
 
 class FiatAccount < ApplicationRecord
   include CategorizedAccount
+  include BalanceNotification
 
   belongs_to :user
   has_many :fiat_transactions, dependent: :destroy
@@ -19,8 +20,6 @@ class FiatAccount < ApplicationRecord
   validate :validate_balances
 
   scope :of_currency, ->(currency) { where(currency: currency) }
-
-  after_save :handle_balance_changes
 
   class << self
     def ransackable_attributes(_auth_object = nil)
@@ -67,36 +66,6 @@ class FiatAccount < ApplicationRecord
     return unless frozen_balance > balance
 
     errors.add(:frozen_balance, 'cannot be greater than balance')
-  end
-
-  def handle_balance_changes
-    if saved_change_to_balance? || saved_change_to_frozen_balance?
-      broadcast_balance_update
-      create_balance_notification
-    end
-  end
-
-  def broadcast_balance_update
-    BalanceBroadcastService.call(user)
-  end
-
-  def create_balance_notification
-    old_balance = saved_change_to_balance? ? saved_change_to_balance[0] : balance
-    new_balance = saved_change_to_balance? ? saved_change_to_balance[1] : balance
-
-    if new_balance > old_balance
-      user.notifications.create!(
-        title: 'Balance Updated',
-        content: "Your #{currency} balance has increased by #{new_balance - old_balance}",
-        notification_type: 'balance_increase'
-      )
-    elsif new_balance < old_balance
-      user.notifications.create!(
-        title: 'Balance Updated',
-        content: "Your #{currency} balance has decreased by #{old_balance - new_balance}",
-        notification_type: 'balance_decrease'
-      )
-    end
   end
 
   def create_fiat_transaction(amount, transaction_type)

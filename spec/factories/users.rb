@@ -11,6 +11,12 @@ FactoryBot.define do
     phone_verified { false }
     document_verified { false }
 
+    trait :with_default_accounts do
+      after(:create) do |user|
+        AccountCreationService.new(user).create_all_accounts
+      end
+    end
+
     trait :admin do
       role { 'admin' }
     end

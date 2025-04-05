@@ -3,8 +3,8 @@
 FactoryBot.define do
   factory :merchant_escrow do
     association :user, :merchant
-    usdt_account { user.coin_accounts.find_by!(coin_currency: 'usdt', layer: 'bep20') }
-    fiat_account { user.fiat_accounts.find_by!(currency: 'VND') }
+    usdt_account { create(:coin_account, user: user, coin_currency: 'usdt', layer: 'bep20', account_type: 'deposit') }
+    fiat_account { create(:fiat_account, user: user, currency: 'VND') }
     usdt_amount { 100.0 }
     fiat_amount { 2500000.0 }
     fiat_currency { 'VND' }

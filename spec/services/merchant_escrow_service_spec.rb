@@ -4,8 +4,8 @@ RSpec.describe MerchantEscrowService, type: :service do
   describe '#create' do
     it 'creates a new escrow with freeze and mint operations' do
       merchant = create(:user, :merchant)
-      usdt_account = merchant.coin_accounts.find_by!(coin_currency: 'usdt', account_type: 'main')
-      usdt_account.update!(balance: 1000.0)
+      usdt_account = create(:coin_account, user: merchant, coin_currency: 'usdt', layer: 'all', account_type: 'main', balance: 1000.0)
+      fiat_account = create(:fiat_account, user: merchant, currency: 'VND', balance: 2500000.0)
       params = { usdt_amount: 100, fiat_currency: 'VND' }
 
       allow(Setting).to receive(:get_exchange_rate).with('usdt', 'VND').and_return(25000.0)
@@ -35,10 +35,8 @@ RSpec.describe MerchantEscrowService, type: :service do
   describe '#cancel' do
     it 'cancels an escrow with unfreeze and burn operations' do
       merchant = create(:user, :merchant)
-      usdt_account = merchant.coin_accounts.find_by!(coin_currency: 'usdt', account_type: 'main')
-      fiat_account = merchant.fiat_accounts.find_by!(currency: 'VND')
-      usdt_account.update!(balance: 1000.0, frozen_balance: 100.0)
-      fiat_account.update!(balance: 2500000.0)
+      usdt_account = create(:coin_account, user: merchant, coin_currency: 'usdt', layer: 'all', account_type: 'main', balance: 1000.0, frozen_balance: 100.0)
+      fiat_account = create(:fiat_account, user: merchant, currency: 'VND', balance: 2500000.0)
 
       escrow = create(:merchant_escrow,
         user: merchant,

@@ -5,7 +5,7 @@ RSpec.describe KafkaService::Handlers::CoinDepositHandler, type: :service do
     context 'when operation type is COIN_DEPOSIT_CREATE' do
       it 'processes deposit created successfully' do
         user = create(:user)
-        coin_account = user.coin_accounts.find_by!(coin_currency: 'usdt', layer: 'erc20')
+        coin_account = create(:coin_account, user: user, coin_currency: 'usdt', layer: 'erc20', account_type: 'deposit')
         deposit = create(:coin_deposit, user: user, coin_account: coin_account, coin_currency: 'usdt', coin_amount: 1.5, tx_hash: '0x123')
         payload = {
           'object' => {
@@ -55,7 +55,7 @@ RSpec.describe KafkaService::Handlers::CoinDepositHandler, type: :service do
 
       it 'does not process when isSuccess is false' do
         user = create(:user)
-        coin_account = user.coin_accounts.find_by!(coin_currency: 'usdt', layer: 'erc20')
+        coin_account = create(:coin_account, user: user, coin_currency: 'usdt', layer: 'erc20', account_type: 'deposit')
         deposit = create(:coin_deposit, user: user, coin_account: coin_account, coin_currency: 'usdt', coin_amount: 1.5, tx_hash: '0x123')
         payload = {
           'object' => {
@@ -76,7 +76,7 @@ RSpec.describe KafkaService::Handlers::CoinDepositHandler, type: :service do
 
       it 'does not process when coin account is not found' do
         user = create(:user)
-        coin_account = user.coin_accounts.find_by!(coin_currency: 'usdt', layer: 'erc20')
+        coin_account = create(:coin_account, user: user, coin_currency: 'usdt', layer: 'erc20', account_type: 'deposit')
         deposit = create(:coin_deposit, user: user, coin_account: coin_account, coin_currency: 'usdt', coin_amount: 1.5, tx_hash: '0x123')
         payload = {
           'object' => {
