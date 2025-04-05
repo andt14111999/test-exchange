@@ -11,12 +11,15 @@ describe KafkaService::Handlers::AmmPoolHandler do
       end
     end
 
-    context 'when operation type is AMM_POOL_UPDATE' do
+    context 'when payload object pair is present' do
       it 'processes the amm pool update' do
         payload = {
-          'operationType' => KafkaService::Config::OperationTypes::AMM_POOL_UPDATE,
-          'pair' => amm_pool.pair,
-          'actionId' => amm_pool.id
+          'object' => {
+            'pair' => amm_pool.pair,
+            'feePercentage' => 0.005,
+            'updatedAt' => (Time.current.to_f * 1000).to_i
+          },
+          'isSuccess' => 'true'
         }
 
         expect(handler).to receive(:process_amm_pool_update).with(payload)
@@ -24,25 +27,21 @@ describe KafkaService::Handlers::AmmPoolHandler do
       end
     end
 
-    context 'when operation type is AMM_POOL_CREATE' do
-      it 'processes the amm pool update' do
-        payload = {
-          'operationType' => KafkaService::Config::OperationTypes::AMM_POOL_CREATE,
-          'pair' => amm_pool.pair,
-          'actionId' => amm_pool.id
-        }
+    context 'when payload object pair is missing' do
+      it 'does not process the update when object is missing' do
+        payload = { 'isSuccess' => 'true' }
 
-        expect(handler).to receive(:process_amm_pool_update).with(payload)
+        expect(handler).not_to receive(:process_amm_pool_update)
         handler.handle(payload)
       end
-    end
 
-    context 'when operation type is not supported' do
-      it 'does not process the update' do
+      it 'does not process the update when pair is blank' do
         payload = {
-          'operationType' => 'unknown_operation',
-          'pair' => amm_pool.pair,
-          'actionId' => amm_pool.id
+          'object' => {
+            'pair' => '',
+            'feePercentage' => 0.005
+          },
+          'isSuccess' => 'true'
         }
 
         expect(handler).not_to receive(:process_amm_pool_update)
@@ -58,9 +57,10 @@ describe KafkaService::Handlers::AmmPoolHandler do
     context 'when record is not found' do
       it 'logs the error' do
         payload = {
-          'operationType' => KafkaService::Config::OperationTypes::AMM_POOL_UPDATE,
-          'pair' => 'UNKNOWN/PAIR',
-          'actionId' => 999999
+          'object' => {
+            'pair' => 'UNKNOWN/PAIR',
+            'feePercentage' => 0.005
+          }
         }
 
         allow(Rails.logger).to receive(:error)
@@ -71,9 +71,10 @@ describe KafkaService::Handlers::AmmPoolHandler do
     context 'when standard error occurs' do
       it 'logs the error' do
         payload = {
-          'operationType' => KafkaService::Config::OperationTypes::AMM_POOL_UPDATE,
-          'pair' => amm_pool.pair,
-          'actionId' => amm_pool.id
+          'object' => {
+            'pair' => amm_pool.pair,
+            'feePercentage' => 0.005
+          }
         }
 
         allow(handler).to receive(:handle_update_response).and_raise(StandardError, 'Test error')
@@ -93,9 +94,9 @@ describe KafkaService::Handlers::AmmPoolHandler do
       it 'updates the amm pool with params from response' do
         current_time = Time.current
         payload = {
-          'actionId' => amm_pool.id,
           'isSuccess' => 'true',
           'object' => {
+            'pair' => amm_pool.pair,
             'feePercentage' => 0.005,
             'currentTick' => 100,
             'currentPrice' => 1.5,
@@ -118,9 +119,9 @@ describe KafkaService::Handlers::AmmPoolHandler do
         amm_pool.update(updated_at: current_time)
 
         payload = {
-          'actionId' => amm_pool.id,
           'isSuccess' => 'true',
           'object' => {
+            'pair' => amm_pool.pair,
             'feePercentage' => 0.005,
             'currentTick' => 100,
             'currentPrice' => 1.5,
@@ -140,9 +141,11 @@ describe KafkaService::Handlers::AmmPoolHandler do
     context 'when isSuccess is false' do
       it 'updates only the status explanation' do
         payload = {
-          'actionId' => amm_pool.id,
           'isSuccess' => 'false',
-          'errorMessage' => 'Invalid pool parameters'
+          'errorMessage' => 'Invalid pool parameters',
+          'object' => {
+            'pair' => amm_pool.pair
+          }
         }
 
         handler.send(:handle_update_response, payload)
@@ -155,12 +158,13 @@ describe KafkaService::Handlers::AmmPoolHandler do
     context 'when error occurs' do
       it 'logs the error' do
         payload = {
-          'actionId' => amm_pool.id,
           'isSuccess' => 'true',
-          'object' => {}
+          'object' => {
+            'pair' => amm_pool.pair
+          }
         }
 
-        allow(AmmPool).to receive(:find).and_raise(StandardError, 'Test error')
+        allow(AmmPool).to receive(:find_by!).and_raise(StandardError, 'Test error')
         expect(Rails.logger).to receive(:error).with(/Error handling update response/)
 
         handler.send(:handle_update_response, payload)
