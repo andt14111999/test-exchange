@@ -3,16 +3,21 @@
 FactoryBot.define do
   factory :coin_account do
     user
-    coin_currency { 'usdt' }
-    sequence(:layer) { |n| CoinAccount::SUPPORTED_NETWORKS['usdt'][n % CoinAccount::SUPPORTED_NETWORKS['usdt'].length] }
-    balance { 0.0 }
+    coin_currency { 'btc' }
+    layer { 'all' }
+    balance { 10.0 }
     frozen_balance { 0.0 }
-    account_type { 'deposit' }
+    account_type { 'main' }
     address { SecureRandom.hex(20) }
 
     trait :main do
       account_type { 'main' }
       layer { 'all' }
+    end
+
+    trait :deposit do
+      account_type { 'deposit' }
+      layer { 'bitcoin' }
     end
 
     trait :with_balance do
@@ -28,11 +33,6 @@ FactoryBot.define do
     trait :eth do
       coin_currency { 'eth' }
       layer { 'erc20' }
-    end
-
-    trait :btc do
-      coin_currency { 'btc' }
-      layer { 'bitcoin' }
     end
 
     trait :bnb do
