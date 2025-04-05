@@ -63,6 +63,7 @@ class FiatAccount < ApplicationRecord
   private
 
   def validate_balances
+    return if balance.nil? || frozen_balance.nil?
     return unless frozen_balance > balance
 
     errors.add(:frozen_balance, 'cannot be greater than balance')

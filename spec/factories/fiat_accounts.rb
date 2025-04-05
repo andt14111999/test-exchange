@@ -2,9 +2,10 @@
 
 FactoryBot.define do
   factory :fiat_account do
-    association :user
-    currency { 'VND' }
-    balance { 0.0 }
+    user
+    currency { FiatAccount::SUPPORTED_CURRENCIES.keys.sample }
+    balance { 0 }
+    frozen_balance { 0 }
     created_at { Time.zone.now }
     updated_at { Time.zone.now }
   end
