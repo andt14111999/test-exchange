@@ -12,13 +12,42 @@ describe 'AmmPools API', type: :request do
       create(:amm_pool, status: 'inactive')
     end
 
-    # Skip tests liên quan đến API endpoint trả về danh sách vì có vấn đề với metadata
-    it 'returns only active amm pools' do
-      skip "Metadata needs to be fixed"
+    it 'returns only active amm pools with pagination' do
+      get '/api/v1/amm_pools'
+
+      expect(response).to have_http_status(:ok)
+      json_response = JSON.parse(response.body)
+
+      expect(json_response['amm_pools'].size).to eq(2)
+
+      # Check that all returned pools are active
+      json_response['amm_pools'].each do |pool|
+        expect(pool['status']).to eq('active')
+      end
     end
 
-    it 'includes metadata in the response' do
-      skip "Metadata needs to be fixed"
+    it 'includes metadata with pagination info in the response' do
+      get '/api/v1/amm_pools'
+
+      expect(response).to have_http_status(:ok)
+      json_response = JSON.parse(response.body)
+
+      expect(json_response).to have_key('meta')
+      expect(json_response['meta']).to have_key('current_page')
+      expect(json_response['meta']).to have_key('per_page')
+      expect(json_response['meta']).to have_key('total_pages')
+      expect(json_response['meta']['current_page']).to eq(1)
+      expect(json_response['meta']['per_page']).to eq(10)
+    end
+
+    it 'handles custom pagination parameters' do
+      get '/api/v1/amm_pools?page=2&per_page=1'
+
+      expect(response).to have_http_status(:ok)
+      json_response = JSON.parse(response.body)
+
+      expect(json_response['meta']['current_page']).to eq(2)
+      expect(json_response['meta']['per_page']).to eq(1)
     end
   end
 
@@ -29,6 +58,7 @@ describe 'AmmPools API', type: :request do
       # Tắt các callback khi create để tests không bị fail
       allow_any_instance_of(AmmPool).to receive(:send_event_create_amm_pool)
       create(:amm_pool,
+             status: 'active',
              price: 25000,
              current_tick: 100,
              volume_token0: 1000,
@@ -80,8 +110,14 @@ describe 'AmmPools API', type: :request do
       expect(json_response['error']).to eq('AMM Pool not found')
     end
 
-    it 'returns pools by ID regardless of status' do
-      skip "Status changes unexpectedly in test"
+    it 'returns 404 for inactive pool' do
+      inactive_pool = create(:amm_pool, status: 'inactive')
+      allow_any_instance_of(AmmPool).to receive(:send_event_create_amm_pool)
+
+      get "/api/v1/amm_pools/#{inactive_pool.id}"
+
+      expect(response).to have_http_status(:not_found)
+      expect(JSON.parse(response.body)['error']).to eq('AMM Pool not found')
     end
   end
 end
