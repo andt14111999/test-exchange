@@ -14,7 +14,7 @@ RSpec.describe BalanceChannel, type: :channel do
         subscribe
 
         expect(subscription).to be_confirmed
-        expect(subscription).to have_stream_for("balance:#{Base64.urlsafe_encode64(user.to_gid.to_s)}")
+        expect(subscription).to have_stream_for(user)
       end
     end
 
