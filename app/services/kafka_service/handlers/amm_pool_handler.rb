@@ -6,19 +6,16 @@ module KafkaService
       def handle(payload)
         return if payload.nil?
 
-        Rails.logger.info("Processing amm pool update: #{payload['pair']}")
+        pair = payload.dig('object', 'pair')
+        return if pair.blank?
 
-        case payload['operationType']
-        when Config::OperationTypes::AMM_POOL_UPDATE, Config::OperationTypes::AMM_POOL_CREATE
-          process_amm_pool_update(payload)
-        end
+        Rails.logger.info("Processing amm pool update: #{pair}")
+        process_amm_pool_update(payload)
       end
 
       private
 
       def process_amm_pool_update(payload)
-        Rails.logger.info("Processing amm pool update: #{payload['pair']}")
-
         ActiveRecord::Base.transaction do
           handle_update_response(payload)
         end
@@ -32,11 +29,11 @@ module KafkaService
       private
 
       def handle_update_response(payload)
-        amm_pool = AmmPool.find(payload['actionId'])
+        object = payload['object']
+        amm_pool = AmmPool.find_by!(pair: object['pair'])
         return unless amm_pool.persisted?
 
         if payload['isSuccess'].to_bool
-          object = payload['object']
           if object['updatedAt'].to_i < (amm_pool.updated_at.to_f * 1000).to_i
             return raise 'amm pool message is older than the last update'
           end
