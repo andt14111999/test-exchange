@@ -104,8 +104,6 @@ class MerchantEscrowOperation < ApplicationRecord
   def handle_operation_error(error)
     fail!
     update!(status_explanation: error.message)
-    Rails.logger.error "Failed to process merchant escrow operation: #{error.message}"
-    raise error
   end
 
   # USDT Operations
@@ -131,9 +129,9 @@ class MerchantEscrowOperation < ApplicationRecord
   def update_usdt_balance(account, action)
     case action
     when :freeze_balance
-      account.frozen_balance += usdt_amount
+      account.lock_amount!(usdt_amount)
     when :unfreeze_balance
-      account.frozen_balance -= usdt_amount
+      account.unlock_amount!(usdt_amount)
     end
   end
 
@@ -159,8 +157,12 @@ class MerchantEscrowOperation < ApplicationRecord
   end
 
   def validate_fiat_balance(account, action)
-    if action == :decrease_balance && fiat_amount > account.balance
-      raise 'Insufficient balance'
+    if action == :decrease_balance
+      if operation_type == 'burn'
+        raise 'Insufficient frozen balance' if fiat_amount > account.frozen_balance
+      else
+        raise 'Insufficient balance' if fiat_amount > account.balance
+      end
     end
   end
 
@@ -169,7 +171,12 @@ class MerchantEscrowOperation < ApplicationRecord
     when :increase_balance
       account.balance += fiat_amount
     when :decrease_balance
-      account.balance -= fiat_amount
+      if operation_type == 'burn'
+        account.balance += fiat_amount
+        account.frozen_balance -= fiat_amount
+      else
+        account.balance -= fiat_amount
+      end
     end
   end
 

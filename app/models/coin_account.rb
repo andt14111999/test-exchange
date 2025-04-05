@@ -132,6 +132,7 @@ class CoinAccount < ApplicationRecord
       raise 'Insufficient frozen balance' if amount > frozen_balance
 
       self.frozen_balance -= amount
+      self.balance += amount
       save!
       create_coin_transaction(amount, 'unlock')
     end

@@ -139,14 +139,14 @@ RSpec.describe CoinAccount, type: :model do
       end
 
       it 'returns false when account_type is not main' do
-        account = build(:coin_account)
+        account = build(:coin_account, :deposit)
         expect(account.main?).to be false
       end
     end
 
     describe '#deposit?' do
       it 'returns true when account_type is deposit' do
-        account = build(:coin_account)
+        account = build(:coin_account, :deposit)
         expect(account.deposit?).to be true
       end
 
@@ -188,7 +188,7 @@ RSpec.describe CoinAccount, type: :model do
         account = create(:coin_account, :main, balance: 100, frozen_balance: 30)
         account.unlock_amount!(20)
         expect(account.frozen_balance).to eq(10)
-        expect(account.balance).to eq(100)
+        expect(account.balance).to eq(120)
       end
 
       it 'raises error when amount is greater than frozen balance' do
@@ -222,14 +222,14 @@ RSpec.describe CoinAccount, type: :model do
 
       it 'updates an existing deposit record' do
         account = create(:coin_account, :main)
-        deposit = create(:coin_deposit, coin_account: account)
+        deposit = create(:coin_deposit, coin_account: account, coin_currency: account.coin_currency)
         deposit_params = {
           out_index: deposit.out_index,
           amount: deposit.coin_amount,
           tx_hash: deposit.tx_hash,
           confirmations_count: 2,
           required_confirmations_count: 3,
-          coin: 'usdt'
+          coin: account.coin_currency
         }
 
         result = account.handle_deposit(deposit_params)
@@ -315,7 +315,7 @@ RSpec.describe CoinAccount, type: :model do
 
         notification = account.user.notifications.last
         expect(notification.title).to eq('Balance Updated')
-        expect(notification.content).to eq("Your USDT balance has decreased by 20.0")
+        expect(notification.content).to eq("Your #{account.coin_currency.upcase} balance has decreased by 20.0")
         expect(notification.notification_type).to eq('balance_decrease')
       end
     end
@@ -335,12 +335,9 @@ RSpec.describe CoinAccount, type: :model do
     end
 
     it 'creates notification when balance increases' do
-      puts "Before update: #{Notification.count} notifications"
       expect {
         account.update!(balance: 150)
       }.to change(Notification, :count).by(1)
-      puts "After update: #{Notification.count} notifications"
-      puts "Notifications: #{Notification.all.map { |n| "#{n.notification_type} - #{n.content}" }.join(', ')}"
 
       notification = Notification.last
       expect(notification.user).to eq(account.user)
@@ -349,12 +346,9 @@ RSpec.describe CoinAccount, type: :model do
     end
 
     it 'creates notification when balance decreases' do
-      puts "Before update: #{Notification.count} notifications"
       expect {
         account.update!(balance: 50)
       }.to change(Notification, :count).by(1)
-      puts "After update: #{Notification.count} notifications"
-      puts "Notifications: #{Notification.all.map { |n| "#{n.notification_type} - #{n.content}" }.join(', ')}"
 
       notification = Notification.last
       expect(notification.user).to eq(account.user)
@@ -363,12 +357,9 @@ RSpec.describe CoinAccount, type: :model do
     end
 
     it 'does not create notification when frozen_balance changes' do
-      puts "Before update: #{Notification.count} notifications"
       expect {
         account.update!(frozen_balance: 60)
       }.not_to change(Notification, :count)
-      puts "After update: #{Notification.count} notifications"
-      puts "Notifications: #{Notification.all.map { |n| "#{n.notification_type} - #{n.content}" }.join(', ')}"
     end
   end
 end

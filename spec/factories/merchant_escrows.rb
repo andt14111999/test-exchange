@@ -17,5 +17,17 @@ FactoryBot.define do
         escrow.user.fiat_accounts.load
       end
     end
+
+    trait :active do
+      status { 'active' }
+    end
+
+    trait :cancelled do
+      status { 'cancelled' }
+    end
+
+    trait :completed do
+      status { 'completed' }
+    end
   end
 end

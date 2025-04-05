@@ -17,7 +17,6 @@ class MerchantEscrowService
     escrow = build_escrow
     execute_escrow_transaction(escrow) do
       create_freeze_and_mint_operations(escrow)
-      escrow.activate!
     end
 
     escrow
@@ -30,9 +29,21 @@ class MerchantEscrowService
     execute_escrow_transaction(escrow) do
       create_unfreeze_and_burn_operations(escrow)
       escrow.cancel!
+    rescue StandardError => e
+      raise
     end
 
     escrow
+  end
+
+  def list
+    validate_merchant!
+    user.merchant_escrows.sorted
+  end
+
+  def find(id)
+    validate_merchant!
+    user.merchant_escrows.find_by(id: id)
   end
 
   private

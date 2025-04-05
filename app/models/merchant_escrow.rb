@@ -34,7 +34,7 @@ class MerchantEscrow < ApplicationRecord
     end
 
     event :cancel do
-      transitions from: :active, to: :cancelled
+      transitions from: [ :pending, :active ], to: :cancelled
     end
   end
 
@@ -52,7 +52,7 @@ class MerchantEscrow < ApplicationRecord
 
   # Public Methods
   def can_cancel?
-    active?
+    pending? || active?
   end
 
   def activate!
