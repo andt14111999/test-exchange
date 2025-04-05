@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CoinWithdrawalOperation < ApplicationRecord
+class CoinWithdrawalOperation < Operation
   include AASM
 
   has_many :coin_transactions, as: :operation, dependent: :destroy
@@ -13,10 +13,13 @@ class CoinWithdrawalOperation < ApplicationRecord
     if new_record?
       self.coin_amount = coin_withdrawal.try(:coin_amount)
       self.coin_fee = coin_withdrawal.try(:coin_fee).to_d
+      self.status = 'pending'
     end
   }
 
-  before_validation -> { self.coin_currency = coin_withdrawal.coin_currency }, on: :create
+  before_validation lambda {
+    self.coin_currency = coin_withdrawal.coin_currency if coin_withdrawal.present?
+  }, on: :create
 
   validate :validate_amount
 
@@ -49,8 +52,7 @@ class CoinWithdrawalOperation < ApplicationRecord
     end
   end
 
-  after_commit :relay_later, if: :pending?
-  after_commit :mark_withdrawal_release_succeed, if: :should_mark_withdrawal_release_succeed?
+  after_commit :relay_later, if: :pending?, on: :create
 
   def relay_later
     start_relaying!
@@ -119,8 +121,8 @@ class CoinWithdrawalOperation < ApplicationRecord
   end
 
   def validate_amount
-    errors.add(:coin_amount, :invalid) unless coin_amount&.positive?
-    errors.add(:coin_fee, :invalid) if coin_fee.negative?
+    errors.add(:coin_amount, 'must be greater than 0') unless coin_amount&.positive?
+    errors.add(:coin_fee, 'must be greater than or equal to 0') if coin_fee.negative?
   end
 
   def create_coin_transactions
@@ -144,13 +146,13 @@ class CoinWithdrawalOperation < ApplicationRecord
   end
 
   def mark_withdrawal_release_processed
-    coin_withdrawal.process!
+    coin_withdrawal.process! if coin_withdrawal.may_process?
   rescue StandardError => e
     Rails.logger.error("CoinWithdrawalOperation##{id} mark_withdrawal_release_processed error: #{e.message}")
   end
 
   def mark_withdrawal_release_succeed
-    coin_withdrawal.complete!
+    coin_withdrawal.complete! if coin_withdrawal.may_complete?
   rescue StandardError => e
     Rails.logger.error("CoinWithdrawalOperation##{id} mark_withdrawal_release_succeed error: #{e.message}")
   end
