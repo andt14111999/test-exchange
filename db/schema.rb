@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_04_03_105023) do
+ActiveRecord::Schema[8.0].define(version: 2025_04_04_045546) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -42,6 +42,36 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_03_105023) do
     t.string "authenticator_key"
     t.index ["email"], name: "index_admin_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_admin_users_on_reset_password_token", unique: true
+  end
+
+  create_table "amm_pools", force: :cascade do |t|
+    t.string "pair", null: false
+    t.string "token0", null: false
+    t.string "token1", null: false
+    t.integer "tick_spacing", null: false
+    t.decimal "fee_percentage", precision: 10, scale: 6, null: false
+    t.decimal "fee_protocol_percentage", precision: 10, scale: 6, default: "0.0"
+    t.integer "current_tick", default: 0
+    t.decimal "sqrt_price", precision: 36, scale: 18, default: "1.0"
+    t.decimal "price", precision: 36, scale: 18, default: "1.0"
+    t.decimal "liquidity", precision: 36, scale: 18, default: "0.0"
+    t.decimal "fee_growth_global0", precision: 36, scale: 18, default: "0.0"
+    t.decimal "fee_growth_global1", precision: 36, scale: 18, default: "0.0"
+    t.decimal "protocol_fees0", precision: 36, scale: 18, default: "0.0"
+    t.decimal "protocol_fees1", precision: 36, scale: 18, default: "0.0"
+    t.decimal "volume_token0", precision: 36, scale: 18, default: "0.0"
+    t.decimal "volume_token1", precision: 36, scale: 18, default: "0.0"
+    t.decimal "volume_usd", precision: 36, scale: 18, default: "0.0"
+    t.integer "tx_count", default: 0
+    t.decimal "total_value_locked_token0", precision: 36, scale: 18, default: "0.0"
+    t.decimal "total_value_locked_token1", precision: 36, scale: 18, default: "0.0"
+    t.string "status", default: "pending"
+    t.string "status_explanation", default: ""
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["pair"], name: "index_amm_pools_on_pair", unique: true
+    t.index ["status"], name: "index_amm_pools_on_status"
+    t.index ["token0", "token1", "fee_percentage"], name: "index_amm_pools_on_token0_and_token1_and_fee_percentage", unique: true
   end
 
   create_table "coin_accounts", force: :cascade do |t|

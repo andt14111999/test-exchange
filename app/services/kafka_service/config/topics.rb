@@ -18,6 +18,10 @@ module KafkaService
       BALANCE_UPDATE = COIN_ACCOUNT_UPDATE
       TRANSACTION_RESULT = TRANSACTION_RESPONSE
       BALANCE_RESPONSE = COIN_ACCOUNT_UPDATE
+
+      # AMM Pool related topics
+      AMM_POOL_TOPIC = 'EE.I.amm_pool'.freeze
+      AMM_POOL_UPDATE_TOPIC = 'EE.O.amm_pool_update'.freeze
     end
   end
 end

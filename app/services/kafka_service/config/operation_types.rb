@@ -9,6 +9,8 @@ module KafkaService
       COIN_WITHDRAWAL_FAILED = 'coin_withdrawal_failed'
       COIN_ACCOUNT_CREATE = 'coin_account_create'
       BALANCE_QUERY = 'balance_query'
+      AMM_POOL_CREATE = 'amm_pool_create'
+      AMM_POOL_UPDATE = 'amm_pool_update'
     end
   end
 end
