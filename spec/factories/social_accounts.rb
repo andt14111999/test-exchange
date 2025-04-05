@@ -2,12 +2,23 @@
 
 FactoryBot.define do
   factory :social_account do
-    association :user
-    provider { %w[google facebook apple].sample }
-    sequence(:provider_user_id) { |n| "user_#{n}" }
-    sequence(:email) { |n| "user#{n}@example.com" }
-    name { 'John Doe' }
+    user
+    provider { 'google' }
+    sequence(:provider_user_id) { |n| "user_id#{n}" }
+    sequence(:email) { |n| "social#{n}@example.com" }
+    sequence(:name) { |n| "Social User #{n}" }
+    access_token { 'access_token' }
+    refresh_token { 'refresh_token' }
+    token_expires_at { 1.hour.from_now }
     avatar_url { 'https://example.com/avatar.jpg' }
-    token_expires_at { 1.day.from_now }
+    profile_data { { 'data' => 'test' } }
+
+    trait :facebook do
+      provider { 'facebook' }
+    end
+
+    trait :apple do
+      provider { 'apple' }
+    end
   end
 end

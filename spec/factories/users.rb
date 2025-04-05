@@ -2,9 +2,9 @@
 
 FactoryBot.define do
   factory :user do
-    email { Faker::Internet.email }
-    display_name { "User #{SecureRandom.hex(4)}" }
-    avatar_url { "https://example.com/avatar.jpg" }
+    sequence(:email) { |n| "user#{n}@example.com" }
+    sequence(:display_name) { |n| "User #{n}" }
+    avatar_url { 'https://example.com/avatar.jpg' }
     role { 'user' }
     status { 'active' }
     kyc_level { 0 }
