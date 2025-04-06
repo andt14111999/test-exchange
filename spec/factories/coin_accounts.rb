@@ -2,13 +2,13 @@
 
 FactoryBot.define do
   factory :coin_account do
-    association :user
-    coin_currency { 'usdt' }
-    layer { 'trc20' }
+    user
+    coin_currency { 'btc' }
+    layer { 'bitcoin' }
+    balance { 10.0 }
+    frozen_balance { 0.0 }
     account_type { 'deposit' }
-    balance { 0 }
-    frozen_balance { 0 }
-    address { 'TRX123' }
+    address { '0x1234567890abcdef' }
 
     trait :main do
       account_type { 'main' }
