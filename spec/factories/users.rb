@@ -2,14 +2,20 @@
 
 FactoryBot.define do
   factory :user do
-    email { Faker::Internet.email }
-    display_name { "User #{SecureRandom.hex(4)}" }
-    avatar_url { "https://example.com/avatar.jpg" }
+    sequence(:email) { |n| "user#{n}@example.com" }
+    sequence(:display_name) { |n| "User #{n}" }
+    avatar_url { 'https://example.com/avatar.jpg' }
     role { 'user' }
     status { 'active' }
     kyc_level { 0 }
     phone_verified { false }
     document_verified { false }
+
+    trait :with_default_accounts do
+      after(:create) do |user|
+        AccountCreationService.new(user).create_all_accounts
+      end
+    end
 
     trait :admin do
       role { 'admin' }

@@ -48,7 +48,7 @@ describe AmmPool, type: :model do
     end
 
     it 'can transition from pending to active' do
-      allow_any_instance_of(AmmPool).to receive(:send_event_create_amm_pool)
+      allow_any_instance_of(described_class).to receive(:send_event_create_amm_pool)
 
       pool = create(:amm_pool, status: 'pending')
       pool.activate!
@@ -56,7 +56,7 @@ describe AmmPool, type: :model do
     end
 
     it 'can transition from active to inactive' do
-      allow_any_instance_of(AmmPool).to receive(:send_event_create_amm_pool)
+      allow_any_instance_of(described_class).to receive(:send_event_create_amm_pool)
 
       pool = create(:amm_pool, status: 'active')
       pool.deactivate!
@@ -64,7 +64,7 @@ describe AmmPool, type: :model do
     end
 
     it 'can transition to failed state' do
-      allow_any_instance_of(AmmPool).to receive(:send_event_create_amm_pool)
+      allow_any_instance_of(described_class).to receive(:send_event_create_amm_pool)
 
       pool = create(:amm_pool, status: 'pending')
       pool.fail!
@@ -98,7 +98,7 @@ describe AmmPool, type: :model do
   describe '#send_event_update_amm_pool' do
     let(:service) { instance_double(KafkaService::Services::AmmPool::AmmPoolService) }
     let(:amm_pool) do
-      allow_any_instance_of(AmmPool).to receive(:send_event_create_amm_pool)
+      allow_any_instance_of(described_class).to receive(:send_event_create_amm_pool)
       create(:amm_pool, fee_percentage: 0.003, fee_protocol_percentage: 0.05, status: 'pending')
     end
 
@@ -117,7 +117,7 @@ describe AmmPool, type: :model do
         expect(args[:payload][:actionId]).to eq(amm_pool.id)
         expect(args[:payload][:feePercentage]).to eq(0.005)
         expect(args[:payload][:feeProtocolPercentage]).to eq(0.1)
-        expect(args[:payload][:isActive]).to eq(true)
+        expect(args[:payload][:isActive]).to be(true)
       end
 
       amm_pool.send_event_update_amm_pool(params)
@@ -144,7 +144,7 @@ describe AmmPool, type: :model do
 
       expect(service).to receive(:update) do |args|
         expect(args[:payload][:feePercentage]).to eq(0.005)
-        expect(args[:payload][:isActive]).to eq(true)
+        expect(args[:payload][:isActive]).to be(true)
         expect(args[:payload]).not_to have_key(:feeProtocolPercentage)
       end
 
@@ -154,7 +154,7 @@ describe AmmPool, type: :model do
 
   describe '#validate_update_params' do
     let(:amm_pool) do
-      allow_any_instance_of(AmmPool).to receive(:send_event_create_amm_pool)
+      allow_any_instance_of(described_class).to receive(:send_event_create_amm_pool)
       create(:amm_pool, fee_percentage: 0.003, fee_protocol_percentage: 0.05, status: 'pending')
     end
 

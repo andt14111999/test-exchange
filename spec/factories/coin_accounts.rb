@@ -3,11 +3,42 @@
 FactoryBot.define do
   factory :coin_account do
     user
-    coin_currency { 'usdt' }
-    layer { 'erc20' }
+    coin_currency { 'btc' }
+    layer { 'bitcoin' }
+    balance { 10.0 }
+    frozen_balance { 0.0 }
     account_type { 'deposit' }
-    balance { 0 }
-    frozen_balance { 0 }
+    address { '0x1234567890abcdef' }
+
+    trait :main do
+      account_type { 'main' }
+      layer { 'all' }
+    end
+
+    trait :deposit do
+      account_type { 'deposit' }
+      layer { 'bitcoin' }
+    end
+
+    trait :with_balance do
+      balance { 100.0 }
+      frozen_balance { 0.0 }
+    end
+
+    trait :with_frozen_balance do
+      balance { 100.0 }
+      frozen_balance { 30.0 }
+    end
+
+    trait :eth do
+      coin_currency { 'eth' }
+      layer { 'erc20' }
+    end
+
+    trait :bnb do
+      coin_currency { 'bnb' }
+      layer { 'bep20' }
+    end
 
     trait :with_deposits do
       after(:create) do |account|

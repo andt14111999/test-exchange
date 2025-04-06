@@ -22,10 +22,8 @@ module V1
         def create_new_account(auth)
           user = ::User.find_or_initialize_by(email: auth.info.email)
 
-          if user.new_record?
-            create_new_user(user, auth)
-            create_social_account(user, auth)
-          end
+          create_new_user(user, auth) if user.new_record?
+          create_social_account(user, auth)
         end
 
         def create_new_user(user, auth)

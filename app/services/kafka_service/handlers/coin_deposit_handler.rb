@@ -18,8 +18,8 @@ module KafkaService
         deposit_id = object['identifier'].split('-').last
 
         ActiveRecord::Base.transaction do
-          deposit = CoinDeposit.find(deposit_id)
-          return unless payload['isSuccess'] && deposit.persisted?
+          deposit = CoinDeposit.find_by(id: deposit_id)
+          return unless deposit && payload['isSuccess']
 
           coin_account = CoinAccount.find(object['accountKey'])
           create_deposit_operation(deposit, coin_account, object)
@@ -35,7 +35,7 @@ module KafkaService
         CoinDepositOperation.create!(
           coin_account: coin_account,
           coin_amount: object['amount'],
-          coin_currency: object['coin'],
+          coin_currency: object['coin'].downcase,
           coin_deposit: deposit,
           coin_fee: 0,
           platform_fee: 0,

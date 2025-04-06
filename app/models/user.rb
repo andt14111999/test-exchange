@@ -66,7 +66,7 @@ class User < ApplicationRecord
         name: auth.info.name,
         access_token: auth.credentials.token,
         refresh_token: auth.credentials.refresh_token,
-        token_expires_at: auth.credentials.expires_at&.to_datetime,
+        token_expires_at: auth.credentials.expires_at ? Time.zone.at(auth.credentials.expires_at) : nil,
         avatar_url: auth.info.image,
         profile_data: auth.extra.raw_info
       )

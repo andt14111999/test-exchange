@@ -19,7 +19,7 @@ class BalanceBroadcastService
     begin
       BalanceChannel.broadcast_to(@user, balance_data_with_status)
       true
-    rescue => e
+    rescue
       false
     end
   end
@@ -39,7 +39,7 @@ class BalanceBroadcastService
   end
 
   def coin_account_data
-    coin_accounts = @user.coin_accounts.main.where(coin_currency: ::CoinAccount::SUPPORTED_NETWORKS.keys)
+    coin_accounts = @user.coin_accounts.where(account_type: 'main', coin_currency: ::CoinAccount::SUPPORTED_NETWORKS.keys)
 
     ::CoinAccount::SUPPORTED_NETWORKS.keys.map do |coin_currency|
       main_account = coin_accounts.find { |account| account.coin_currency == coin_currency }

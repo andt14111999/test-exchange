@@ -9,8 +9,9 @@ FactoryBot.define do
 
     after(:build) do |fiat_transaction|
       user = create(:user)
-      fiat_transaction.fiat_account = user.fiat_accounts.find_by(currency: 'VND')
-      fiat_transaction.currency = fiat_transaction.fiat_account.currency
+      fiat_account = create(:fiat_account, user: user, currency: 'VND')
+      fiat_transaction.fiat_account = fiat_account
+      fiat_transaction.currency = fiat_account.currency
     end
   end
 end

@@ -3,6 +3,7 @@
 # app/models/coin_account.rb
 class CoinAccount < ApplicationRecord
   include CategorizedAccount
+  include BalanceNotification
 
   belongs_to :user
   has_many :coin_transactions, dependent: :destroy
@@ -66,10 +67,9 @@ class CoinAccount < ApplicationRecord
   } }, if: -> { coin_currency.present? }
   validates :user_id, presence: true
   validate :validate_balances
+  validate :validate_layer_for_coin_currency
 
   scope :of_coin, ->(coin_currency) { where(coin_currency: coin_currency) }
-
-  after_save :handle_balance_changes
 
   class << self
     def ransackable_attributes(_auth_object = nil)
@@ -132,6 +132,7 @@ class CoinAccount < ApplicationRecord
       raise 'Insufficient frozen balance' if amount > frozen_balance
 
       self.frozen_balance -= amount
+      self.balance += amount
       save!
       create_coin_transaction(amount, 'unlock')
     end
@@ -167,6 +168,7 @@ class CoinAccount < ApplicationRecord
   private
 
   def validate_balances
+    return if balance.nil? || frozen_balance.nil?
     return unless frozen_balance > balance
 
     errors.add(:frozen_balance, 'cannot be greater than balance')
@@ -179,36 +181,6 @@ class CoinAccount < ApplicationRecord
 
     errors.add(:layer,
       "is not supported for #{coin_currency}. Supported layers are: #{SUPPORTED_NETWORKS[coin_currency]&.join(', ')}")
-  end
-
-  def handle_balance_changes
-    if saved_change_to_balance? || saved_change_to_frozen_balance?
-      broadcast_balance_update
-      create_balance_notification
-    end
-  end
-
-  def broadcast_balance_update
-    BalanceBroadcastService.call(user)
-  end
-
-  def create_balance_notification
-    old_balance = saved_change_to_balance? ? saved_change_to_balance[0] : balance
-    new_balance = saved_change_to_balance? ? saved_change_to_balance[1] : balance
-
-    if new_balance > old_balance
-      user.notifications.create!(
-        title: 'Balance Updated',
-        content: "Your #{coin_currency.upcase} balance has increased by #{new_balance - old_balance}",
-        notification_type: 'balance_increase'
-      )
-    elsif new_balance < old_balance
-      user.notifications.create!(
-        title: 'Balance Updated',
-        content: "Your #{coin_currency.upcase} balance has decreased by #{old_balance - new_balance}",
-        notification_type: 'balance_decrease'
-      )
-    end
   end
 
   def create_coin_transaction(amount, transaction_type)

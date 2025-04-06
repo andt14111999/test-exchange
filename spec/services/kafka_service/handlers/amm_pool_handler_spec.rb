@@ -64,6 +64,7 @@ describe KafkaService::Handlers::AmmPoolHandler do
         }
 
         allow(Rails.logger).to receive(:error)
+        expect(Rails.logger).to receive(:error).with(/Error handling update response: Couldn't find AmmPool/)
         handler.send(:process_amm_pool_update, payload)
       end
     end

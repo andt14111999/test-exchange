@@ -24,3 +24,7 @@ en:
           attributes:
             usdt_amount:
               exceed_available_balance: "USDT amount exceeds available balance"
+        coin_withdrawal:
+          attributes:
+            coin_amount:
+              exceed_available_balance: "exceeds available balance"

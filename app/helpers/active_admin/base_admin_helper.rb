@@ -15,14 +15,14 @@ module ActiveAdmin
         if current_admin_user.verify_otp(code)
           yield
           flash[:notice] = success_message
-          head :ok
+          :ok
         else
           flash[:error] = '2Fa code is incorrect.'
-          head :unprocessable_entity
+          :unprocessable_entity
         end
       else
         flash[:error] = '2Fa is not enabled.'
-        head :unprocessable_entity
+        :unprocessable_entity
       end
     end
 

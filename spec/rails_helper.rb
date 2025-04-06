@@ -45,11 +45,6 @@ RSpec.configure do |config|
   # examples within a transaction, remove the following line or assign false
   # instead of true.
   config.use_transactional_fixtures = true
-
-  # Detects N+1 queries
-  config.before { Prosopite.scan }
-  config.after { Prosopite.finish }
-
   # Mock Kafka service for all tests
   config.before do
     allow_any_instance_of(KafkaService::Services::Coin::CoinAccountService).to receive(:create)
