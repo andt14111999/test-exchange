@@ -29,14 +29,15 @@ class CoinWithdrawalOperation < Operation
   scope :sorted, -> { order('id ASC') }
 
   aasm column: 'status', whiny_transitions: false do
-    state :pending, initial: true, after_enter: :mark_withdrawal_release_processed
+    state :pending, initial: true
     state :relaying
     state :relay_failed
     state :relay_crashed
     state :processed
 
     event :start_relaying do
-      transitions from: %i[pending relay_failed relay_crashed], to: :relaying
+      transitions from: %i[pending relay_failed relay_crashed], to: :relaying,
+        after: :mark_withdrawal_release_processed
     end
 
     event :crash do
@@ -48,11 +49,13 @@ class CoinWithdrawalOperation < Operation
     end
 
     event :relay do
-      transitions from: :relaying, to: :processed
+      transitions from: :relaying, to: :processed,
+        guard: :withdrawal_status_processed?,
+        after: :mark_withdrawal_release_succeed
     end
   end
 
-  after_commit :relay_later, if: :pending?, on: :create
+  after_commit :relay_later, if: -> { pending? && !Rails.env.test? }, on: :create
 
   def relay_later
     start_relaying!
@@ -152,6 +155,7 @@ class CoinWithdrawalOperation < Operation
   end
 
   def mark_withdrawal_release_succeed
+    return unless withdrawal_status_processed? && tx_hash.present?
     coin_withdrawal.complete! if coin_withdrawal.may_complete?
   rescue StandardError => e
     Rails.logger.error("CoinWithdrawalOperation##{id} mark_withdrawal_release_succeed error: #{e.message}")
