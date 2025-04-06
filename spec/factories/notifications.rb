@@ -7,5 +7,6 @@ FactoryBot.define do
     content { 'This is a test notification' }
     notification_type { 'info' }
     read { false }
+    delivered { false }
   end
 end
