@@ -27,4 +27,3 @@ end
 NilClass.class_eval do
   def to_bool; false; end
 end
-

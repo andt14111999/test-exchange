@@ -1,7 +1,7 @@
 require 'rails_helper'
 
-describe 'to_bool extension', type: :initializer do
-  describe 'String#to_bool' do
+RSpec.describe String, type: :initializer do
+  describe '#to_bool' do
     it 'converts truthy strings to true' do
       expect('true'.to_bool).to be true
       expect('t'.to_bool).to be true
