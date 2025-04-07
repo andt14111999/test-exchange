@@ -29,7 +29,7 @@ class AmmPool < ApplicationRecord
 
     event :fail do
       before do |status_explanation|
-        status_explanation = status_explanation
+        self.status_explanation = status_explanation
       end
 
       transitions from: [ :pending, :active, :inactive ], to: :failed
