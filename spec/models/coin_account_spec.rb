@@ -66,11 +66,24 @@ RSpec.describe CoinAccount, type: :model do
 
     it 'validates uniqueness of layer scoped to user_id, coin_currency, and account_type' do
       user = create(:user)
-      existing_account = create(:coin_account, :main, user: user)
-      account = build(:coin_account, :main,
+      existing_account = described_class.create!(
         user: user,
-        coin_currency: existing_account.coin_currency
+        coin_currency: 'usdt',
+        layer: 'erc20',
+        account_type: 'deposit',
+        balance: 0,
+        frozen_balance: 0
       )
+
+      account = described_class.new(
+        user: user,
+        coin_currency: 'usdt',
+        layer: 'erc20',
+        account_type: 'deposit',
+        balance: 0,
+        frozen_balance: 0
+      )
+
       expect(account).to be_invalid
       expect(account.errors[:layer]).to include('has already been taken')
     end

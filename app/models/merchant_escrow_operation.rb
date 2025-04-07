@@ -67,11 +67,11 @@ class MerchantEscrowOperation < ApplicationRecord
 
   # Helper methods to find related accounts
   def find_user_usdt_account
-    user.coin_accounts.of_coin('usdt').main
+    usdt_account
   end
 
   def find_user_fiat_account
-    user.fiat_accounts.of_currency(fiat_currency).first
+    fiat_account
   end
 
   private
@@ -81,10 +81,13 @@ class MerchantEscrowOperation < ApplicationRecord
     begin
       ActiveRecord::Base.transaction do
         execute_operation
-        complete!
+        self.status = 'completed'
+        save!
       end
     rescue StandardError => e
-      handle_operation_error(e)
+      self.status = 'failed'
+      self.status_explanation = e.message
+      save!
     end
   end
 
@@ -94,33 +97,23 @@ class MerchantEscrowOperation < ApplicationRecord
       process_usdt_operation(:freeze_balance)
     when 'unfreeze'
       process_usdt_operation(:unfreeze_balance)
-    when 'mint'
-      process_fiat_operation(:increase_balance)
-    when 'burn'
-      process_fiat_operation(:decrease_balance)
+    when 'mint', 'burn'
+      process_fiat_operation(operation_type == 'mint' ? :increase_balance : :decrease_balance)
     end
-  end
-
-  def handle_operation_error(error)
-    fail!
-    update!(status_explanation: error.message)
   end
 
   # USDT Operations
   def process_usdt_operation(action)
     account = find_user_usdt_account
-    account.with_lock do
-      validate_usdt_balance(account, action)
-      update_usdt_balance(account, action)
-      account.save!
-      record_usdt_transaction(account)
-    end
+    validate_usdt_balance(account, action)
+    update_usdt_balance(account, action)
+    record_usdt_transaction(account)
   end
 
   def validate_usdt_balance(account, action)
     case action
     when :freeze_balance
-      raise 'Insufficient balance' if usdt_amount > account.available_balance
+      raise 'Insufficient balance' if usdt_amount > account.balance
     when :unfreeze_balance
       raise 'Insufficient frozen balance' if usdt_amount > account.frozen_balance
     end
@@ -129,31 +122,32 @@ class MerchantEscrowOperation < ApplicationRecord
   def update_usdt_balance(account, action)
     case action
     when :freeze_balance
-      account.lock_amount!(usdt_amount)
+      account.balance -= usdt_amount
+      account.frozen_balance += usdt_amount
     when :unfreeze_balance
-      account.unlock_amount!(usdt_amount)
+      account.frozen_balance -= usdt_amount
+      account.balance += usdt_amount
     end
+    account.save!
   end
 
   def record_usdt_transaction(account)
-    create_coin_transaction(
-      account,
-      usdt_amount,
-      OPERATION_TRANSACTION_TYPES[operation_type],
-      account.balance,
-      account.frozen_balance
+    coin_transactions.create!(
+      coin_account: account,
+      amount: usdt_amount,
+      transaction_type: OPERATION_TRANSACTION_TYPES[operation_type],
+      coin_currency: account.coin_currency,
+      snapshot_balance: account.balance,
+      snapshot_frozen_balance: account.frozen_balance
     )
   end
 
   # Fiat Operations
   def process_fiat_operation(action)
     account = find_user_fiat_account
-    account.with_lock do
-      validate_fiat_balance(account, action)
-      update_fiat_balance(account, action)
-      account.save!
-      record_fiat_transaction(account)
-    end
+    validate_fiat_balance(account, action)
+    update_fiat_balance(account, action)
+    record_fiat_transaction(account)
   end
 
   def validate_fiat_balance(account, action)
@@ -172,44 +166,23 @@ class MerchantEscrowOperation < ApplicationRecord
       account.balance += fiat_amount
     when :decrease_balance
       if operation_type == 'burn'
-        account.balance += fiat_amount
         account.frozen_balance -= fiat_amount
+        account.balance -= fiat_amount
       else
         account.balance -= fiat_amount
       end
     end
+    account.save!
   end
 
   def record_fiat_transaction(account)
-    create_fiat_transaction(
-      account,
-      fiat_amount,
-      OPERATION_TRANSACTION_TYPES[operation_type],
-      account.balance,
-      account.frozen_balance
-    )
-  end
-
-  # Transaction Creation
-  def create_coin_transaction(account, amount, transaction_type, snapshot_balance, snapshot_frozen_balance)
-    coin_transactions.create!(
-      coin_account: account,
-      amount: amount,
-      transaction_type: transaction_type,
-      coin_currency: account.coin_currency,
-      snapshot_balance: snapshot_balance,
-      snapshot_frozen_balance: snapshot_frozen_balance
-    )
-  end
-
-  def create_fiat_transaction(account, amount, transaction_type, snapshot_balance, snapshot_frozen_balance)
     fiat_transactions.create!(
       fiat_account: account,
-      amount: amount,
-      transaction_type: transaction_type,
+      amount: fiat_amount,
+      transaction_type: OPERATION_TRANSACTION_TYPES[operation_type],
       currency: account.currency,
-      snapshot_balance: snapshot_balance,
-      snapshot_frozen_balance: snapshot_frozen_balance
+      snapshot_balance: account.balance,
+      snapshot_frozen_balance: account.frozen_balance
     )
   end
 end

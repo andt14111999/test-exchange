@@ -41,23 +41,33 @@ class FiatAccount < ApplicationRecord
   def mint_amount!(amount)
     return if amount <= 0
 
-    with_lock do
-      self.balance += amount
-      save!
-      create_fiat_transaction(amount, 'mint')
-    end
+    self.balance += amount
+    create_fiat_transaction(amount, 'mint')
   end
 
   def burn_amount!(amount)
     return if amount <= 0
 
-    with_lock do
-      raise 'Insufficient balance' if amount > balance
+    raise 'Insufficient balance' if amount > balance
 
-      self.balance -= amount
-      save!
-      create_fiat_transaction(amount, 'burn')
-    end
+    self.balance -= amount
+    create_fiat_transaction(amount, 'burn')
+  end
+
+  def lock_amount!(amount)
+    return if amount <= 0
+
+    raise 'Insufficient balance' if amount > available_balance
+
+    self.frozen_balance += amount
+  end
+
+  def unlock_amount!(amount)
+    return if amount <= 0
+
+    raise 'Insufficient frozen balance' if amount > frozen_balance
+
+    self.frozen_balance -= amount
   end
 
   private

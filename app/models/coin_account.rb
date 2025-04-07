@@ -60,12 +60,12 @@ class CoinAccount < ApplicationRecord
   validates :layer, presence: true
   validates :balance, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :frozen_balance, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :layer, uniqueness: { scope: [ :user_id, :coin_currency, :account_type ] }
   validates :account_type, presence: true, inclusion: { in: ACCOUNT_TYPES }
+  validates :user_id, presence: true
+  validates :layer, uniqueness: { scope: [ :user_id, :coin_currency, :account_type ] }
   validates :layer, inclusion: { in: lambda { |account|
     account.main? ? [ 'all' ] : SUPPORTED_NETWORKS[account.coin_currency]
   } }, if: -> { coin_currency.present? }
-  validates :user_id, presence: true
   validate :validate_balances
   validate :validate_layer_for_coin_currency
 
@@ -116,26 +116,18 @@ class CoinAccount < ApplicationRecord
   def lock_amount!(amount)
     return if amount <= 0
 
-    with_lock do
-      raise 'Insufficient balance' if amount > available_balance
+    raise 'Insufficient balance' if amount > available_balance
 
-      self.frozen_balance += amount
-      save!
-      create_coin_transaction(amount, 'lock')
-    end
+    self.frozen_balance += amount
   end
 
   def unlock_amount!(amount)
     return if amount <= 0
 
-    with_lock do
-      raise 'Insufficient frozen balance' if amount > frozen_balance
+    raise 'Insufficient frozen balance' if amount > frozen_balance
 
-      self.frozen_balance -= amount
-      self.balance += amount
-      save!
-      create_coin_transaction(amount, 'unlock')
-    end
+    self.frozen_balance -= amount
+    self.balance += amount
   end
 
   def handle_deposit(deposit_params)
