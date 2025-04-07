@@ -89,7 +89,7 @@ ActiveAdmin.register MerchantEscrow do
 
   member_action :cancel, method: :put do
     escrow = resource
-    if escrow.cancel
+    if escrow.cancel!
       redirect_to resource_path, notice: 'Escrow was successfully cancelled'
     else
       redirect_to resource_path, alert: 'Could not cancel escrow'

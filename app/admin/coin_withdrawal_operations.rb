@@ -52,16 +52,18 @@ ActiveAdmin.register CoinWithdrawalOperation do
       row :updated_at
     end
 
-    panel 'Transactions' do
-      table_for resource.coin_transactions do
-        column :id
-        column :amount
-        column :coin_currency
-        column :status do |transaction|
-          status_tag transaction.status
+    div id: 'transactions' do
+      panel 'Transactions' do
+        table_for resource.coin_transactions do
+          column :id
+          column :amount
+          column :coin_currency
+          column :transaction_type do |transaction|
+            status_tag transaction.transaction_type
+          end
+          column :created_at
+          column :updated_at
         end
-        column :created_at
-        column :updated_at
       end
     end
 
@@ -69,11 +71,13 @@ ActiveAdmin.register CoinWithdrawalOperation do
   end
 
   sidebar 'State Actions', only: :show do
-    if resource.pending?
-      button_to 'Start Relaying',
-        relay_admin_coin_withdrawal_operation_path(resource),
-        method: :put,
-        data: { confirm: 'Are you sure?' }
+    div id: 'state_actions' do
+      if resource.pending?
+        button_to 'Start Relaying',
+          relay_admin_coin_withdrawal_operation_path(resource),
+          method: :put,
+          data: { confirm: 'Are you sure?' }
+      end
     end
   end
 

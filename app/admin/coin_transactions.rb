@@ -6,16 +6,22 @@ ActiveAdmin.register CoinTransaction do
   actions :index, :show
 
   filter :coin_account
-  filter :coin_currency
+  filter :coin_currency, as: :select, collection: CoinAccount::SUPPORTED_NETWORKS.keys
+  filter :transaction_type, as: :select, collection: %w[transfer lock unlock]
   filter :amount
-  filter :operation_type
   filter :created_at
 
   index do
     selectable_column
     id_column
-    column :coin_account
+    column :coin_account do |tx|
+      link_to "Coin account ##{tx.coin_account.id}", admin_coin_account_path(tx.coin_account)
+    end
+    column :user do |tx|
+      link_to tx.coin_account.user.email, admin_user_path(tx.coin_account.user)
+    end
     column :coin_currency
+    column :transaction_type
     column :amount do |tx|
       number_with_precision(tx.amount, precision: 8)
     end
@@ -32,8 +38,14 @@ ActiveAdmin.register CoinTransaction do
   show do
     attributes_table do
       row :id
-      row :coin_account
+      row :coin_account do |tx|
+        link_to "Coin account ##{tx.coin_account.id}", admin_coin_account_path(tx.coin_account)
+      end
+      row :user do |tx|
+        link_to tx.coin_account.user.email, admin_user_path(tx.coin_account.user)
+      end
       row :coin_currency
+      row :transaction_type
       row :amount do |tx|
         number_with_precision(tx.amount, precision: 8)
       end
