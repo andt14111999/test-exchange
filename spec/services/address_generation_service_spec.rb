@@ -55,6 +55,20 @@ RSpec.describe AddressGenerationService, type: :service do
         expect(address).to match(/^1[1-9A-HJ-NP-Za-km-z]{25,34}$/)
       end
     end
+
+    context 'with unknown layer' do
+      let(:user) { create(:user) }
+      let(:account) { create(:coin_account, user: user, coin_currency: 'usdt', layer: 'erc20', account_type: 'deposit') }
+
+      before do
+        allow(account).to receive(:layer).and_return('unknown')
+      end
+
+      it 'returns a random hex string' do
+        address = service.generate
+        expect(address).to match(/^[a-f0-9]{40}$/)
+      end
+    end
   end
 
   describe '#generate in production environment' do
