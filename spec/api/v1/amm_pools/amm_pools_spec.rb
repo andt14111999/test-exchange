@@ -66,7 +66,8 @@ describe 'AmmPools API', type: :request do
              volume_usd: 1000,
              tx_count: 50,
              total_value_locked_token0: 5000,
-             total_value_locked_token1: 125000000)
+             total_value_locked_token1: 125000000,
+             init_price: 24000)
     end
 
     it 'returns a specific amm pool with all fields' do
@@ -87,6 +88,7 @@ describe 'AmmPools API', type: :request do
       expect(json_response['current_tick']).to eq(amm_pool.current_tick)
       expect(json_response['price']).to eq(amm_pool.price.to_s)
       expect(json_response['status']).to eq(amm_pool.status)
+      expect(json_response['init_price']).to eq(amm_pool.init_price.to_s)
 
       # Check volume and TVL fields
       expect(json_response['volume_token0']).to eq(amm_pool.volume_token0.to_s)

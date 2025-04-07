@@ -38,6 +38,24 @@ describe AmmPool, type: :model do
       expect(pool).to be_invalid
       expect(pool.errors[:token0]).to include("the pool of token0 and token1 already exists")
     end
+
+    it 'validates init_price is positive when present' do
+      pool = build(:amm_pool, init_price: -1)
+      expect(pool).to be_invalid
+      expect(pool.errors[:init_price]).to include('must be greater than 0')
+
+      pool = build(:amm_pool, init_price: 0)
+      expect(pool).to be_invalid
+      expect(pool.errors[:init_price]).to include('must be greater than 0')
+
+      pool = build(:amm_pool, init_price: 1)
+      expect(pool).to be_valid
+    end
+
+    it 'allows init_price to be nil' do
+      pool = build(:amm_pool, init_price: nil)
+      expect(pool).to be_valid
+    end
   end
 
   describe 'state machine' do
@@ -121,6 +139,59 @@ describe AmmPool, type: :model do
       end
 
       amm_pool.send_event_update_amm_pool(params)
+    end
+
+    it 'sends update event with init_price parameter' do
+      params = { init_price: 1.5 }
+
+      expect(service).to receive(:update) do |args|
+        expect(args[:pair]).to eq(amm_pool.pair)
+        expect(args[:payload][:operationType]).to eq(KafkaService::Config::OperationTypes::AMM_POOL_UPDATE)
+        expect(args[:payload][:actionType]).to eq('AmmPool')
+        expect(args[:payload][:actionId]).to eq(amm_pool.id)
+        expect(args[:payload][:initPrice]).to eq(1.5)
+      end
+
+      amm_pool.send_event_update_amm_pool(params)
+    end
+
+    it 'includes init_price in create event when present' do
+      allow_any_instance_of(described_class).to receive(:send_event_create_amm_pool).and_call_original
+
+      pool = build(:amm_pool, init_price: 1.5)
+
+      expect(KafkaService::Services::AmmPool::AmmPoolService).to receive(:new).and_return(service)
+      expect(service).to receive(:create) do |args|
+        expect(args[:payload][:initPrice]).to eq(1.5)
+      end
+
+      pool.save!
+    end
+
+    it 'raises error when updating init_price on a pool with liquidity' do
+      amm_pool.update!(total_value_locked_token0: 10, total_value_locked_token1: 10)
+
+      expect {
+        amm_pool.send_event_update_amm_pool({ init_price: 1.5 })
+      }.to raise_error('Cannot modify initPrice on pool with liquidity')
+    end
+
+    it 'raises error when updating init_price on an active pool' do
+      amm_pool.update!(status: 'active')
+
+      expect {
+        amm_pool.send_event_update_amm_pool({ init_price: 1.5 })
+      }.to raise_error('Cannot modify initPrice on active pool')
+    end
+
+    it 'raises error when updating with non-positive init_price' do
+      expect {
+        amm_pool.send_event_update_amm_pool({ init_price: 0 })
+      }.to raise_error('Initial price must be positive')
+
+      expect {
+        amm_pool.send_event_update_amm_pool({ init_price: -1 })
+      }.to raise_error('Initial price must be positive')
     end
 
     it 'raises error when no valid changes are found' do

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_04_04_045546) do
+ActiveRecord::Schema[8.0].define(version: 2025_04_07_060833) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -69,6 +69,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_04_045546) do
     t.string "status_explanation", default: ""
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.decimal "init_price", precision: 36, scale: 18
     t.index ["pair"], name: "index_amm_pools_on_pair", unique: true
     t.index ["status"], name: "index_amm_pools_on_status"
     t.index ["token0", "token1", "fee_percentage"], name: "index_amm_pools_on_token0_and_token1_and_fee_percentage", unique: true

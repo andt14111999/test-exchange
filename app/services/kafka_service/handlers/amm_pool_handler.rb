@@ -67,7 +67,8 @@ module KafkaService
           total_value_locked_token1: object['totalValueLockedToken1'],
           status_explanation: object['statusExplanation'],
           updated_at: Time.at(object['updatedAt'] / 1000.0),
-          status: object['isActive'] ? 'active' : 'inactive'
+          status: object['isActive'] ? 'active' : 'inactive',
+          init_price: object['initPrice']
         }.compact
       end
     end
