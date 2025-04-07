@@ -4,7 +4,7 @@ FactoryBot.define do
     operation_type { 'freeze' }
     usdt_amount { 100.0 }
     fiat_amount { 100.0 }
-    fiat_currency { 'VND' }
+    fiat_currency { FiatAccount::SUPPORTED_CURRENCIES.keys.first }
     status { 'pending' }
 
     before(:create) do |operation|
@@ -13,7 +13,7 @@ FactoryBot.define do
       end
 
       if operation.fiat_account.nil?
-        operation.fiat_account = create(:fiat_account, currency: operation.fiat_currency, user: operation.merchant_escrow.user, balance: 200.0)
+        operation.fiat_account = operation.merchant_escrow.fiat_account
       end
     end
   end

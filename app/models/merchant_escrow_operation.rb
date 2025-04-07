@@ -26,7 +26,7 @@ class MerchantEscrowOperation < ApplicationRecord
   validates :operation_type, presence: true, inclusion: { in: OPERATION_TYPES }
   validates :usdt_amount, presence: true, numericality: { greater_than: 0 }
   validates :fiat_amount, presence: true, numericality: { greater_than: 0 }
-  validates :fiat_currency, presence: true
+  validates :fiat_currency, presence: true, inclusion: { in: FiatAccount::SUPPORTED_CURRENCIES.keys }
   validates :status, presence: true, inclusion: { in: %w[pending completed failed] }
   validates :merchant_escrow_id, presence: true
 

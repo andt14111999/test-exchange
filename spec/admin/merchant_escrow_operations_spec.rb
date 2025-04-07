@@ -17,7 +17,7 @@ RSpec.describe 'Admin::MerchantEscrowOperations', type: :system do
                         fiat_account: fiat_account,
                         usdt_amount: 100.5,
                         fiat_amount: 2000.75,
-                        fiat_currency: 'usd',
+                        fiat_currency: 'VND',
                         operation_type: 'freeze',
                         status: 'failed')
 
@@ -29,7 +29,7 @@ RSpec.describe 'Admin::MerchantEscrowOperations', type: :system do
       expect(page).to have_content('freeze')
       expect(page).to have_content(number_with_precision(operation.usdt_amount, precision: 8))
       expect(page).to have_content(number_with_precision(operation.fiat_amount, precision: 2))
-      expect(page).to have_content('usd')
+      expect(page).to have_content('VND')
       expect(page).to have_content('Failed')
       expect(page).to have_content(operation.created_at.strftime('%B %d, %Y %H:%M'))
     end
@@ -74,7 +74,7 @@ RSpec.describe 'Admin::MerchantEscrowOperations', type: :system do
                         fiat_account: fiat_account,
                         usdt_amount: 100.5,
                         fiat_amount: 2000.75,
-                        fiat_currency: 'usd',
+                        fiat_currency: 'VND',
                         operation_type: 'freeze',
                         status: 'failed',
                         status_explanation: 'Insufficient balance')
@@ -89,7 +89,7 @@ RSpec.describe 'Admin::MerchantEscrowOperations', type: :system do
       expect(page).to have_content('freeze')
       expect(page).to have_content(number_with_precision(operation.usdt_amount, precision: 8))
       expect(page).to have_content(number_with_precision(operation.fiat_amount, precision: 2))
-      expect(page).to have_content('usd')
+      expect(page).to have_content('VND')
       expect(page).to have_content('Failed')
       expect(page).to have_content('Insufficient balance')
       expect(page).to have_content(operation.created_at.strftime('%B %d, %Y %H:%M'))
