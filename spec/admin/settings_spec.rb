@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe 'Admin Settings', type: :system do
+RSpec.describe 'Admin Settings', type: :feature do
   context 'when admin is signed in' do
     before do
       admin = create(:admin_user, :admin)
