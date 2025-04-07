@@ -69,6 +69,12 @@ FactoryBot.define do
       account_type { 'main' }
     end
 
+    trait :btc_deposit do
+      coin_currency { 'btc' }
+      layer { 'bitcoin' }
+      account_type { 'deposit' }
+    end
+
     trait :usdt do
       coin_currency { 'usdt' }
       layer { 'erc20' }

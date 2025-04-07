@@ -3,6 +3,8 @@
 ActiveAdmin.register CoinAccount do
   menu priority: 1, parent: 'Coin Management', label: 'Accounts'
 
+  actions :all, except: [ :edit, :update, :new ]
+
   permit_params :user_id, :coin_currency, :layer, :balance, :frozen_balance, :address, :account_type
 
   index do
@@ -53,9 +55,6 @@ ActiveAdmin.register CoinAccount do
     panel 'Total Balances Across All Layers' do
       main_account = coin_account.user.coin_accounts.of_coin(coin_account.coin_currency).main
       attributes_table_for main_account do
-        row :total_balance do
-          number_with_precision(main_account.total_balance, precision: 8)
-        end
         row :frozen_balance do
           number_with_precision(main_account.frozen_balance, precision: 8)
         end
@@ -64,27 +63,5 @@ ActiveAdmin.register CoinAccount do
         end
       end
     end
-  end
-
-  form do |f|
-    f.inputs do
-      f.input :user
-      f.input :account_type, as: :select,
-        collection: CoinAccount::ACCOUNT_TYPES,
-        include_blank: false
-      f.input :coin_currency, as: :select,
-        collection: CoinAccount::SUPPORTED_NETWORKS.keys,
-        include_blank: false
-      f.input :layer, as: :select,
-        collection: lambda {
-          coin_currency = f.object.coin_currency || f.object.coin_currency_was
-          coin_currency.present? ? CoinAccount::SUPPORTED_NETWORKS[coin_currency] : []
-        }.call,
-        include_blank: false
-      f.input :balance
-      f.input :frozen_balance
-      f.input :address
-    end
-    f.actions
   end
 end
