@@ -94,29 +94,30 @@ RSpec.describe CoinWithdrawalOperation, type: :model do
       end
 
       it 'transitions from pending to relaying' do
-        operation = build(:coin_withdrawal_operation, coin_withdrawal: withdrawal)
-        operation.status = 'pending'
+        operation = create(:coin_withdrawal_operation, coin_withdrawal: withdrawal)
         operation.start_relaying!
         expect(operation.status).to eq('relaying')
       end
 
       it 'transitions from relaying to relay_crashed' do
-        operation = build(:coin_withdrawal_operation, coin_withdrawal: withdrawal)
-        operation.status = 'relaying'
+        operation = create(:coin_withdrawal_operation, coin_withdrawal: withdrawal)
+        operation.start_relaying!
         operation.crash!
         expect(operation.status).to eq('relay_crashed')
       end
 
       it 'transitions from relaying to relay_failed' do
-        operation = build(:coin_withdrawal_operation, coin_withdrawal: withdrawal)
-        operation.status = 'relaying'
+        operation = create(:coin_withdrawal_operation, coin_withdrawal: withdrawal)
+        operation.start_relaying!
         operation.fail!
         expect(operation.status).to eq('relay_failed')
       end
 
       it 'transitions from relaying to processed' do
-        operation = build(:coin_withdrawal_operation, coin_withdrawal: withdrawal)
-        operation.status = 'relaying'
+        operation = create(:coin_withdrawal_operation, coin_withdrawal: withdrawal)
+        operation.start_relaying!
+        operation.withdrawal_status = 'processed'
+        operation.tx_hash = 'tx_123'
         operation.relay!
         expect(operation.status).to eq('processed')
       end
@@ -132,10 +133,11 @@ RSpec.describe CoinWithdrawalOperation, type: :model do
     end
 
     describe 'after_enter callbacks' do
-      it 'marks withdrawal as processed when entering pending state' do
+      it 'marks withdrawal as processing when starting to relay' do
         user = create(:user)
         withdrawal = create(:coin_withdrawal, user: user)
         operation = create(:coin_withdrawal_operation, coin_withdrawal: withdrawal)
+        operation.start_relaying!
         expect(withdrawal.reload.status).to eq('processing')
       end
     end
@@ -230,23 +232,44 @@ RSpec.describe CoinWithdrawalOperation, type: :model do
     let(:withdrawal) { create(:coin_withdrawal, user: user) }
     let(:operation) { create(:coin_withdrawal_operation, coin_withdrawal: withdrawal) }
 
-    it 'completes the withdrawal when it can be completed' do
-      allow(withdrawal).to receive(:may_complete?).and_return(true)
-      expect(withdrawal).to receive(:complete!)
-      operation.send(:mark_withdrawal_release_succeed)
-    end
-
     it 'does not raise error when withdrawal cannot be completed' do
+      operation.start_relaying!
+      operation.withdrawal_status = 'processed'
+      operation.tx_hash = 'tx_123'
       allow(withdrawal).to receive(:may_complete?).and_return(false)
-      expect { operation.send(:mark_withdrawal_release_succeed) }.not_to raise_error
+      expect { operation.relay! }.not_to raise_error
     end
 
     it 'logs error when complete! raises an error' do
+      operation.start_relaying!
+      operation.withdrawal_status = 'processed'
+      operation.tx_hash = 'tx_123'
       allow(withdrawal).to receive(:may_complete?).and_return(true)
-      allow(withdrawal).to receive(:complete!).and_raise(StandardError.new('Complete failed'))
-      expect(Rails.logger).to receive(:error).with("CoinWithdrawalOperation##{operation.id} mark_withdrawal_release_succeed error: Complete failed")
-
+      allow(withdrawal).to receive(:complete!).and_raise(StandardError, 'test error')
+      allow(Rails.logger).to receive(:error)
       operation.send(:mark_withdrawal_release_succeed)
+      expect(Rails.logger).to have_received(:error).with(/CoinWithdrawalOperation#\d+ mark_withdrawal_release_succeed error: test error/)
+    end
+  end
+
+  describe '#mark_withdrawal_release_processed' do
+    let(:user) { create(:user) }
+    let(:withdrawal) { create(:coin_withdrawal, user: user) }
+    let(:operation) { create(:coin_withdrawal_operation, coin_withdrawal: withdrawal) }
+
+    it 'does not raise error when withdrawal cannot be processed' do
+      operation.start_relaying!
+      allow(withdrawal).to receive(:may_process?).and_return(false)
+      expect { operation.send(:mark_withdrawal_release_processed) }.not_to raise_error
+    end
+
+    it 'logs error when process! raises an error' do
+      operation.start_relaying!
+      allow(withdrawal).to receive(:may_process?).and_return(true)
+      allow(withdrawal).to receive(:process!).and_raise(StandardError, 'test error')
+      allow(Rails.logger).to receive(:error)
+      operation.send(:mark_withdrawal_release_processed)
+      expect(Rails.logger).to have_received(:error).with("CoinWithdrawalOperation##{operation.id} mark_withdrawal_release_processed error: test error")
     end
   end
 

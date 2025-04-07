@@ -67,6 +67,34 @@ describe KafkaService::Handlers::AmmPoolHandler do
         expect(Rails.logger).to receive(:error).with(/Error handling update response: Couldn't find AmmPool/)
         handler.send(:process_amm_pool_update, payload)
       end
+
+      it 'rescues and logs ActiveRecord::RecordNotFound error' do
+        payload = {
+          'object' => {
+            'pair' => 'UNKNOWN/PAIR',
+            'feePercentage' => 0.005
+          }
+        }
+
+        allow(AmmPool).to receive(:find_by!).and_raise(ActiveRecord::RecordNotFound.new('Could not find record'))
+        expect(Rails.logger).to receive(:error).with('Error handling update response: Could not find record')
+
+        handler.send(:process_amm_pool_update, payload)
+      end
+
+      it 'logs the exact error message for record not found' do
+        payload = {
+          'object' => {
+            'pair' => 'UNKNOWN/PAIR'
+          }
+        }
+
+        error_message = "Couldn't find AmmPool with pair='UNKNOWN/PAIR'"
+        allow(handler).to receive(:handle_update_response).and_raise(ActiveRecord::RecordNotFound.new(error_message))
+        expect(Rails.logger).to receive(:error).with("Failed to find record: #{error_message}")
+
+        handler.send(:process_amm_pool_update, payload)
+      end
     end
 
     context 'when standard error occurs' do

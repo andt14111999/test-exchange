@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :coin_withdrawal do
     transient do
-      account_balance { 10.0 }
+      account_balance { 100.0 }
     end
 
     user
@@ -15,9 +17,8 @@ FactoryBot.define do
 
     after(:build) do |withdrawal, evaluator|
       unless withdrawal.user.coin_accounts.exists?(coin_currency: withdrawal.coin_currency)
-        create(:coin_account, :main,
+        create(:coin_account, :btc_main,
           user: withdrawal.user,
-          coin_currency: withdrawal.coin_currency,
           balance: evaluator.account_balance
         )
       end

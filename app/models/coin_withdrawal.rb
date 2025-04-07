@@ -45,7 +45,7 @@ class CoinWithdrawal < ApplicationRecord
     end
 
     event :cancel do
-      transitions from: [ :pending ], to: :cancelled,
+      transitions from: [ :pending, :processing ], to: :cancelled,
         after: :unfreeze_user_balance
     end
   end

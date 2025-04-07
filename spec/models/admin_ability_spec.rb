@@ -24,4 +24,20 @@ RSpec.describe AdminAbility do
       expect(ability).to be_able_to(:manage, ActiveAdmin::Page, name: 'Setup 2FA')
     end
   end
+
+  context 'when user is implementor' do
+    it 'can manage AmmPool' do
+      implementor = create(:admin_user, :implementor)
+      ability = described_class.new(implementor)
+
+      expect(ability).to be_able_to(:manage, AmmPool)
+    end
+
+    it 'can read AmmPool' do
+      implementor = create(:admin_user, :implementor)
+      ability = described_class.new(implementor)
+
+      expect(ability).to be_able_to(:read, AmmPool)
+    end
+  end
 end

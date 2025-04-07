@@ -111,6 +111,29 @@ describe AmmPool, type: :model do
 
       pool.save!
     end
+
+    it 'transitions to failed state when Kafka service raises an error' do
+      error_message = 'Kafka connection error'
+      allow(service).to receive(:create).and_raise(StandardError.new(error_message))
+      allow(Rails.logger).to receive(:error)
+
+      pool = build(:amm_pool)
+      pool.save!
+
+      expect(pool).to be_failed
+      expect(Rails.logger).to have_received(:error).with("Failed to notify exchange engine: #{error_message}")
+    end
+
+    it 'sets status explanation when transitioning to failed state' do
+      error_message = 'Kafka connection error'
+      allow(service).to receive(:create).and_raise(StandardError.new(error_message))
+
+      pool = build(:amm_pool)
+      pool.save!
+      pool.reload
+
+      expect(pool.status_explanation).to eq("Failed to notify exchange engine: #{error_message}")
+    end
   end
 
   describe '#send_event_update_amm_pool' do

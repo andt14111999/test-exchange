@@ -8,10 +8,14 @@ FactoryBot.define do
     updated_at { Time.zone.now }
 
     after(:build) do |fiat_transaction|
-      user = create(:user)
-      fiat_account = create(:fiat_account, user: user, currency: 'VND')
-      fiat_transaction.fiat_account = fiat_account
-      fiat_transaction.currency = fiat_account.currency
+      if fiat_transaction.fiat_account.nil?
+        user = create(:user)
+        fiat_account = create(:fiat_account, user: user, currency: 'VND')
+        fiat_transaction.fiat_account = fiat_account
+        fiat_transaction.currency = fiat_account.currency
+      else
+        fiat_transaction.currency = fiat_transaction.fiat_account.currency
+      end
     end
   end
 end
