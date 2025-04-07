@@ -134,5 +134,41 @@ RSpec.describe FiatAccount, type: :model do
         end.not_to change { [ fiat_account.balance, FiatTransaction.count ] }
       end
     end
+
+    describe '#lock_amount!' do
+      it 'increases frozen_balance' do
+        fiat_account = create(:fiat_account, balance: 100, frozen_balance: 0)
+        expect { fiat_account.lock_amount!(50) }.to change { fiat_account.frozen_balance }.by(50)
+      end
+
+      it 'raises error when amount is greater than available_balance' do
+        fiat_account = create(:fiat_account, balance: 100, frozen_balance: 0)
+        expect { fiat_account.lock_amount!(101) }.to raise_error('Insufficient balance')
+      end
+
+      it 'does nothing when amount is less than or equal to 0' do
+        fiat_account = create(:fiat_account, balance: 100, frozen_balance: 0)
+        expect { fiat_account.lock_amount!(0) }.not_to change { fiat_account.frozen_balance }
+        expect { fiat_account.lock_amount!(-10) }.not_to change { fiat_account.frozen_balance }
+      end
+    end
+
+    describe '#unlock_amount!' do
+      it 'decreases frozen_balance' do
+        fiat_account = create(:fiat_account, balance: 100, frozen_balance: 50)
+        expect { fiat_account.unlock_amount!(30) }.to change { fiat_account.frozen_balance }.by(-30)
+      end
+
+      it 'raises error when amount is greater than frozen_balance' do
+        fiat_account = create(:fiat_account, balance: 100, frozen_balance: 50)
+        expect { fiat_account.unlock_amount!(51) }.to raise_error('Insufficient frozen balance')
+      end
+
+      it 'does nothing when amount is less than or equal to 0' do
+        fiat_account = create(:fiat_account, balance: 100, frozen_balance: 50)
+        expect { fiat_account.unlock_amount!(0) }.not_to change { fiat_account.frozen_balance }
+        expect { fiat_account.unlock_amount!(-10) }.not_to change { fiat_account.frozen_balance }
+      end
+    end
   end
 end
