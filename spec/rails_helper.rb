@@ -10,6 +10,7 @@ abort("The Rails environment is running in production mode!") if Rails.env.produ
 # that will avoid rails generators crashing because migrations haven't been run yet
 # return unless Rails.env.test?
 require 'rspec/rails'
+require 'capybara/rspec'
 # Add additional requires below this line. Rails is not loaded until this point!
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
@@ -40,14 +41,31 @@ RSpec.configure do |config|
     Rails.root.join('spec/fixtures')
   ]
   config.include Devise::Test::ControllerHelpers, type: :controller
+  config.include Devise::Test::IntegrationHelpers, type: :system
+  config.include Warden::Test::Helpers
 
   # If you're not using ActiveRecord, or you'd prefer not to run each of your
   # examples within a transaction, remove the following line or assign false
   # instead of true.
   config.use_transactional_fixtures = true
-  # Mock Kafka service for all tests
-  config.before do
-    allow_any_instance_of(KafkaService::Services::Coin::CoinAccountService).to receive(:create)
+  # Mock Kafka service for all tests except Kafka service specs
+  config.before do |example|
+    if example.file_path.include?('spec/services/kafka_service')
+      # Don't mock for Kafka service specs
+    else
+      allow_any_instance_of(KafkaService::Services::Coin::CoinAccountService).to receive(:create)
+      allow_any_instance_of(KafkaService::Base::Producer).to receive(:send_message) do |_instance, **args|
+        Rails.logger.info("Mocked Kafka message sent: #{args}")
+      end
+    end
+  end
+
+  config.before(:each, type: :system) do
+    driven_by :rack_test
+  end
+
+  config.before(:each, :js, type: :system) do
+    driven_by :selenium_chrome_headless
   end
 
   # You can uncomment this line to turn off ActiveRecord support entirely.
@@ -77,3 +95,5 @@ RSpec.configure do |config|
   # Include FactoryBot methods
   config.include FactoryBot::Syntax::Methods
 end
+
+Capybara.default_max_wait_time = 5

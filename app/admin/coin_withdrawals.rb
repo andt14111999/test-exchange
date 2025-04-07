@@ -51,16 +51,15 @@ ActiveAdmin.register CoinWithdrawal do
       row :updated_at
     end
 
-    panel 'Withdrawal Operation' do
-      if withdrawal.coin_withdrawal_operation.present?
-        attributes_table_for withdrawal.coin_withdrawal_operation do
+    panel 'Withdrawal Operation', id: 'withdrawal-operation' do
+      if resource.coin_withdrawal_operation.present?
+        attributes_table_for resource.coin_withdrawal_operation do
           row :id
           row :status do |operation|
             status_tag operation.status
           end
           row :withdrawal_status
           row :tx_hash
-          row :tx_hash_arrived_at
           row :scheduled_at
           row :withdrawal_data
           row :created_at
@@ -71,15 +70,13 @@ ActiveAdmin.register CoinWithdrawal do
       end
     end
 
-    panel 'Transaction' do
-      if withdrawal.coin_transaction.present?
-        attributes_table_for withdrawal.coin_transaction do
+    panel 'Transaction', id: 'transaction' do
+      if resource.coin_withdrawal_operation.present? && resource.coin_withdrawal_operation.coin_transactions.exists?
+        attributes_table_for resource.coin_withdrawal_operation.coin_transactions.first do
           row :id
           row :amount
           row :coin_currency
-          row :status do |transaction|
-            status_tag transaction.status
-          end
+          row :transaction_type
           row :created_at
           row :updated_at
         end
@@ -102,9 +99,10 @@ ActiveAdmin.register CoinWithdrawal do
 
   member_action :cancel, method: :put do
     withdrawal = resource
-    if withdrawal.cancel
+    begin
+      withdrawal.cancel!
       redirect_to resource_path, notice: 'Withdrawal was successfully cancelled'
-    else
+    rescue StandardError => e
       redirect_to resource_path, alert: 'Could not cancel withdrawal'
     end
   end

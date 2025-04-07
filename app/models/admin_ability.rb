@@ -17,6 +17,7 @@ class AdminAbility
     can %i[read], AdminUser, { id: current_user.id }
     can %i[manage], ActiveAdmin::Page, name: 'Setup 2FA'
     can :read, AmmPool
+    can :manage, SocialAccount
   end
 
   def apply_implementor_actions

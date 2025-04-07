@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-CurrencyTotal = Struct.new(:currency, :name, :total_balance, :frozen_balance, :available_balance)
+CurrencyTotal = Struct.new(:currency, :name, :frozen_balance, :balance)
 
 ActiveAdmin.register FiatAccount do
   menu priority: 4, parent: 'Fiat Management', label: 'Fiat Accounts'
@@ -26,8 +26,6 @@ ActiveAdmin.register FiatAccount do
   filter :currency, as: :select, collection: FiatAccount::SUPPORTED_CURRENCIES
   filter :balance
   filter :frozen_balance
-  filter :total_balance
-  filter :available_balance
   filter :created_at
 
   show do
