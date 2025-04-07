@@ -10,12 +10,12 @@ ActiveAdmin.register AmmPool do
   scope :inactive
   scope :failed
 
-  permit_params :pair, :token0, :token1, :tick_spacing, :fee_percentage, :fee_protocol_percentage, :status
+  permit_params :pair, :token0, :token1, :tick_spacing, :fee_percentage, :fee_protocol_percentage, :status, :init_price
 
   controller do
     def update
       amm_pool = AmmPool.find(params[:id])
-      permitted_params = params.require(:amm_pool).permit(:fee_percentage, :fee_protocol_percentage, :status)
+      permitted_params = params.require(:amm_pool).permit(:fee_percentage, :fee_protocol_percentage, :status, :init_price)
 
       begin
         result = amm_pool.send_event_update_amm_pool(permitted_params)
@@ -45,6 +45,7 @@ ActiveAdmin.register AmmPool do
       number_to_percentage(pool.fee_protocol_percentage * 100, precision: 3)
     end
     column :price
+    column :init_price
     column :liquidity
     column :status
     column :created_at
@@ -68,6 +69,7 @@ ActiveAdmin.register AmmPool do
       row :current_tick
       row :sqrt_price
       row :price
+      row :init_price
       row :liquidity
       row :status
       row :status_explanation
@@ -105,12 +107,20 @@ ActiveAdmin.register AmmPool do
     f.inputs 'AMM Pool Details' do
       if f.object.persisted?
         f.input :status, as: :select, collection: AmmPool.aasm.states_for_select
+
+        # Thêm trường init_price cho form edit, chỉ hiển thị nếu pool không có thanh khoản và không ở trạng thái active
+        if f.object.total_value_locked_token0.to_d == 0 && f.object.total_value_locked_token1.to_d == 0 && !f.object.active?
+          f.input :init_price, as: :number, input_html: { min: 0.000001, step: 0.000001 },
+            hint: 'Chỉ có thể đặt giá ban đầu khi pool chưa có thanh khoản và đang không hoạt động. Giá phải là số dương.'
+        end
       else
         render 'admin/amm_pools/tickrate_explanation'
         f.input :pair
         f.input :token0
         f.input :token1
         f.input :tick_spacing
+        f.input :init_price, as: :number, input_html: { min: 0.000001, step: 0.000001 },
+          hint: 'Giá ban đầu của token0 tính theo token1, ví dụ: 24000 (1 USDT = 24000 VND). Để trống nếu chưa biết giá ban đầu.'
       end
       f.input :fee_percentage, as: :number, input_html: { min: 0, max: 1, step: 0.0001 },
         hint: 'Nhập dưới dạng số thập phân, ví dụ: 0.003 (0.3%), 0.0001 (0.01%), 0.01 (1%)'

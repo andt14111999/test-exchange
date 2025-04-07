@@ -10,8 +10,9 @@ class AmmPool < ApplicationRecord
   validates :tick_spacing, presence: true
   validates :fee_percentage, presence: true
   validates :token0, uniqueness: { scope: :token1, message: 'the pool of token0 and token1 already exists' }
+  validates :init_price, numericality: { greater_than: 0 }, allow_nil: true
 
-  UPDATABLE_ATTRIBUTES = %w[fee_percentage fee_protocol_percentage status].freeze
+  UPDATABLE_ATTRIBUTES = %w[fee_percentage fee_protocol_percentage status init_price].freeze
 
   aasm column: 'status' do
     state :pending, initial: true
@@ -43,6 +44,11 @@ class AmmPool < ApplicationRecord
       raise 'No valid changes found in params'
     end
 
+    # Validate init_price updates
+    if params[:init_price].present?
+      validate_init_price_update(params[:init_price])
+    end
+
     payload = {
       eventId: "amm-pool-#{SecureRandom.uuid}",
       operationType: KafkaService::Config::OperationTypes::AMM_POOL_UPDATE,
@@ -51,13 +57,31 @@ class AmmPool < ApplicationRecord
       pair: pair,
       feePercentage: params[:fee_percentage],
       feeProtocolPercentage: params[:fee_protocol_percentage],
-      isActive: params[:status] == 'active'
+      isActive: params[:status] == 'active',
+      initPrice: params[:init_price]
     }.compact
 
     KafkaService::Services::AmmPool::AmmPoolService.new.update(pair:, payload:)
   end
 
   private
+
+  def validate_init_price_update(init_price)
+    # Validate that init_price is positive
+    unless init_price.to_d.positive?
+      raise 'Initial price must be positive'
+    end
+
+    # Validate that pool has no liquidity
+    if total_value_locked_token0.to_d > 0 || total_value_locked_token1.to_d > 0
+      raise 'Cannot modify initPrice on pool with liquidity'
+    end
+
+    # Validate that pool is not active
+    if active?
+      raise 'Cannot modify initPrice on active pool'
+    end
+  end
 
   def send_event_create_amm_pool
     return unless pending?
@@ -73,8 +97,9 @@ class AmmPool < ApplicationRecord
       tickSpacing: tick_spacing,
       feePercentage: fee_percentage,
       feeProtocolPercentage: fee_protocol_percentage,
-      isActive: false
-    }
+      isActive: false,
+      initPrice: init_price
+    }.compact
 
     KafkaService::Services::AmmPool::AmmPoolService.new.create(pair:, payload:)
   rescue => e

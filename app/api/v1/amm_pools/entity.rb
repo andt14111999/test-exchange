@@ -16,6 +16,7 @@ module V1
       expose :liquidity
       expose :status
       expose :status_explanation
+      expose :init_price
 
       expose :volume_token0
       expose :volume_token1

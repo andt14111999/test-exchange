@@ -22,5 +22,6 @@ FactoryBot.define do
     total_value_locked_token1 { BigDecimal('0') }
     status { 'pending' }
     status_explanation { '' }
+    init_price { nil }
   end
 end
