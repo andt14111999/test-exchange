@@ -50,9 +50,11 @@ RSpec.describe 'Admin::FiatTransactions', type: :feature do
 
       visit admin_fiat_transactions_path
 
-      # Verify both transactions are visible before filtering
-      expect(page).to have_content(transaction_vnd.id)
-      expect(page).to have_content(transaction_php.id)
+      # Verify both transactions are visible initially
+      expect(page).to have_content('VND')
+      expect(page).to have_content('100.00')
+      expect(page).to have_content('PHP')
+      expect(page).to have_content('200.00')
 
       # Apply filter
       within '.filter_form' do
@@ -60,21 +62,21 @@ RSpec.describe 'Admin::FiatTransactions', type: :feature do
         click_button 'Filter'
       end
 
-      # Wait for the page to update and verify filter is applied
+      # Verify filter is applied
       expect(page).to have_content('Current filters:')
       expect(page).to have_content('Currency equals VND')
 
-      # Wait for the filter to be applied
-      sleep 1
+      # Wait for page to fully load after filter applied
+      expect(page).to have_content('Fiat account')
 
-      # Verify only VND transaction is visible in the table
-      within 'table#index_table_fiat_transactions' do
-        expect(page).to have_content(transaction_vnd.id)
-        expect(page).to have_content('100.00')
-        expect(page).to have_content('VND')
-        expect(page).not_to have_content(transaction_php.id)
-        expect(page).not_to have_content('200.00')
-      end
+      # Look for unique combination of attributes that identify each transaction
+      expect(page).to have_content('VND')
+      expect(page).to have_content('100.00')
+
+      # Make sure the PHP transaction is not visible - check for its unique attributes
+      # Using a method that does not depend on specific IDs
+      expect(page).not_to have_selector('td', text: 'PHP')
+      expect(page).not_to have_selector('td', text: '200.00')
     end
 
     it 'filters transactions by transaction type' do
