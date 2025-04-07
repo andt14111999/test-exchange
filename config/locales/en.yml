@@ -28,3 +28,10 @@ en:
           attributes:
             coin_amount:
               exceed_available_balance: "exceeds available balance"
+  activemodel:
+    errors:
+      models:
+        nonce:
+          attributes:
+            base:
+              already_used: "already_used"
