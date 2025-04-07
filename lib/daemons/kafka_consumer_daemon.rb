@@ -33,7 +33,7 @@ module Daemons
     def shutdown
       Rails.logger.info('Shutting down Kafka consumer daemon...')
       @manager&.stop
-      Rails.application.exit
+      Kernel.exit
     end
   end
 end
