@@ -163,12 +163,12 @@ ActiveAdmin.register CoinDeposit do
       end
     end
 
-    if resource.locked? && authorized?(:release, resource) && authorized?(:release, resource)
-        button_to 'Release',
-          release_admin_coin_deposit_path(resource),
-          method: :put,
-          class: 'button',
-          data: { confirm: 'Are you sure?' }
+    if resource.locked? && authorized?(:release, resource)
+      button_to 'Release',
+        release_admin_coin_deposit_path(resource),
+        method: :put,
+        class: 'button',
+        data: { confirm: 'Are you sure?' }
     end
   end
 

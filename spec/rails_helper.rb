@@ -41,6 +41,7 @@ RSpec.configure do |config|
     Rails.root.join('spec/fixtures')
   ]
   config.include Devise::Test::ControllerHelpers, type: :controller
+  config.include Devise::Test::IntegrationHelpers, type: :request
   config.include Devise::Test::IntegrationHelpers, type: :system
   config.include Warden::Test::Helpers
 
