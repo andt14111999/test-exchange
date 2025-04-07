@@ -106,7 +106,13 @@ ActiveAdmin.register SocialAccount do
 
       tab 'Profile Data' do
         panel 'Raw Profile Data' do
-          pre code: JSON.pretty_generate(resource.profile_data) if resource.profile_data.present?
+          if resource.profile_data.present?
+            pre do
+              code JSON.pretty_generate(resource.profile_data)
+            end
+          else
+            para 'No profile data available'
+          end
         end
       end
     end
@@ -146,8 +152,12 @@ ActiveAdmin.register SocialAccount do
     f.actions
   end
 
-  batch_action :refresh_tokens do |_ids|
-    redirect_to collection_path, notice: 'Token refresh has been initiated for selected accounts'
+  batch_action :refresh_tokens, confirm: 'Are you sure you want to refresh tokens for selected accounts?' do |ids|
+    batch_action_collection.find(ids).each do |account|
+      # TODO: Implement token refresh logic here
+    end
+    flash[:notice] = 'Token refresh has been initiated for selected accounts'
+    redirect_to collection_path
   end
 
   action_item :refresh_token, only: :show do
