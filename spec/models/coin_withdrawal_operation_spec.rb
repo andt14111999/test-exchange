@@ -252,6 +252,27 @@ RSpec.describe CoinWithdrawalOperation, type: :model do
     end
   end
 
+  describe '#mark_withdrawal_release_processed' do
+    let(:user) { create(:user) }
+    let(:withdrawal) { create(:coin_withdrawal, user: user) }
+    let(:operation) { create(:coin_withdrawal_operation, coin_withdrawal: withdrawal) }
+
+    it 'does not raise error when withdrawal cannot be processed' do
+      operation.start_relaying!
+      allow(withdrawal).to receive(:may_process?).and_return(false)
+      expect { operation.send(:mark_withdrawal_release_processed) }.not_to raise_error
+    end
+
+    it 'logs error when process! raises an error' do
+      operation.start_relaying!
+      allow(withdrawal).to receive(:may_process?).and_return(true)
+      allow(withdrawal).to receive(:process!).and_raise(StandardError, 'test error')
+      allow(Rails.logger).to receive(:error)
+      operation.send(:mark_withdrawal_release_processed)
+      expect(Rails.logger).to have_received(:error).with("CoinWithdrawalOperation##{operation.id} mark_withdrawal_release_processed error: test error")
+    end
+  end
+
   describe 'ransackable attributes and associations' do
     it 'returns correct ransackable attributes' do
       expect(described_class.ransackable_attributes(nil)).to include(
