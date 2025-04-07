@@ -168,13 +168,13 @@ RSpec.describe CoinWithdrawal, type: :model do
 
     before do
       coin_account
-      withdrawal.update_column(:tx_hash_arrived_at, nil)
+      withdrawal.reload
     end
 
     it 'updates tx_hash_arrived_at timestamp' do
       time = Time.current
       allow(Time).to receive(:current).and_return(time)
-      expect { withdrawal.record_tx_hash_arrived_at }.to change { withdrawal.reload.tx_hash_arrived_at }.from(nil).to(time)
+      expect { withdrawal.record_tx_hash_arrived_at }.to change { withdrawal.reload.tx_hash_arrived_at&.change(nsec: withdrawal.reload.tx_hash_arrived_at&.nsec.to_i / 1000 * 1000) }.from(nil).to(time.change(nsec: time.nsec / 1000 * 1000))
     end
   end
 
