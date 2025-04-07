@@ -34,36 +34,98 @@ RSpec.describe 'Admin::FiatTransactions', type: :feature do
       fiat_account_vnd = create(:fiat_account, user: user, currency: 'VND')
       fiat_account_php = create(:fiat_account, user: user, currency: 'PHP')
 
-      transaction_vnd = create(:fiat_transaction, fiat_account: fiat_account_vnd, currency: 'VND')
-      transaction_php = create(:fiat_transaction, fiat_account: fiat_account_php, currency: 'PHP')
+      # Create transactions with different currencies and amounts
+      transaction_vnd = create(:fiat_transaction,
+        fiat_account: fiat_account_vnd,
+        currency: 'VND',
+        amount: 100.00,
+        transaction_type: 'mint'
+      )
+      transaction_php = create(:fiat_transaction,
+        fiat_account: fiat_account_php,
+        currency: 'PHP',
+        amount: 200.00,
+        transaction_type: 'mint'
+      )
 
       visit admin_fiat_transactions_path
 
+      # Verify both transactions are visible before filtering
+      expect(page).to have_content(transaction_vnd.id)
+      expect(page).to have_content(transaction_php.id)
+
+      # Apply filter
       within '.filter_form' do
         select 'VND', from: 'q[currency_eq]'
         click_button 'Filter'
       end
 
-      expect(page).to have_content(transaction_vnd.id)
-      expect(page).not_to have_content(transaction_php.id)
+      # Wait for the page to update and verify filter is applied
+      expect(page).to have_content('Current filters:')
+      expect(page).to have_content('Currency equals VND')
+
+      # Wait for the filter to be applied
+      sleep 1
+
+      # Verify only VND transaction is visible in the table
+      within 'table#index_table_fiat_transactions' do
+        expect(page).to have_content(transaction_vnd.id)
+        expect(page).to have_content('100.00')
+        expect(page).to have_content('VND')
+        expect(page).not_to have_content(transaction_php.id)
+        expect(page).not_to have_content('200.00')
+      end
     end
 
     it 'filters transactions by transaction type' do
       user = create(:user)
       fiat_account = create(:fiat_account, user: user)
 
-      mint_tx = create(:fiat_transaction, fiat_account: fiat_account, transaction_type: 'mint')
-      burn_tx = create(:fiat_transaction, fiat_account: fiat_account, transaction_type: 'burn')
+      # Create transactions with different types and amounts
+      mint_tx = create(:fiat_transaction,
+        fiat_account: fiat_account,
+        transaction_type: 'mint',
+        amount: 100.00,
+        currency: 'VND'
+      )
+      burn_tx = create(:fiat_transaction,
+        fiat_account: fiat_account,
+        transaction_type: 'burn',
+        amount: 50.00,
+        currency: 'VND'
+      )
 
       visit admin_fiat_transactions_path
 
+      # Verify both transactions are visible before filtering
+      expect(page).to have_content(mint_tx.id)
+      expect(page).to have_content(burn_tx.id)
+
+      # Apply filter
       within '.filter_form' do
         select 'mint', from: 'q[transaction_type_eq]'
         click_button 'Filter'
       end
 
-      expect(page).to have_content(mint_tx.id)
-      expect(page).not_to have_content(burn_tx.id)
+      # Wait for the page to update and verify filter is applied
+      expect(page).to have_content('Current filters:')
+      expect(page).to have_content('Transaction type equals mint')
+
+      # Wait for the filter to be applied and page to reload
+      expect(page).to have_content('Displaying 1 Fiat Transaction')
+
+      # Verify only mint transaction is visible in the table
+      within 'table' do
+        # First verify mint transaction is visible
+        expect(page).to have_selector('tr', text: mint_tx.id.to_s)
+        expect(page).to have_selector('tr', text: '100.00')
+        expect(page).to have_selector('tr', text: 'Mint')
+
+        # Then verify burn transaction is not visible
+        # Use a more specific selector to avoid matching filter dropdown
+        expect(page).not_to have_selector("tr[data-id='#{burn_tx.id}']")
+        expect(page).not_to have_selector('tr', text: '50.00')
+      end
     end
 
     it 'displays transaction details on show page' do

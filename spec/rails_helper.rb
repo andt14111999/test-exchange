@@ -48,9 +48,16 @@ RSpec.configure do |config|
   # examples within a transaction, remove the following line or assign false
   # instead of true.
   config.use_transactional_fixtures = true
-  # Mock Kafka service for all tests
-  config.before do
-    allow_any_instance_of(KafkaService::Services::Coin::CoinAccountService).to receive(:create)
+  # Mock Kafka service for all tests except Kafka service specs
+  config.before do |example|
+    if example.file_path.include?('spec/services/kafka_service')
+      # Don't mock for Kafka service specs
+    else
+      allow_any_instance_of(KafkaService::Services::Coin::CoinAccountService).to receive(:create)
+      allow_any_instance_of(KafkaService::Base::Producer).to receive(:send_message) do |_instance, **args|
+        Rails.logger.info("Mocked Kafka message sent: #{args}")
+      end
+    end
   end
 
   config.before(:each, type: :system) do

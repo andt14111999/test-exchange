@@ -16,6 +16,7 @@ class FiatTransaction < ApplicationRecord
 
   scope :sorted, -> { order(created_at: :desc) }
   scope :of_currency, ->(currency) { where(currency: currency) }
+  scope :of_transaction_type, ->(type) { where(transaction_type: type) }
 
   before_create :set_balance_snapshot, unless: -> { snapshot_balance.present? && snapshot_frozen_balance.present? }
 
