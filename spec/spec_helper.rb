@@ -47,6 +47,10 @@ SimpleCov.start 'rails' do
   minimum_coverage_by_file 90
 end
 
+SimpleCov.at_exit do
+  SimpleCov.result.format!
+end
+
 RSpec.configure do |config|
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest
