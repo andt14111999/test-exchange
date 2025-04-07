@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module ApplicationCable
   class Channel < ActionCable::Channel::Base
     def connect
@@ -5,6 +7,7 @@ module ApplicationCable
     end
 
     def disconnect
+      stop_all_streams
     end
 
     private
@@ -15,6 +18,10 @@ module ApplicationCable
       else
         reject_unauthorized_connection
       end
+    end
+
+    def current_user
+      connection.current_user
     end
   end
 end
