@@ -102,8 +102,8 @@ RSpec.describe CoinDepositOperation, type: :model do
   describe '#main_coin_account' do
     it 'returns main coin account for user' do
       user = create(:user)
-      main_account = create(:coin_account, :main, user: user, coin_currency: 'btc')
-      deposit_account = create(:coin_account, :deposit, user: user, coin_currency: 'btc')
+      main_account = create(:coin_account, :btc_main, user: user)
+      deposit_account = create(:coin_account, :btc, user: user)
       operation = create(:coin_deposit_operation, coin_account: deposit_account)
       expect(operation.main_coin_account).to eq(main_account)
     end

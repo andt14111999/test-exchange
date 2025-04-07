@@ -3,16 +3,20 @@
 FactoryBot.define do
   factory :fiat_account do
     user
-    sequence(:currency) { |n| FiatAccount::SUPPORTED_CURRENCIES.keys[n % FiatAccount::SUPPORTED_CURRENCIES.keys.size] }
+    currency { 'VND' }
     balance { 0 }
     frozen_balance { 0 }
     created_at { Time.zone.now }
     updated_at { Time.zone.now }
 
     after(:build) do |account|
-      # Ensure unique currency for each user
-      if FiatAccount.exists?(user_id: account.user_id, currency: account.currency)
-        account.currency = FiatAccount::SUPPORTED_CURRENCIES.keys.find { |c| !FiatAccount.exists?(user_id: account.user_id, currency: c) }
+      if account.user.present? && account.currency.present?
+        existing_account = FiatAccount.find_by(
+          user_id: account.user_id,
+          currency: account.currency
+        )
+
+        account.currency = "#{account.currency}_#{Time.current.to_i}" if existing_account.present?
       end
     end
 
@@ -26,6 +30,10 @@ FactoryBot.define do
 
     trait :ngn do
       currency { 'NGN' }
+    end
+
+    trait :with_balance do
+      balance { 100 }
     end
   end
 end

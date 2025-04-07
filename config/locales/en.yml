@@ -22,6 +22,8 @@ en:
           not_found: "Admin user not found"
         merchant_escrow:
           attributes:
+            user:
+              not_merchant: "must be a merchant"
             usdt_amount:
               exceed_available_balance: "USDT amount exceeds available balance"
         coin_withdrawal:

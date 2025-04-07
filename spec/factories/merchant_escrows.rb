@@ -2,21 +2,14 @@
 
 FactoryBot.define do
   factory :merchant_escrow do
-    association :user, :merchant
-    usdt_account { create(:coin_account, user: user, coin_currency: 'usdt', layer: 'bep20', account_type: 'deposit') }
-    fiat_account { create(:fiat_account, user: user, currency: 'VND') }
-    usdt_amount { 100.0 }
-    fiat_amount { 2500000.0 }
+    user { create(:user, :merchant) }
+    association :usdt_account, factory: [ :coin_account, :usdt_main ]
+    association :fiat_account, factory: [ :fiat_account, :vnd ]
+    usdt_amount { 100 }
+    fiat_amount { 2_500_000 }
     fiat_currency { 'VND' }
-    exchange_rate { 25000.0 }
+    exchange_rate { 25_000 }
     status { 'pending' }
-
-    trait :with_includes do
-      before(:create) do |escrow|
-        escrow.user.coin_accounts.load
-        escrow.user.fiat_accounts.load
-      end
-    end
 
     trait :active do
       status { 'active' }
@@ -28,6 +21,13 @@ FactoryBot.define do
 
     trait :completed do
       status { 'completed' }
+    end
+
+    trait :with_includes do
+      before(:create) do |escrow|
+        escrow.user.coin_accounts.load
+        escrow.user.fiat_accounts.load
+      end
     end
   end
 end

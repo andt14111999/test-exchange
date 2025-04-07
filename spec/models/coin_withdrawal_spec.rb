@@ -1,9 +1,11 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 RSpec.describe CoinWithdrawal, type: :model do
   describe 'associations' do
     let(:user) { create(:user) }
-    let(:coin_account) { create(:coin_account, :main, user: user, coin_currency: 'btc') }
+    let(:coin_account) { create(:coin_account, :btc_main, user: user, balance: 100.0) }
     let(:withdrawal) { create(:coin_withdrawal, user: user, coin_currency: 'btc', coin_layer: 'bitcoin') }
 
     before do
@@ -16,7 +18,7 @@ RSpec.describe CoinWithdrawal, type: :model do
 
   describe 'validations' do
     let(:user) { create(:user) }
-    let(:coin_account) { create(:coin_account, :main, user: user, coin_currency: 'btc') }
+    let(:coin_account) { create(:coin_account, :btc_main, user: user, balance: 100.0) }
     let(:withdrawal) { create(:coin_withdrawal, user: user, coin_currency: 'btc', coin_layer: 'bitcoin') }
 
     before do
@@ -32,7 +34,7 @@ RSpec.describe CoinWithdrawal, type: :model do
 
   describe 'custom validations' do
     let(:user) { create(:user) }
-    let(:coin_account) { create(:coin_account, :main, user: user, coin_currency: 'btc', balance: 10.0) }
+    let(:coin_account) { create(:coin_account, :btc_main, user: user, balance: 10.0) }
     let(:withdrawal) { build(:coin_withdrawal, user: user, coin_currency: 'btc', coin_layer: nil) }
 
     before do
@@ -83,7 +85,7 @@ RSpec.describe CoinWithdrawal, type: :model do
 
   describe 'callbacks' do
     let(:user) { create(:user) }
-    let(:coin_account) { create(:coin_account, :main, user: user, coin_currency: 'btc', balance: 10.0) }
+    let(:coin_account) { create(:coin_account, :btc_main, user: user, balance: 10.0) }
     let(:withdrawal) { build(:coin_withdrawal, user: user, coin_currency: 'btc', coin_layer: 'bitcoin') }
 
     before do
@@ -124,10 +126,11 @@ RSpec.describe CoinWithdrawal, type: :model do
 
   describe 'state transitions' do
     let(:user) { create(:user) }
+    let(:coin_account) { create(:coin_account, :btc_main, user: user, balance: 100.0) }
     let(:withdrawal) { build(:coin_withdrawal, user: user, coin_currency: 'btc', coin_layer: 'bitcoin', coin_amount: 1.0) }
-    let(:coin_account) { withdrawal.coin_account }
 
     before do
+      coin_account
       allow_any_instance_of(CoinWithdrawalOperation).to receive(:relay_later)
       withdrawal.save!
     end
@@ -160,7 +163,7 @@ RSpec.describe CoinWithdrawal, type: :model do
 
   describe '#record_tx_hash_arrived_at' do
     let(:user) { create(:user) }
-    let(:coin_account) { create(:coin_account, :main, user: user, coin_currency: 'btc') }
+    let(:coin_account) { create(:coin_account, :btc_main, user: user, balance: 100.0) }
     let(:withdrawal) { create(:coin_withdrawal, user: user, coin_currency: 'btc', coin_layer: 'bitcoin', tx_hash_arrived_at: nil) }
 
     before do
