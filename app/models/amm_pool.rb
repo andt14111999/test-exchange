@@ -39,6 +39,37 @@ class AmmPool < ApplicationRecord
 
   after_create :send_event_create_amm_pool
 
+  # Tính toán APR (Annual Percentage Rate) của pool
+  # Để tính APR chính xác, cần:
+  # 1. Thời gian từ khi pool được tạo hoặc từ lần cập nhật phí cuối cùng
+  # 2. Tổng phí thu được trong khoảng thời gian đó
+  # 3. Tổng giá trị khóa trong pool
+  def apr
+    return 0 if total_value_locked_token0.to_d.zero? && total_value_locked_token1.to_d.zero?
+
+    # Tính tổng phí thu được
+    total_fees = fee_growth_global0.to_d
+
+    # Tính tổng giá trị khóa trong pool theo token0 (USDT)
+    total_value_locked = tvl_in_token0
+
+    # Tính APR = (total_fees / total_value_locked) * 100
+    # Lưu ý: Đây là ước tính đơn giản, để tính chính xác cần thêm thông tin về thời gian
+    (total_fees / total_value_locked * 100).round(2)
+  end
+
+  # Tính toán TVL (Total Value Locked) theo token0 (USDT)
+  def tvl_in_token0
+    # TVL = total_value_locked_token0 + (total_value_locked_token1 / price)
+    (total_value_locked_token0.to_d + total_value_locked_token1.to_d / price.to_d).round(2)
+  end
+
+  # Tính toán TVL (Total Value Locked) theo token1 (VND)
+  def tvl_in_token1
+    # TVL = (total_value_locked_token0 * price) + total_value_locked_token1
+    (total_value_locked_token0.to_d * price.to_d + total_value_locked_token1.to_d).round(2)
+  end
+
   def send_event_update_amm_pool(params)
     unless validate_update_params(params)
       raise 'No valid changes found in params'

@@ -53,9 +53,10 @@ module KafkaService
           fee_percentage: object['feePercentage'],
           fee_protocol_percentage: object['feeProtocolPercentage'],
           current_tick: object['currentTick'],
-          sqrt_price: object['currentSqrtPrice'],
-          price: object['currentPrice'],
-          liquidity: object['currentLiquidity'],
+          sqrt_price: object['sqrtPrice'],
+          init_price: object['initPrice'],
+          price: object['price'],
+          liquidity: object['liquidity'],
           fee_growth_global0: object['feeGrowthGlobal0'],
           fee_growth_global1: object['feeGrowthGlobal1'],
           protocol_fees0: object['protocolFees0'],
@@ -63,12 +64,12 @@ module KafkaService
           volume_token0: object['volumeToken0'],
           volume_token1: object['volumeToken1'],
           volume_usd: object['volumeUsd'],
+          tx_count: object['txCount'],
           total_value_locked_token0: object['totalValueLockedToken0'],
           total_value_locked_token1: object['totalValueLockedToken1'],
           status_explanation: object['statusExplanation'],
           updated_at: Time.at(object['updatedAt'] / 1000.0),
-          status: object['isActive'] ? 'active' : 'inactive',
-          init_price: object['initPrice']
+          status: object['isActive'] ? 'active' : 'inactive'
         }.compact
       end
     end

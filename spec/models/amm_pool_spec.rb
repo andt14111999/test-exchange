@@ -277,4 +277,54 @@ describe AmmPool, type: :model do
       expect(result).to be true
     end
   end
+
+  describe '#apr' do
+    it 'returns 0 when pool has no liquidity' do
+      pool = create(:amm_pool,
+                   total_value_locked_token0: 0,
+                   total_value_locked_token1: 0,
+                   fee_growth_global0: 10)
+      expect(pool.apr).to eq(0)
+    end
+
+    it 'calculates APR correctly' do
+      pool = create(:amm_pool,
+                   total_value_locked_token0: 1000,
+                   total_value_locked_token1: 25000000,
+                   price: 25000,
+                   fee_growth_global0: 10)
+
+      # APR = (total_fees / total_value_locked) * 100
+      # total_fees = 10
+      # total_value_locked = 1000 + (25000000 / 25000) = 2000
+      # APR = (10 / 2000) * 100 = 0.5
+      expect(pool.apr).to eq(0.5)
+    end
+  end
+
+  describe '#tvl_in_token0' do
+    it 'calculates TVL in token0 (USDT) correctly' do
+      pool = create(:amm_pool,
+                   total_value_locked_token0: 1000,
+                   total_value_locked_token1: 25000000,
+                   price: 25000)
+
+      # TVL = total_value_locked_token0 + (total_value_locked_token1 / price)
+      # TVL = 1000 + (25000000 / 25000) = 2000
+      expect(pool.tvl_in_token0).to eq(2000.0)
+    end
+  end
+
+  describe '#tvl_in_token1' do
+    it 'calculates TVL in token1 (VND) correctly' do
+      pool = create(:amm_pool,
+                   total_value_locked_token0: 1000,
+                   total_value_locked_token1: 25000000,
+                   price: 25000)
+
+      # TVL = (total_value_locked_token0 * price) + total_value_locked_token1
+      # TVL = (1000 * 25000) + 25000000 = 50000000
+      expect(pool.tvl_in_token1).to eq(50000000.0)
+    end
+  end
 end
