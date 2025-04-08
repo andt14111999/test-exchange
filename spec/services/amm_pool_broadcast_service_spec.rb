@@ -8,7 +8,7 @@ RSpec.describe AmmPoolBroadcastService do
       amm_pool = create(:amm_pool)
 
       expect(AmmPoolChannel).to receive(:broadcast_to).with(
-        'amm_pool_channel',
+        described_class.channel_name,
         {
           status: 'success',
           data: {

@@ -17,7 +17,7 @@ class AmmPoolBroadcastService
 
   def broadcast_amm_pool
     begin
-      AmmPoolChannel.broadcast_to('amm_pool_channel', amm_pool_data)
+      AmmPoolChannel.broadcast_to(AmmPoolChannel.channel_name, amm_pool_data)
       true
     rescue => e
       Rails.logger.error("Failed to broadcast amm pool: #{e.message}")

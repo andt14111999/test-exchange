@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
 class AmmPoolChannel < ApplicationCable::Channel
+  def self.channel_name
+    self.name.underscore
+  end
+
   def subscribed
-    stream_for 'amm_pool_channel'
+    stream_for self.class.channel_name
   end
 
   def unsubscribed
