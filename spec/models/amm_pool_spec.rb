@@ -327,4 +327,19 @@ describe AmmPool, type: :model do
       expect(pool.tvl_in_token1).to eq(50000000.0)
     end
   end
+
+  describe 'callbacks' do
+    describe 'after_commit' do
+      it 'broadcasts update after create' do
+        expect(AmmPoolBroadcastService).to receive(:call).with(instance_of(described_class))
+        create(:amm_pool)
+      end
+
+      it 'broadcasts update after update' do
+        amm_pool = create(:amm_pool)
+        expect(AmmPoolBroadcastService).to receive(:call).with(amm_pool)
+        amm_pool.update(fee_percentage: 0.5)
+      end
+    end
+  end
 end
