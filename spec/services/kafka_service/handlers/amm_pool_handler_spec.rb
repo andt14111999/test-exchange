@@ -128,7 +128,7 @@ describe KafkaService::Handlers::AmmPoolHandler do
             'pair' => amm_pool.pair,
             'feePercentage' => 0.005,
             'currentTick' => 100,
-            'currentPrice' => 1.5,
+            'price' => 1.5,
             'isActive' => true,
             'updatedAt' => (current_time.to_f * 1000 + 5000).to_i # Add 5 seconds to make it newer
           }
@@ -139,7 +139,7 @@ describe KafkaService::Handlers::AmmPoolHandler do
 
         expect(amm_pool.fee_percentage).to eq(0.005)
         expect(amm_pool.current_tick).to eq(100)
-        expect(amm_pool.price).to eq(1.5)
+        expect(amm_pool.price.to_f).to eq(1.5)
         expect(amm_pool).to be_active
       end
 
@@ -153,7 +153,7 @@ describe KafkaService::Handlers::AmmPoolHandler do
             'pair' => amm_pool.pair,
             'feePercentage' => 0.005,
             'currentTick' => 100,
-            'currentPrice' => 1.5,
+            'price' => 1.5,
             'isActive' => true,
             'updatedAt' => (current_time.to_f * 1000 - 5000).to_i # Make it older by 5 seconds
           }
@@ -210,9 +210,9 @@ describe KafkaService::Handlers::AmmPoolHandler do
         'feePercentage' => 0.005,
         'feeProtocolPercentage' => 0.01,
         'currentTick' => 100,
-        'currentSqrtPrice' => 1.2,
-        'currentPrice' => 1.5,
-        'currentLiquidity' => 100000,
+        'sqrtPrice' => 1.2,
+        'price' => 1.5,
+        'liquidity' => 100000,
         'feeGrowthGlobal0' => 0.001,
         'feeGrowthGlobal1' => 0.002,
         'protocolFees0' => 10,
@@ -224,7 +224,8 @@ describe KafkaService::Handlers::AmmPoolHandler do
         'totalValueLockedToken1' => 6000,
         'statusExplanation' => 'All good',
         'updatedAt' => (time_now.to_f * 1000).to_i,
-        'isActive' => true
+        'isActive' => true,
+        'initPrice' => 1.2
       }
 
       params = handler.send(:extract_params_from_response, object)
@@ -247,6 +248,7 @@ describe KafkaService::Handlers::AmmPoolHandler do
       expect(params[:status_explanation]).to eq('All good')
       expect(params[:updated_at]).to be_within(1.second).of(time_now)
       expect(params[:status]).to eq('active')
+      expect(params[:init_price]).to eq(1.2)
     end
 
     it 'sets status to inactive when isActive is false' do

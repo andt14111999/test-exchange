@@ -16,12 +16,12 @@ module V1
           present :meta, generate_meta(pools), with: Api::EntityMeta
         end
 
-        desc 'Get an AMM pool by ID'
+        desc 'Get an AMM pool by pair'
         params do
-          requires :id, type: Integer, desc: 'AMM Pool ID'
+          requires :pair, type: String, desc: 'AMM Pool pair (e.g. BTC/USDT)'
         end
-        get ':id' do
-          pool = ::AmmPool.active.find_by(id: params[:id])
+        get ':pair' do
+          pool = ::AmmPool.active.find_by(pair: params[:pair])
           error!({ error: 'AMM Pool not found' }, :not_found) unless pool
 
           present pool, with: V1::AmmPools::Entity

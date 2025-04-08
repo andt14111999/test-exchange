@@ -9,22 +9,14 @@ module V1
       expose :token1
       expose :tick_spacing
       expose :fee_percentage
-      expose :fee_protocol_percentage
       expose :current_tick
       expose :sqrt_price
       expose :price
-      expose :liquidity
-      expose :status
-      expose :status_explanation
-      expose :init_price
 
-      expose :volume_token0
-      expose :volume_token1
-      expose :volume_usd
-      expose :tx_count
-
-      expose :total_value_locked_token0
-      expose :total_value_locked_token1
+      # Expose APR and TVL
+      expose :apr
+      expose :tvl_in_token0
+      expose :tvl_in_token1
 
       expose :created_at do |pool|
         pool.created_at.to_i

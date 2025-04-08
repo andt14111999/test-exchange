@@ -22,7 +22,11 @@ describe 'AmmPools API', type: :request do
 
       # Check that all returned pools are active
       json_response['amm_pools'].each do |pool|
-        expect(pool['status']).to eq('active')
+        # Không còn kiểm tra status vì đã xóa khỏi entity
+        expect(pool['id']).to be_present
+        expect(pool['pair']).to be_present
+        expect(pool['token0']).to be_present
+        expect(pool['token1']).to be_present
       end
     end
 
@@ -51,7 +55,7 @@ describe 'AmmPools API', type: :request do
     end
   end
 
-  describe 'GET /api/v1/amm_pools/:id' do
+  describe 'GET /api/v1/amm_pools/:pair' do
     let(:amm_pool) do
       # Allow Kafka service to receive messages but not send them
       allow_any_instance_of(KafkaService::Services::AmmPool::AmmPoolService).to receive(:create)
@@ -61,17 +65,13 @@ describe 'AmmPools API', type: :request do
              status: 'active',
              price: 25000,
              current_tick: 100,
-             volume_token0: 1000,
-             volume_token1: 25000000,
-             volume_usd: 1000,
-             tx_count: 50,
              total_value_locked_token0: 5000,
              total_value_locked_token1: 125000000,
-             init_price: 24000)
+             fee_growth_global0: 10)
     end
 
     it 'returns a specific amm pool with all fields' do
-      get "/api/v1/amm_pools/#{amm_pool.id}"
+      get "/api/v1/amm_pools/#{CGI.escape(amm_pool.pair)}"
 
       expect(response).to have_http_status(:ok)
 
@@ -84,19 +84,14 @@ describe 'AmmPools API', type: :request do
 
       # Chuyển đổi giá trị để so sánh
       expect(json_response['fee_percentage'].to_f).to eq(amm_pool.fee_percentage)
-      expect(json_response['fee_protocol_percentage'].to_f).to eq(amm_pool.fee_protocol_percentage)
       expect(json_response['current_tick']).to eq(amm_pool.current_tick)
       expect(json_response['price']).to eq(amm_pool.price.to_s)
-      expect(json_response['status']).to eq(amm_pool.status)
-      expect(json_response['init_price']).to eq(amm_pool.init_price.to_s)
+      expect(json_response['sqrt_price']).to eq(amm_pool.sqrt_price.to_s)
 
-      # Check volume and TVL fields
-      expect(json_response['volume_token0']).to eq(amm_pool.volume_token0.to_s)
-      expect(json_response['volume_token1']).to eq(amm_pool.volume_token1.to_s)
-      expect(json_response['volume_usd']).to eq(amm_pool.volume_usd.to_s)
-      expect(json_response['tx_count']).to eq(amm_pool.tx_count)
-      expect(json_response['total_value_locked_token0']).to eq(amm_pool.total_value_locked_token0.to_s)
-      expect(json_response['total_value_locked_token1']).to eq(amm_pool.total_value_locked_token1.to_s)
+      # Check APR and TVL fields
+      expect(json_response['apr'].to_f).to eq(amm_pool.apr)
+      expect(json_response['tvl_in_token0'].to_f).to eq(amm_pool.tvl_in_token0)
+      expect(json_response['tvl_in_token1'].to_f).to eq(amm_pool.tvl_in_token1)
 
       # Check timestamps are integers
       expect(json_response['created_at']).to be_an(Integer)
@@ -104,7 +99,7 @@ describe 'AmmPools API', type: :request do
     end
 
     it 'returns 404 for non-existent pool' do
-      get '/api/v1/amm_pools/999999'
+      get '/api/v1/amm_pools/NONEXISTENT%2FPAIR'
 
       expect(response).to have_http_status(:not_found)
       json_response = JSON.parse(response.body)
@@ -116,7 +111,7 @@ describe 'AmmPools API', type: :request do
       inactive_pool = create(:amm_pool, status: 'inactive')
       allow_any_instance_of(AmmPool).to receive(:send_event_create_amm_pool)
 
-      get "/api/v1/amm_pools/#{inactive_pool.id}"
+      get "/api/v1/amm_pools/#{CGI.escape(inactive_pool.pair)}"
 
       expect(response).to have_http_status(:not_found)
       expect(JSON.parse(response.body)['error']).to eq('AMM Pool not found')
