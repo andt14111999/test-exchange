@@ -38,6 +38,7 @@ class AmmPool < ApplicationRecord
   end
 
   after_create :send_event_create_amm_pool
+  after_commit :broadcast_update
 
   # Tính toán APR (Annual Percentage Rate) của pool
   # Để tính APR chính xác, cần:
@@ -154,5 +155,9 @@ class AmmPool < ApplicationRecord
     end
 
     has_changes
+  end
+
+  def broadcast_update
+    AmmPoolBroadcastService.call(self)
   end
 end
