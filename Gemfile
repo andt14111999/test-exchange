@@ -8,7 +8,7 @@ source 'https://rubygems.org'
 gem 'bootsnap', require: false
 gem 'pg', '~> 1.5'
 gem 'puma', '>= 5.0'
-gem 'rails', '~> 8.0.0'
+gem 'rails', '~> 8.0.2'
 
 ################################################################################
 # Frontend & Asset Pipeline
