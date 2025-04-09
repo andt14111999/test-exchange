@@ -21,31 +21,16 @@ RSpec.describe KafkaService::Services::Coin::CoinAccountService, type: :service 
 
   describe '#create' do
     it 'sends create account event with correct data' do
-      expect(producer).to receive(:send_message).with(
-        topic: KafkaService::Config::Topics::COIN_ACCOUNT,
-        key: anything,
-        payload: hash_including(
+      expect(producer).to receive(:send_message) do |args|
+        expect(args[:topic]).to eq(KafkaService::Config::Topics::COIN_ACCOUNT)
+        expect(args[:payload]).to include(
           operationType: KafkaService::Config::OperationTypes::COIN_ACCOUNT_CREATE,
           actionType: KafkaService::Config::ActionTypes::COIN_ACCOUNT,
           userId: user_id,
-          coin: coin
+          coin: coin,
+          accountKey: "#{user_id}-coin-"
         )
-      )
-
-      service.create(user_id: user_id, coin: coin)
-    end
-
-    it 'sends create account event without account_key' do
-      expect(producer).to receive(:send_message).with(
-        topic: KafkaService::Config::Topics::COIN_ACCOUNT,
-        key: anything,
-        payload: hash_including(
-          operationType: KafkaService::Config::OperationTypes::COIN_ACCOUNT_CREATE,
-          actionType: KafkaService::Config::ActionTypes::COIN_ACCOUNT,
-          userId: user_id,
-          coin: coin
-        )
-      )
+      end
 
       service.create(user_id: user_id, coin: coin)
     end

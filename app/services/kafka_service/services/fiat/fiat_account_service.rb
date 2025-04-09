@@ -24,7 +24,7 @@ module KafkaService
           )
         end
 
-        def query_balance(account_id:)
+        def query_balance(user_id:, account_id:)
           account_key = KafkaService::Services::AccountKeyBuilderService.build_fiat_account_key(
             user_id: user_id,
             account_id: account_id
@@ -42,7 +42,7 @@ module KafkaService
           )
         end
 
-        def reset_balance(account_id:)
+        def reset_balance(user_id:, account_id:)
           account_key = KafkaService::Services::AccountKeyBuilderService.build_fiat_account_key(
             user_id: user_id,
             account_id: account_id

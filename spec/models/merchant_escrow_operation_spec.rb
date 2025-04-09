@@ -465,4 +465,260 @@ RSpec.describe MerchantEscrowOperation, type: :model do
       end
     end
   end
+
+  describe 'delegations' do
+    it 'delegates user to merchant_escrow' do
+      user = create(:user, :merchant, email: 'delegation_test@example.com')
+      merchant_escrow = create(:merchant_escrow, user: user)
+      usdt_account = create(:coin_account, :usdt_main)
+      fiat_account = create(:fiat_account, :vnd, user: user)
+
+      operation = create(:merchant_escrow_operation,
+                        merchant_escrow: merchant_escrow,
+                        usdt_account: usdt_account,
+                        fiat_account: fiat_account)
+
+      expect(operation.user).to eq(user)
+    end
+  end
+
+  describe 'callback failures' do
+    it 'handles missing USDT account gracefully' do
+      user = create(:user, :merchant, email: 'missing_usdt@example.com')
+      merchant_escrow = create(:merchant_escrow, user: user)
+      usdt_account = create(:coin_account, :usdt_main)
+      fiat_account = create(:fiat_account, :vnd, user: user)
+
+      # Create a valid operation first
+      operation = create(:merchant_escrow_operation,
+                       merchant_escrow: merchant_escrow,
+                       usdt_account: usdt_account,
+                       fiat_account: fiat_account)
+
+      # Reset the state to pending
+      operation.update_column(:status, 'pending')
+
+      # Mock find_by to return nil for USDT account
+      allow(CoinAccount).to receive(:find_by).with(id: operation.usdt_account_id).and_return(nil)
+      allow(FiatAccount).to receive(:find_by).with(id: operation.fiat_account_id).and_return(fiat_account)
+
+      # Manually trigger callback
+      operation.send(:record_transactions)
+
+      expect(operation.status).to eq('failed')
+      expect(operation.status_explanation).to include('Missing required accounts')
+    end
+
+    it 'handles missing fiat account gracefully' do
+      user = create(:user, :merchant, email: 'missing_fiat@example.com')
+      merchant_escrow = create(:merchant_escrow, user: user)
+      usdt_account = create(:coin_account, :usdt_main)
+      fiat_account = create(:fiat_account, :vnd, user: user)
+
+      # Create a valid operation first
+      operation = create(:merchant_escrow_operation,
+                        merchant_escrow: merchant_escrow,
+                        usdt_account: usdt_account,
+                        fiat_account: fiat_account)
+
+      # Reset the state to pending
+      operation.update_column(:status, 'pending')
+
+      # Mock find_by to return nil for fiat account
+      allow(CoinAccount).to receive(:find_by).with(id: operation.usdt_account_id).and_return(usdt_account)
+      allow(FiatAccount).to receive(:find_by).with(id: operation.fiat_account_id).and_return(nil)
+
+      # Manually trigger callback
+      operation.send(:record_transactions)
+
+      expect(operation.status).to eq('failed')
+      expect(operation.status_explanation).to include('Missing required accounts')
+    end
+
+    it 'fails and sets explanation when an unexpected error occurs during transaction creation' do
+      user = create(:user, :merchant, email: 'unexpected_error@example.com')
+      merchant_escrow = create(:merchant_escrow, user: user)
+      usdt_account = create(:coin_account, :usdt_main)
+      fiat_account = create(:fiat_account, :vnd, user: user)
+
+      # Create a valid operation first
+      operation = create(:merchant_escrow_operation,
+                       merchant_escrow: merchant_escrow,
+                       usdt_account: usdt_account,
+                       fiat_account: fiat_account)
+
+      # Reset the state to pending
+      operation.update_column(:status, 'pending')
+
+      # Mock accounts to return valid objects
+      allow(CoinAccount).to receive(:find_by).with(id: operation.usdt_account_id).and_return(usdt_account)
+      allow(FiatAccount).to receive(:find_by).with(id: operation.fiat_account_id).and_return(fiat_account)
+
+      # Mock an error during transaction creation
+      allow(operation).to receive(:record_usdt_transaction).and_raise(StandardError.new("Test error"))
+
+      # Manually trigger callback
+      operation.send(:record_transactions)
+
+      expect(operation.reload.status).to eq('failed')
+      expect(operation.status_explanation).to eq('Test error')
+    end
+  end
+
+  describe 'transaction creation' do
+    it 'creates coin transaction with correct transaction type for mint operation' do
+      user = create(:user, :merchant, email: 'coin_tx_mint@example.com')
+      merchant_escrow = create(:merchant_escrow, user: user)
+      usdt_account = create(:coin_account, :usdt_main, balance: 200.0)
+      fiat_account = create(:fiat_account, :vnd, user: user, balance: 200.0)
+
+      operation = create(:merchant_escrow_operation,
+                       merchant_escrow: merchant_escrow,
+                       usdt_account: usdt_account,
+                       fiat_account: fiat_account,
+                       operation_type: 'mint',
+                       usdt_amount: 100.0,
+                       fiat_amount: 100.0)
+
+      coin_tx = operation.coin_transactions.first
+      expect(coin_tx).to be_present
+      expect(coin_tx.transaction_type).to eq('lock')
+      expect(coin_tx.amount).to eq(100.0)
+      expect(coin_tx.coin_currency).to eq(usdt_account.coin_currency)
+    end
+
+    it 'creates coin transaction with correct transaction type for burn operation' do
+      user = create(:user, :merchant, email: 'coin_tx_burn@example.com')
+      merchant_escrow = create(:merchant_escrow, user: user)
+      usdt_account = create(:coin_account, :usdt_main, balance: 200.0)
+      fiat_account = create(:fiat_account, :vnd, user: user, balance: 200.0)
+
+      operation = create(:merchant_escrow_operation,
+                       merchant_escrow: merchant_escrow,
+                       usdt_account: usdt_account,
+                       fiat_account: fiat_account,
+                       operation_type: 'burn',
+                       usdt_amount: 100.0,
+                       fiat_amount: 100.0)
+
+      coin_tx = operation.coin_transactions.first
+      expect(coin_tx).to be_present
+      expect(coin_tx.transaction_type).to eq('unlock')
+      expect(coin_tx.amount).to eq(100.0)
+    end
+
+    it 'creates fiat transaction with correct transaction type for mint operation' do
+      user = create(:user, :merchant, email: 'fiat_tx_mint@example.com')
+      merchant_escrow = create(:merchant_escrow, user: user)
+      usdt_account = create(:coin_account, :usdt_main, balance: 200.0)
+      fiat_account = create(:fiat_account, :vnd, user: user, balance: 200.0)
+
+      operation = create(:merchant_escrow_operation,
+                       merchant_escrow: merchant_escrow,
+                       usdt_account: usdt_account,
+                       fiat_account: fiat_account,
+                       operation_type: 'mint',
+                       usdt_amount: 100.0,
+                       fiat_amount: 100.0)
+
+      fiat_tx = operation.fiat_transactions.first
+      expect(fiat_tx).to be_present
+      expect(fiat_tx.transaction_type).to eq('mint')
+      expect(fiat_tx.amount).to eq(100.0)
+      expect(fiat_tx.currency).to eq(fiat_account.currency)
+    end
+
+    it 'creates fiat transaction with correct transaction type for burn operation' do
+      user = create(:user, :merchant, email: 'fiat_tx_burn@example.com')
+      merchant_escrow = create(:merchant_escrow, user: user)
+      usdt_account = create(:coin_account, :usdt_main, balance: 200.0)
+      fiat_account = create(:fiat_account, :vnd, user: user, balance: 200.0)
+
+      operation = create(:merchant_escrow_operation,
+                       merchant_escrow: merchant_escrow,
+                       usdt_account: usdt_account,
+                       fiat_account: fiat_account,
+                       operation_type: 'burn',
+                       usdt_amount: 100.0,
+                       fiat_amount: 100.0)
+
+      fiat_tx = operation.fiat_transactions.first
+      expect(fiat_tx).to be_present
+      expect(fiat_tx.transaction_type).to eq('burn')
+      expect(fiat_tx.amount).to eq(100.0)
+    end
+
+    it 'sets transaction snapshot balances correctly' do
+      user = create(:user, :merchant, email: 'snapshot_test@example.com')
+      merchant_escrow = create(:merchant_escrow, user: user)
+      usdt_account = create(:coin_account, :usdt_main, balance: 200.0, frozen_balance: 50.0)
+      fiat_account = create(:fiat_account, :vnd, user: user, balance: 200.0, frozen_balance: 50.0)
+
+      operation = create(:merchant_escrow_operation,
+                       merchant_escrow: merchant_escrow,
+                       usdt_account: usdt_account,
+                       fiat_account: fiat_account,
+                       operation_type: 'mint',
+                       usdt_amount: 100.0,
+                       fiat_amount: 100.0)
+
+      coin_tx = operation.coin_transactions.first
+      expect(coin_tx.snapshot_balance).to eq(200.0)
+      expect(coin_tx.snapshot_frozen_balance).to eq(50.0)
+
+      fiat_tx = operation.fiat_transactions.first
+      expect(fiat_tx.snapshot_balance).to eq(200.0)
+      expect(fiat_tx.snapshot_frozen_balance).to eq(50.0)
+    end
+  end
+
+  describe 'constants' do
+    it 'defines the correct OPERATION_TYPES' do
+      expect(described_class::OPERATION_TYPES).to eq(%w[mint burn])
+    end
+
+    it 'defines the correct OPERATION_TRANSACTION_TYPES' do
+      expected_types = {
+        'mint' => 'mint',
+        'burn' => 'burn'
+      }
+      expect(described_class::OPERATION_TRANSACTION_TYPES).to eq(expected_types)
+    end
+  end
+
+  describe 'validations integration' do
+    it 'validates fiat_currency inclusion in FiatAccount::SUPPORTED_CURRENCIES' do
+      user = create(:user, :merchant, email: 'currency_test@example.com')
+      merchant_escrow = create(:merchant_escrow, user: user)
+      usdt_account = create(:coin_account, :usdt_main)
+      fiat_account = create(:fiat_account, :vnd, user: user)
+
+      operation = build(:merchant_escrow_operation,
+                      merchant_escrow: merchant_escrow,
+                      usdt_account: usdt_account,
+                      fiat_account: fiat_account,
+                      fiat_currency: 'INVALID')
+
+      expect(operation).to be_invalid
+      expect(operation.errors[:fiat_currency]).to include('is not included in the list')
+    end
+
+    it 'creates a valid operation with proper attributes' do
+      user = create(:user, :merchant, email: 'valid_test@example.com')
+      merchant_escrow = create(:merchant_escrow, user: user)
+      usdt_account = create(:coin_account, :usdt_main, balance: 200.0)
+      fiat_account = create(:fiat_account, :vnd, user: user, balance: 200.0)
+
+      operation = build(:merchant_escrow_operation,
+                      merchant_escrow: merchant_escrow,
+                      usdt_account: usdt_account,
+                      fiat_account: fiat_account,
+                      operation_type: 'mint',
+                      usdt_amount: 100.0,
+                      fiat_amount: 100.0,
+                      fiat_currency: 'VND')
+
+      expect(operation).to be_valid
+    end
+  end
 end
