@@ -68,7 +68,7 @@ RSpec.describe NotificationBroadcastService, type: :service do
         user = create(:user)
         notification = create(:notification)
         service = described_class.new(user, notification)
-        allow(NotificationChannel).to receive(:broadcast_to).with(user, anything).and_return(true)
+        allow(NotificationChannel).to receive(:broadcast_to_user).with(user, anything).and_return(true)
 
         result = service.send(:broadcast_notification)
 
@@ -80,8 +80,8 @@ RSpec.describe NotificationBroadcastService, type: :service do
         notification = build(:notification, :not_delivered)
         service = described_class.new(user, notification)
 
-        # Stub the broadcast_to method to simulate successful broadcast
-        allow(NotificationChannel).to receive(:broadcast_to) do |user, data|
+        # Stub the broadcast_to_user method to simulate successful broadcast
+        allow(NotificationChannel).to receive(:broadcast_to_user) do |user, data|
           expect(data[:status]).to eq('success')
           expect(data[:data][:id]).to eq(notification.id)
           true
@@ -101,7 +101,7 @@ RSpec.describe NotificationBroadcastService, type: :service do
         user = create(:user)
         notification = create(:notification)
         service = described_class.new(user, notification)
-        allow(NotificationChannel).to receive(:broadcast_to).and_raise(StandardError)
+        allow(NotificationChannel).to receive(:broadcast_to_user).and_raise(StandardError)
 
         result = service.send(:broadcast_notification)
 
@@ -112,7 +112,7 @@ RSpec.describe NotificationBroadcastService, type: :service do
         user = create(:user)
         notification = create(:notification, :not_delivered)
         service = described_class.new(user, notification)
-        allow(NotificationChannel).to receive(:broadcast_to).and_raise(StandardError)
+        allow(NotificationChannel).to receive(:broadcast_to_user).and_raise(StandardError)
 
         expect { service.send(:broadcast_notification) }.not_to change { notification.reload.delivered }
       end

@@ -17,9 +17,11 @@ class BalanceBroadcastService
 
   def broadcast_balance
     begin
-      BalanceChannel.broadcast_to(@user, balance_data_with_status)
+      message = balance_data_with_status
+      BalanceChannel.broadcast_to_user(@user, message)
       true
-    rescue
+    rescue => e
+      Rails.logger.error "Error broadcasting balance: #{e.message}"
       false
     end
   end
