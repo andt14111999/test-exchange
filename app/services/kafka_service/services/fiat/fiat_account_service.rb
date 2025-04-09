@@ -2,10 +2,10 @@
 
 module KafkaService
   module Services
-    module Coin
-      class CoinAccountService < KafkaService::Base::Service
-        def create(user_id:, coin:, account_id: nil)
-          account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
+    module Fiat
+      class FiatAccountService < KafkaService::Base::Service
+        def create(user_id:, currency:, account_id: nil)
+          account_key = KafkaService::Services::AccountKeyBuilderService.build_fiat_account_key(
             user_id: user_id,
             account_id: account_id
           )
@@ -18,14 +18,14 @@ module KafkaService
               actionType: KafkaService::Config::ActionTypes::COIN_ACCOUNT,
               actionId: account_id,
               userId: user_id,
-              coin: coin,
+              coin: currency,
               accountKey: account_key
             }
           )
         end
 
         def query_balance(account_id:)
-          account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
+          account_key = KafkaService::Services::AccountKeyBuilderService.build_fiat_account_key(
             user_id: user_id,
             account_id: account_id
           )
@@ -43,7 +43,7 @@ module KafkaService
         end
 
         def reset_balance(account_id:)
-          account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
+          account_key = KafkaService::Services::AccountKeyBuilderService.build_fiat_account_key(
             user_id: user_id,
             account_id: account_id
           )

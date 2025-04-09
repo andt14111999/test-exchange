@@ -5,7 +5,9 @@ module KafkaService
     module Coin
       class CoinDepositService < KafkaService::Base::Service
         def create(user_id:, coin:, account_key:, deposit:, amount:)
-          identifier = generate_deposit_identifier(deposit_id: deposit.id)
+          identifier = KafkaService::Services::IdentifierBuilderService.build_deposit_identifier(
+            deposit_id: deposit.id
+          )
 
           send_event(
             topic: KafkaService::Config::Topics::COIN_DEPOSIT,
@@ -46,7 +48,7 @@ module KafkaService
             identifier: identifier,
             operationType: KafkaService::Config::OperationTypes::COIN_DEPOSIT_CREATE,
             actionType: KafkaService::Config::ActionTypes::COIN_TRANSACTION,
-            actionId: SecureRandom.uuid,
+            actionId: deposit.id,
             userId: user_id,
             status: 'pending',
             accountKey: account_key,

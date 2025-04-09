@@ -9,10 +9,12 @@ module KafkaService
       COIN_WITHDRAW = 'EE.I.coin_withdraw'
       COIN_ACCOUNT_QUERY = 'EE.I.coin_account_query'
       COIN_ACCOUNT_RESET = 'EE.I.coin_account_reset'
+      MERCHANT_ESCROW = 'EE.I.merchant_escrow'
 
       # Output topics
       COIN_ACCOUNT_UPDATE = 'EE.O.coin_account_update'
       TRANSACTION_RESPONSE = 'EE.O.transaction_response'
+      MERCHANT_ESCROW_UPDATE = 'EE.O.merchant_escrow_update'
 
       # Aliases
       BALANCE_UPDATE = COIN_ACCOUNT_UPDATE
