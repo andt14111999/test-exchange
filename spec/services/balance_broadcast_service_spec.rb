@@ -53,7 +53,7 @@ RSpec.describe BalanceBroadcastService, type: :service do
         user = create(:user)
         service = described_class.new(user)
 
-        expect(BalanceChannel).to receive(:broadcast_to)
+        expect(BalanceChannel).to receive(:broadcast_to_user)
           .with(user, expected_data)
           .and_return(true)
 
@@ -66,7 +66,7 @@ RSpec.describe BalanceBroadcastService, type: :service do
         user = create(:user)
         service = described_class.new(user)
 
-        expect(BalanceChannel).to receive(:broadcast_to)
+        expect(BalanceChannel).to receive(:broadcast_to_user)
           .with(user, expected_data)
           .and_raise(StandardError)
 

@@ -10,10 +10,6 @@ module BalanceNotification
   private
 
   def handle_balance_changes
-    Rails.logger.debug "handle_balance_changes called for #{self.class.name} #{id}"
-    Rails.logger.debug "saved_change_to_balance?: #{saved_change_to_balance?}"
-    Rails.logger.debug "saved_change_to_frozen_balance?: #{saved_change_to_frozen_balance?}"
-
     if saved_change_to_balance? || saved_change_to_frozen_balance?
       broadcast_balance_update
     end
@@ -28,7 +24,6 @@ module BalanceNotification
   end
 
   def create_balance_notification
-    Rails.logger.debug "create_balance_notification called for #{self.class.name} #{id}"
     old_balance = saved_change_to_balance? ? saved_change_to_balance[0] : balance
     new_balance = saved_change_to_balance? ? saved_change_to_balance[1] : balance
 

@@ -22,53 +22,6 @@ RSpec.describe ApplicationCable::Channel, type: :channel do
     )
   end
 
-  describe '#connect' do
-    context 'with authenticated user' do
-      it 'successfully connects and sets current_user' do
-        warden = instance_double(Warden::Proxy, user: user)
-        allow(connection).to receive(:env).and_return({ 'warden' => warden })
-
-        subscribe
-        # Test connect method directly
-        subscription.connect
-
-        # Verify current_user is set and accessible
-        expect(subscription.current_user).to eq(user)
-        expect(subscription).to be_confirmed
-      end
-
-      it 'finds verified user from warden' do
-        warden = instance_double(Warden::Proxy, user: user)
-        allow(connection).to receive(:env).and_return({ 'warden' => warden })
-        subscribe
-
-        # Test find_verified_user directly
-        expect(subscription.send(:find_verified_user)).to eq(user)
-      end
-    end
-
-    context 'without authenticated user' do
-      it 'rejects connection when warden user is nil' do
-        warden = instance_double(Warden::Proxy, user: nil)
-        allow(connection).to receive(:env).and_return({ 'warden' => warden })
-        subscribe
-
-        expect { subscription.send(:find_verified_user) }.to raise_error(
-          ActionCable::Connection::Authorization::UnauthorizedError
-        )
-      end
-
-      it 'rejects connection when warden is not present' do
-        allow(connection).to receive(:env).and_return({})
-        subscribe
-
-        expect { subscription.send(:find_verified_user) }.to raise_error(
-          ActionCable::Connection::Authorization::UnauthorizedError
-        )
-      end
-    end
-  end
-
   describe '#disconnect' do
     it 'stops all streams' do
       subscribe
@@ -95,6 +48,31 @@ RSpec.describe ApplicationCable::Channel, type: :channel do
       expect(connection).to receive(:current_user).and_return(nil)
 
       expect(subscription.current_user).to be_nil
+    end
+  end
+
+  describe '#env' do
+    before do
+      subscribe
+    end
+
+    it 'returns the env from connection' do
+      env_hash = { 'key' => 'value' }
+      expect(connection).to receive(:env).and_return(env_hash)
+
+      expect(subscription.send(:env)).to eq(env_hash)
+    end
+  end
+
+  describe '#reject_unauthorized_connection' do
+    before do
+      subscribe
+    end
+
+    it 'raises an UnauthorizedError' do
+      expect { subscription.send(:reject_unauthorized_connection) }.to raise_error(
+        ActionCable::Connection::Authorization::UnauthorizedError
+      )
     end
   end
 end

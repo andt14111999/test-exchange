@@ -12,7 +12,7 @@ RSpec.describe NotificationChannel, type: :channel do
         subscribe
 
         expect(subscription).to be_confirmed
-        expect(subscription).to have_stream_for(user)
+        expect(subscription).to have_stream_from("notification:user_#{user.id}")
       end
     end
 

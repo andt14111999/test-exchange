@@ -24,10 +24,11 @@ class NotificationBroadcastService
 
   def broadcast_notification
     begin
-      NotificationChannel.broadcast_to(@user, notification_data)
+      NotificationChannel.broadcast_to_user(@user, notification_data)
       @notification.update(delivered: true) if @notification.respond_to?(:delivered)
       true
     rescue => e
+      Rails.logger.error "Error broadcasting notification: #{e.message}"
       false
     end
   end
