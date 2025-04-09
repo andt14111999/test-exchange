@@ -88,10 +88,15 @@ class CoinDeposit < ApplicationRecord
   end
 
   def send_event_deposit_to_kafka
-    deposit_client.create(
+    account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
       user_id: user_id,
-      coin: coin_currency,
-      account_key: main_coin_account.id,
+      account_id: main_coin_account.id
+    )
+
+    KafkaService::Services::Coin::CoinDepositService.new.create(
+      user_id: user_id,
+      coin: coin_account.coin_currency,
+      account_key: account_key,
       deposit: self,
       amount: coin_amount
     )

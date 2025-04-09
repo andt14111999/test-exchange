@@ -13,7 +13,9 @@ module KafkaService
         Rails.logger.info("Processing balance update: #{payload}")
 
         ActiveRecord::Base.transaction do
-          account = find_or_create_account(payload)
+          account = find_account(payload)
+          return unless account
+
           update_account_balance(account, payload)
         end
       rescue StandardError => e
@@ -21,18 +23,27 @@ module KafkaService
         Rails.logger.error(e.backtrace.join("\n"))
       end
 
-      def find_or_create_account(payload)
-        CoinAccount.find_or_initialize_by(
-          user_id: payload['userId'],
-          coin_currency: payload['coin'].downcase,
-          account_type: 'main',
-          layer: 'all'
-        )
+      def find_account(payload)
+        user_id, type, account_id = payload['key'].split('-')
+
+        if type == 'coin'
+          CoinAccount.find_by(
+            id: account_id,
+            user_id: user_id,
+            account_type: 'main',
+            layer: 'all'
+          )
+        else
+          FiatAccount.find_by(
+            id: account_id,
+            user_id: user_id,
+          )
+        end
       end
 
       def update_account_balance(account, payload)
         account.update!(
-          balance: payload['totalBalance'],
+          balance: payload['availableBalance'],
           frozen_balance: payload['frozenBalance']
         )
       end

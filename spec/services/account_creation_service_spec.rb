@@ -216,13 +216,14 @@ RSpec.describe AccountCreationService, type: :service do
       kafka_service = instance_double(KafkaService::Services::Coin::CoinAccountService, create: true)
       allow(KafkaService::Services::Coin::CoinAccountService).to receive(:new).and_return(kafka_service)
 
-      service.send(:notify_kafka_service, account)
+      # Test the notify_coin_kafka_service method which is the actual method in the service
+      service.send(:notify_coin_kafka_service, account)
 
       expect(KafkaService::Services::Coin::CoinAccountService).to have_received(:new)
       expect(kafka_service).to have_received(:create).with(
         user_id: user.id,
         coin: account.coin_currency,
-        account_key: account.id
+        account_id: account.id
       )
     end
   end

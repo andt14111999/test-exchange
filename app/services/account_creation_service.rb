@@ -75,7 +75,7 @@ class AccountCreationService
 
   def create_main_account(coin_currency)
     account = create_account(coin_currency, 'all', 'main')
-    notify_kafka_service(account)
+    notify_coin_kafka_service(account)
   end
 
   def create_deposit_account(coin_currency, layer)
@@ -83,11 +83,13 @@ class AccountCreationService
   end
 
   def create_fiat_account(currency)
-    user.fiat_accounts.create!(
+    account = user.fiat_accounts.create!(
       currency: currency,
       balance: 0,
       frozen_balance: 0
     )
+
+    notify_fiat_kafka_service(account)
   end
 
   def create_account(coin_currency, layer, account_type)
@@ -118,11 +120,19 @@ class AccountCreationService
     )
   end
 
-  def notify_kafka_service(account)
+  def notify_coin_kafka_service(account)
     KafkaService::Services::Coin::CoinAccountService.new.create(
       user_id: user.id,
       coin: account.coin_currency,
-      account_key: account.id
+      account_id: account.id
+    )
+  end
+
+  def notify_fiat_kafka_service(account)
+    KafkaService::Services::Fiat::FiatAccountService.new.create(
+      user_id: user.id,
+      currency: account.currency,
+      account_id: account.id
     )
   end
 end

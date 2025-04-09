@@ -16,7 +16,7 @@ class MerchantEscrowService
 
     escrow = build_escrow
     execute_escrow_transaction(escrow) do
-      create_freeze_and_mint_operations(escrow)
+      escrow.save!
     end
 
     escrow
@@ -27,7 +27,6 @@ class MerchantEscrowService
     validate_cancelable_escrow!(escrow)
 
     execute_escrow_transaction(escrow) do
-      create_unfreeze_and_burn_operations(escrow)
       escrow.cancel!
     rescue StandardError => e
       raise
@@ -93,18 +92,6 @@ class MerchantEscrowService
     Rails.logger.error "Failed to process #{context}: #{error.message}"
   end
 
-  # Operations
-
-  def create_freeze_and_mint_operations(escrow)
-    create_escrow_operation(escrow, 'freeze')
-    create_escrow_operation(escrow, 'mint')
-  end
-
-  def create_unfreeze_and_burn_operations(escrow)
-    create_escrow_operation(escrow, 'unfreeze')
-    create_escrow_operation(escrow, 'burn')
-  end
-
   # Escrow Building
 
   def build_escrow
@@ -133,20 +120,5 @@ class MerchantEscrowService
   def calculate_fiat_amount(usdt_amount, fiat_currency)
     rate = Setting.get_exchange_rate('usdt', fiat_currency)
     usdt_amount * rate
-  end
-
-  def create_escrow_operation(escrow, operation_type)
-    operation_attributes = {
-      merchant_escrow: escrow,
-      usdt_account_id: escrow.usdt_account_id,
-      fiat_account_id: escrow.fiat_account_id,
-      operation_type: operation_type,
-      usdt_amount: escrow.usdt_amount,
-      fiat_amount: escrow.fiat_amount,
-      fiat_currency: escrow.fiat_currency,
-      status: 'pending'
-    }
-
-    MerchantEscrowOperation.create!(operation_attributes)
   end
 end

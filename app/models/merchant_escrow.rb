@@ -17,6 +17,10 @@ class MerchantEscrow < ApplicationRecord
   validates :exchange_rate, numericality: { greater_than: 0 }, allow_nil: true
   validate :validate_user_is_merchant
 
+  # Callbacks
+  after_create :send_kafka_event_create
+  after_update :send_kafka_event_cancel, if: -> { status_previously_changed? && status == 'cancelled' }
+
   # Scopes
   scope :sorted, -> { order(created_at: :desc) }
   scope :active, -> { where(status: 'active') }
@@ -76,5 +80,37 @@ class MerchantEscrow < ApplicationRecord
 
   def validate_user_is_merchant
     errors.add(:user, :not_merchant) unless user&.merchant?
+  end
+
+  def send_kafka_event_create
+    merchant_escrow_client.create(
+      merchant_escrow: self,
+      usdt_account_key: KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
+        user_id: user_id,
+        account_id: usdt_account_id
+      ),
+      fiat_account_key: KafkaService::Services::AccountKeyBuilderService.build_fiat_account_key(
+        user_id: user_id,
+        account_id: fiat_account_id
+      )
+    )
+  end
+
+  def send_kafka_event_cancel
+    merchant_escrow_client.cancel(
+      merchant_escrow: self,
+      usdt_account_key: KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
+        user_id: user_id,
+        account_id: usdt_account_id
+      ),
+      fiat_account_key: KafkaService::Services::AccountKeyBuilderService.build_fiat_account_key(
+        user_id: user_id,
+        account_id: fiat_account_id
+      )
+    )
+  end
+
+  def merchant_escrow_client
+    @merchant_escrow_client ||= KafkaService::Services::Merchant::MerchantEscrowService.new
   end
 end
