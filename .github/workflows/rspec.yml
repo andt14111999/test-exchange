@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: ["master"]
 
+# Add permissions to allow commenting on PRs
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   rspec:
     name: RSpec
@@ -71,3 +77,120 @@ jobs:
           name: code-coverage-report
           path: coverage/
           retention-days: 7
+      - name: Generate coverage report
+        if: always()
+        run: |
+          sudo apt-get install -y jq bc
+
+          echo "## 🦞 Code Coverage Report" > coverage_report.md
+          echo "" >> coverage_report.md
+
+          if [ -f coverage/.last_run.json ]; then
+            # Extract overall coverage
+            COVERAGE=$(cat coverage/.last_run.json | jq -r '.result.line')
+            THRESHOLD=90.0
+            
+            echo "### Overall Coverage: $(printf "%.2f" $COVERAGE)%" >> coverage_report.md
+            echo "" >> coverage_report.md
+            
+            if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
+              echo "❌ Coverage is below the required threshold of ${THRESHOLD}%" >> coverage_report.md
+            else
+              echo "✅ Coverage meets the required threshold of ${THRESHOLD}%" >> coverage_report.md
+            fi
+            
+            # Extract coverage for each directory/group
+            echo "" >> coverage_report.md
+            echo "### Coverage by Group" >> coverage_report.md
+            echo "" >> coverage_report.md
+            echo "| Group | Coverage |" >> coverage_report.md
+            echo "|-------|----------|" >> coverage_report.md
+            
+            # Creating process_coverage.rb with separate echo commands instead of heredoc
+            echo 'require "json"' > process_coverage.rb
+            echo '' >> process_coverage.rb
+            echo '# Read the coverage data' >> process_coverage.rb
+            echo 'data = JSON.parse(File.read("coverage/.resultset.json"))' >> process_coverage.rb
+            echo 'result_key = data.keys.first  # Usually "RSpec"' >> process_coverage.rb
+            echo '' >> process_coverage.rb
+            echo '# Extract and calculate group coverage' >> process_coverage.rb
+            echo 'groups = {}' >> process_coverage.rb
+            echo '' >> process_coverage.rb
+            echo '# Group files by directory' >> process_coverage.rb
+            echo 'data[result_key]["coverage"].each do |file, lines|' >> process_coverage.rb
+            echo '  next unless file.start_with?("app/")' >> process_coverage.rb
+            echo '  ' >> process_coverage.rb
+            echo '  # Get the group (app/models, app/controllers, etc)' >> process_coverage.rb
+            echo '  group = file.split("/")[0..1].join("/")' >> process_coverage.rb
+            echo '  ' >> process_coverage.rb
+            echo '  # Calculate coverage for this file' >> process_coverage.rb
+            echo '  covered = lines.compact.count { |x| x > 0 }' >> process_coverage.rb
+            echo '  total = lines.compact.size' >> process_coverage.rb
+            echo '  ' >> process_coverage.rb
+            echo '  # Add to group stats' >> process_coverage.rb
+            echo '  groups[group] ||= { covered: 0, total: 0 }' >> process_coverage.rb
+            echo '  groups[group][:covered] += covered' >> process_coverage.rb
+            echo '  groups[group][:total] += total' >> process_coverage.rb
+            echo 'end' >> process_coverage.rb
+            echo '' >> process_coverage.rb
+            echo '# Print group coverage' >> process_coverage.rb
+            echo 'groups.each do |group, stats|' >> process_coverage.rb
+            echo '  percentage = (stats[:covered].to_f / stats[:total] * 100).round(2)' >> process_coverage.rb
+            echo '  puts "#{group}|#{percentage}"' >> process_coverage.rb
+            echo 'end' >> process_coverage.rb
+            echo '' >> process_coverage.rb
+            echo '# Find files below threshold' >> process_coverage.rb
+            echo 'puts "---" # Separator' >> process_coverage.rb
+            echo '' >> process_coverage.rb
+            echo 'data[result_key]["coverage"].each do |file, lines|' >> process_coverage.rb
+            echo '  next unless file.start_with?("app/")' >> process_coverage.rb
+            echo '  ' >> process_coverage.rb
+            echo '  covered = lines.compact.count { |x| x > 0 }' >> process_coverage.rb
+            echo '  total = lines.compact.size' >> process_coverage.rb
+            echo '  percentage = (covered.to_f / total * 100).round(2)' >> process_coverage.rb
+            echo '  ' >> process_coverage.rb
+            echo '  if percentage < 90' >> process_coverage.rb
+            echo '    puts "#{file}|#{percentage}"' >> process_coverage.rb
+            echo '  end' >> process_coverage.rb
+            echo 'end' >> process_coverage.rb
+            
+            # Run the script and process the output
+            ruby process_coverage.rb | while IFS='|' read -r group coverage; do
+              if [ "$group" = "---" ]; then
+                # Start processing failed files
+                echo "" >> coverage_report.md
+                echo "### Files with Less Than 90% Coverage" >> coverage_report.md
+                echo "" >> coverage_report.md
+                echo "| File | Coverage |" >> coverage_report.md
+                echo "|------|----------|" >> coverage_report.md
+              elif [ -n "$group" ] && [ -n "$coverage" ]; then
+                if [ "$group" = "---" ]; then
+                  continue
+                elif [[ $group == app/* ]]; then
+                  echo "| $group | $coverage% |" >> coverage_report.md
+                fi
+              fi
+            done
+          else
+            echo "❌ No coverage report found" >> coverage_report.md
+          fi
+
+          cat coverage_report.md
+
+      - name: Find Comment
+        uses: peter-evans/find-comment@v2
+        if: github.event_name == 'pull_request'
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: 🦞 Code Coverage Report
+
+      - name: Create or update comment
+        uses: peter-evans/create-or-update-comment@v2
+        if: github.event_name == 'pull_request'
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-file: coverage_report.md
+          edit-mode: replace
