@@ -24,7 +24,7 @@ module KafkaService
           )
         end
 
-        def query_balance(account_id:)
+        def query_balance(user_id:, account_id:)
           account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
             user_id: user_id,
             account_id: account_id
@@ -35,14 +35,14 @@ module KafkaService
             key: account_key,
             data: {
               actionType: KafkaService::Config::ActionTypes::COIN_ACCOUNT,
-              actionId: account_id,
+              actionId: SecureRandom.uuid,
               operationType: KafkaService::Config::OperationTypes::BALANCE_QUERY,
               accountKey: account_key
             }
           )
         end
 
-        def reset_balance(account_id:)
+        def reset_balance(user_id:, account_id:)
           account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
             user_id: user_id,
             account_id: account_id

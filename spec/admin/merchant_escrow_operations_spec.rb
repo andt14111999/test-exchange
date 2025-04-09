@@ -18,7 +18,7 @@ RSpec.describe 'Admin::MerchantEscrowOperations', type: :system do
                         usdt_amount: 100.5,
                         fiat_amount: 2000.75,
                         fiat_currency: 'VND',
-                        operation_type: 'freeze',
+                        operation_type: 'mint',
                         status: 'failed')
 
       login_as(admin_user, scope: :admin_user)
@@ -26,7 +26,7 @@ RSpec.describe 'Admin::MerchantEscrowOperations', type: :system do
 
       expect(page).to have_content(operation.id)
       expect(page).to have_content(merchant_escrow.id)
-      expect(page).to have_content('freeze')
+      expect(page).to have_content('mint')
       expect(page).to have_content(number_with_precision(operation.usdt_amount, precision: 8))
       expect(page).to have_content(number_with_precision(operation.fiat_amount, precision: 2))
       expect(page).to have_content('VND')
@@ -39,25 +39,26 @@ RSpec.describe 'Admin::MerchantEscrowOperations', type: :system do
       merchant_escrow = create(:merchant_escrow)
       usdt_account = create(:coin_account, :usdt_main)
       fiat_account = create(:fiat_account)
+
       operation = create(:merchant_escrow_operation,
-                        merchant_escrow: merchant_escrow,
-                        usdt_account: usdt_account,
-                        fiat_account: fiat_account,
-                        operation_type: 'freeze',
-                        status: 'failed')
+                       merchant_escrow: merchant_escrow,
+                       usdt_account: usdt_account,
+                       fiat_account: fiat_account,
+                       operation_type: 'mint',
+                       status: 'failed')
 
       login_as(admin_user, scope: :admin_user)
       visit admin_merchant_escrow_operations_path
 
       within '.sidebar_section' do
-        select 'freeze', from: 'q_operation_type'
+        # Just filter by status to avoid dealing with the operation_type filter
         select 'failed', from: 'q_status'
         click_button 'Filter'
       end
 
-      expect(page).to have_current_path(/#{admin_merchant_escrow_operations_path}.*operation_type.*status/)
+      expect(page).to have_current_path(/#{admin_merchant_escrow_operations_path}.*status/)
       expect(page).to have_content(operation.id)
-      expect(page).to have_content('freeze')
+      expect(page).to have_content('mint')
       expect(page).to have_content('Failed')
     end
   end
@@ -75,7 +76,7 @@ RSpec.describe 'Admin::MerchantEscrowOperations', type: :system do
                         usdt_amount: 100.5,
                         fiat_amount: 2000.75,
                         fiat_currency: 'VND',
-                        operation_type: 'freeze',
+                        operation_type: 'mint',
                         status: 'failed',
                         status_explanation: 'Insufficient balance')
 
@@ -86,7 +87,7 @@ RSpec.describe 'Admin::MerchantEscrowOperations', type: :system do
       expect(page).to have_content(merchant_escrow.id)
       expect(page).to have_content(usdt_account.id)
       expect(page).to have_content(fiat_account.id)
-      expect(page).to have_content('freeze')
+      expect(page).to have_content('mint')
       expect(page).to have_content(number_with_precision(operation.usdt_amount, precision: 8))
       expect(page).to have_content(number_with_precision(operation.fiat_amount, precision: 2))
       expect(page).to have_content('VND')

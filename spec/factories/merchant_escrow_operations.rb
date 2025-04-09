@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :merchant_escrow_operation do
     merchant_escrow
-    operation_type { 'freeze' }
+    operation_type { 'mint' }
     usdt_amount { 100.0 }
     fiat_amount { 100.0 }
     fiat_currency { FiatAccount::SUPPORTED_CURRENCIES.keys.first }

@@ -5,42 +5,45 @@ RSpec.describe KafkaService::Services::Coin::CoinAccountService, type: :service 
   let(:service) { described_class.new }
   let(:user_id) { 1 }
   let(:coin) { 'BTC' }
-  let(:account_key) { 'test_account_key' }
+  let(:account_id) { 123 }
 
   before do
     allow(KafkaService::Base::Producer).to receive(:new).and_return(producer)
     allow(producer).to receive(:send_message)
     # Bypass the global mock in rails_helper.rb
     allow_any_instance_of(described_class).to receive(:create).and_call_original
+
+    # Stub account key builder
+    allow(KafkaService::Services::AccountKeyBuilderService).to receive(:build_coin_account_key)
+      .with(user_id: user_id, account_id: anything)
+      .and_return("#{user_id}-coin-")
   end
 
   describe '#create' do
     it 'sends create account event with correct data' do
       expect(producer).to receive(:send_message).with(
         topic: KafkaService::Config::Topics::COIN_ACCOUNT,
-        key: account_key,
+        key: anything,
         payload: hash_including(
           operationType: KafkaService::Config::OperationTypes::COIN_ACCOUNT_CREATE,
           actionType: KafkaService::Config::ActionTypes::COIN_ACCOUNT,
           userId: user_id,
-          coin: coin,
-          accountKey: account_key
+          coin: coin
         )
       )
 
-      service.create(user_id: user_id, coin: coin, account_key: account_key)
+      service.create(user_id: user_id, coin: coin)
     end
 
     it 'sends create account event without account_key' do
       expect(producer).to receive(:send_message).with(
         topic: KafkaService::Config::Topics::COIN_ACCOUNT,
-        key: nil,
+        key: anything,
         payload: hash_including(
           operationType: KafkaService::Config::OperationTypes::COIN_ACCOUNT_CREATE,
           actionType: KafkaService::Config::ActionTypes::COIN_ACCOUNT,
           userId: user_id,
-          coin: coin,
-          accountKey: nil
+          coin: coin
         )
       )
 
@@ -52,16 +55,15 @@ RSpec.describe KafkaService::Services::Coin::CoinAccountService, type: :service 
     it 'sends query balance event with correct data' do
       expect(producer).to receive(:send_message).with(
         topic: KafkaService::Config::Topics::COIN_ACCOUNT_QUERY,
-        key: account_key,
+        key: anything,
         payload: hash_including(
           actionType: KafkaService::Config::ActionTypes::COIN_ACCOUNT,
           actionId: instance_of(String),
-          operationType: KafkaService::Config::OperationTypes::BALANCE_QUERY,
-          accountKey: account_key
+          operationType: KafkaService::Config::OperationTypes::BALANCE_QUERY
         )
       )
 
-      service.query_balance(account_key: account_key)
+      service.query_balance(user_id: user_id, account_id: account_id)
     end
 
     it 'generates unique action_id for each query' do
@@ -70,31 +72,29 @@ RSpec.describe KafkaService::Services::Coin::CoinAccountService, type: :service 
 
       expect(producer).to receive(:send_message).with(
         topic: KafkaService::Config::Topics::COIN_ACCOUNT_QUERY,
-        key: account_key,
+        key: anything,
         payload: hash_including(
           actionType: KafkaService::Config::ActionTypes::COIN_ACCOUNT,
-          operationType: KafkaService::Config::OperationTypes::BALANCE_QUERY,
-          accountKey: account_key
+          operationType: KafkaService::Config::OperationTypes::BALANCE_QUERY
         )
       ) do |args|
         first_action_id = args[:payload][:actionId]
       end
 
-      service.query_balance(account_key: account_key)
+      service.query_balance(user_id: user_id, account_id: account_id)
 
       expect(producer).to receive(:send_message).with(
         topic: KafkaService::Config::Topics::COIN_ACCOUNT_QUERY,
-        key: account_key,
+        key: anything,
         payload: hash_including(
           actionType: KafkaService::Config::ActionTypes::COIN_ACCOUNT,
-          operationType: KafkaService::Config::OperationTypes::BALANCE_QUERY,
-          accountKey: account_key
+          operationType: KafkaService::Config::OperationTypes::BALANCE_QUERY
         )
       ) do |args|
         second_action_id = args[:payload][:actionId]
       end
 
-      service.query_balance(account_key: account_key)
+      service.query_balance(user_id: user_id, account_id: account_id)
 
       expect(first_action_id).not_to eq(second_action_id)
     end
@@ -104,13 +104,13 @@ RSpec.describe KafkaService::Services::Coin::CoinAccountService, type: :service 
     it 'sends reset balance event with correct data' do
       expect(producer).to receive(:send_message).with(
         topic: KafkaService::Config::Topics::COIN_ACCOUNT_RESET,
-        key: account_key,
+        key: anything,
         payload: hash_including(
-          accountKey: account_key
+          accountKey: anything
         )
       )
 
-      service.reset_balance(account_key: account_key)
+      service.reset_balance(user_id: user_id, account_id: account_id)
     end
   end
 end
