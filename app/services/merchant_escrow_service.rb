@@ -119,6 +119,6 @@ class MerchantEscrowService
 
   def calculate_fiat_amount(usdt_amount, fiat_currency)
     rate = Setting.get_exchange_rate('usdt', fiat_currency)
-    usdt_amount * rate
+    usdt_amount.to_d * rate.to_d
   end
 end
