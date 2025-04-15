@@ -187,7 +187,7 @@ jobs:
           body-includes: 🦞 Code Coverage Report
 
       - name: Create or update comment
-        uses: peter-evans/create-or-update-comment@v2
+        uses: peter-evans/create-or-update-comment@v4
         if: github.event_name == 'pull_request'
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
