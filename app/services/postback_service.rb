@@ -17,15 +17,12 @@ class PostbackService
 
   def post
     sign_payload
-    response = HTTParty.post(
+    HTTParty.post(
       target_url,
       body: json_payload,
       headers: headers,
       timeout: options.fetch(:timeout, 30)
     )
-
-    validate_response(response)
-    response
   end
 
   private
