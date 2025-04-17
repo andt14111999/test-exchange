@@ -12,3 +12,14 @@ AWS_SES_SMTP_USERNAME: ""
 AWS_SES_SMTP_PASSWORD: ""
 
 ROLLBAR_ACCESS_TOKEN: ""
+EXCHANGE_BACKEND_DOMAIN: "localhost:3969"
+
+ROLLBAR_ACCESS_TOKEN: ""
+KAFKA_BROKER: "127.0.0.1:9092"
+
+GOOGLE_CLIENT_ID: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+GOOGLE_CLIENT_SECRET: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+COIN_PORTAL_VERIFYING_KEY: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+EXCHANGE_SIGNING_KEY: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+COIN_PORTAL_URL: "http://localhost:3000"
