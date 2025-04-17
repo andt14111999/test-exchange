@@ -70,6 +70,10 @@ class CoinWithdrawal < ApplicationRecord
     %w[user coin_withdrawal_operation coin_transaction]
   end
 
+  def portal_coin
+    CoinAccount.coin_and_layer_to_portal_coin(coin_currency, coin_layer)
+  end
+
   private
 
   def validate_coin_amount
