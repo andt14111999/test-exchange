@@ -95,7 +95,8 @@ class CoinWithdrawal < ApplicationRecord
   end
 
   def calculate_coin_fee
-    self.coin_fee = 0
+    fee = Setting.send("#{coin_currency}_#{coin_layer}_withdrawal_fee") if Setting.respond_to?("#{coin_currency}_#{coin_layer}_withdrawal_fee")
+    self.coin_fee = fee || 0.0
   end
 
   def freeze_user_balance

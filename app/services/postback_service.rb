@@ -64,12 +64,4 @@ class PostbackService
   def public_key_hex
     @public_key_hex ||= signing_key.verify_key.to_bytes.unpack1('H*')
   end
-
-  def validate_response(response)
-    return if response.success?
-
-    message = "Request failed with status #{response.code}: #{response.body}"
-    Rails.logger.error(message)
-    raise RequestError, message
-  end
 end
