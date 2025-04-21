@@ -76,7 +76,7 @@ RSpec/AnyInstance:
   Enabled: false
 
 RSpec/MultipleMemoizedHelpers:
-  Max: 10
+  Max: 15
 
 Rails/I18nLocaleTexts:
   Enabled: false
@@ -95,3 +95,6 @@ RSpec/ContextWording:
 
 RSpec/ExampleLength:
   Max: 50
+
+RSpec/NestedGroups:
+  Max: 4

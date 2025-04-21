@@ -25,7 +25,7 @@ ActiveAdmin.register CoinWithdrawalOperation do
     column :status do |operation|
       status_tag operation.status
     end
-    column :withdrawal_status
+    tag_column :withdrawal_status
     column :tx_hash
     column :tx_hash_arrived_at
     column :scheduled_at
@@ -37,13 +37,13 @@ ActiveAdmin.register CoinWithdrawalOperation do
     attributes_table do
       row :id
       row :coin_withdrawal
-      row :coin_currency
+      tag_row :coin_currency
       row :coin_amount
       row :coin_fee
       row :status do |operation|
         status_tag operation.status
       end
-      row :withdrawal_status
+      tag_row :withdrawal_status
       row :tx_hash
       row :tx_hash_arrived_at
       row :scheduled_at
