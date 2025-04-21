@@ -11,6 +11,8 @@ class CoinPortalController < ApplicationController
     case params[:type]
     when 'deposit'
       handle_deposit
+    when 'withdrawal'
+      handle_withdrawal
     else
       render plain: 'unsupported type', status: :bad_request
     end
@@ -45,6 +47,22 @@ class CoinPortalController < ApplicationController
     end
   rescue StandardError => e
     Rails.logger.error("Error processing deposit: #{e.message}")
+    render json: { error: 'Internal server error' }, status: :internal_server_error
+  end
+
+  def handle_withdrawal
+    portal_coin = params[:coin]
+    coin_currency = CoinAccount.portal_coin_to_coin_currency(portal_coin)
+    coin_withdrawal_operation = CoinWithdrawalOperation.where(coin_currency:).find_by_id(params[:payment_id])
+
+    if coin_withdrawal_operation
+      coin_withdrawal_operation.sync_withdrawal!(request.request_parameters)
+      render json: { created_at: coin_withdrawal_operation.created_at.to_i }
+    else
+      render plain: 'payment_id not found', status: :bad_request
+    end
+  rescue StandardError => e
+    Rails.logger.error("Error processing withdrawal: #{e.message}")
     render json: { error: 'Internal server error' }, status: :internal_server_error
   end
 

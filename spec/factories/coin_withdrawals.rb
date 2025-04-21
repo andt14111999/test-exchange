@@ -7,9 +7,9 @@ FactoryBot.define do
     end
 
     user
-    coin_currency { 'btc' }
-    coin_layer { 'bitcoin' }
-    coin_address { '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa' }
+    coin_currency { 'usdt' }
+    coin_layer { 'erc20' }
+    coin_address { '0x0000000000000000000000000000000000000000' }
     coin_amount { 1.0 }
     coin_fee { 0.1 }
     status { 'pending' }
@@ -17,7 +17,7 @@ FactoryBot.define do
 
     after(:build) do |withdrawal, evaluator|
       unless withdrawal.user.coin_accounts.exists?(coin_currency: withdrawal.coin_currency)
-        create(:coin_account, :btc_main,
+        create(:coin_account, :usdt_main,
           user: withdrawal.user,
           balance: evaluator.account_balance
         )

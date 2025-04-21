@@ -35,10 +35,10 @@ RSpec.describe CoinWithdrawalOperation, type: :model do
     describe 'before_validation' do
       it 'sets coin_currency from coin_withdrawal on create' do
         user = create(:user)
-        withdrawal = create(:coin_withdrawal, user: user)
+        withdrawal = create(:coin_withdrawal, user: user, coin_currency: 'usdt')
         operation = build(:coin_withdrawal_operation, coin_withdrawal: withdrawal)
         operation.valid?
-        expect(operation.coin_currency).to eq('btc')
+        expect(operation.coin_currency).to eq('usdt')
       end
     end
 
@@ -124,10 +124,13 @@ RSpec.describe CoinWithdrawalOperation, type: :model do
 
       it 'sets status_explanation when withdrawal fails' do
         operation.status = 'relaying'
-        allow(operation).to receive(:process_withdrawal)
+        allow(operation).to receive(:process_withdrawal!)
         operation.withdrawal_data = { 'status' => 'failed' }
+        expect_any_instance_of(PostbackService).to receive(:post).and_return(
+          OpenStruct.new(code: 422, body: { 'payment_id' => [ "can't be blank" ] }.as_json)
+        )
         operation.relay_now
-        expect(operation.status_explanation).to eq('Withdrawal failed')
+        expect(operation.status_explanation).to eq("{\"payment_id\"=>[\"can't be blank\"]}")
         expect(operation.status).to eq('relay_failed')
       end
     end
@@ -167,6 +170,9 @@ RSpec.describe CoinWithdrawalOperation, type: :model do
     end
 
     it 'processes withdrawal and transitions to processed when successful' do
+      expect_any_instance_of(PostbackService).to receive(:post).and_return(
+        OpenStruct.new(code: 200, body: { 'status' => 'processed', 'tx_hash' => 'tx_123' })
+      )
       operation.relay_now
       expect(operation.status).to eq('processed')
       expect(operation.withdrawal_status).to eq('processed')
@@ -174,9 +180,11 @@ RSpec.describe CoinWithdrawalOperation, type: :model do
     end
 
     it 'transitions to relay_failed when withdrawal fails' do
-      allow(operation).to receive(:process_withdrawal).and_raise(StandardError)
+      expect_any_instance_of(PostbackService).to receive(:post).and_return(
+        OpenStruct.new(code: 422, body: { 'payment_id' => [ "can't be blank" ] }.as_json)
+      )
       operation.relay_now
-      expect(operation.status).to eq('relay_crashed')
+      expect(operation.status).to eq('relay_failed')
     end
   end
 

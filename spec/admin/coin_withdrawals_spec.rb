@@ -23,11 +23,10 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
       expect(page).to have_content(withdrawal.id)
       expect(page).to have_content(user.display_name)
       expect(page).to have_content(withdrawal.coin_account.id)
-      expect(page).to have_content('btc')
+      expect(page).to have_content('Btc')
       expect(page).to have_content('1.0')
       expect(page).to have_content('0.0')
       expect(page).to have_content('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa')
-      expect(page).to have_content('btc')
       expect(page).to have_content('Pending')
     end
 
@@ -74,7 +73,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
         scheduled_at: Time.zone.now,
         withdrawal_data: { amount: 1.0 })
 
-      transaction = create(:coin_transaction,
+      _transaction = create(:coin_transaction,
         operation:,
         amount: -1.0,
         coin_currency: 'btc',
@@ -87,11 +86,10 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
       expect(page).to have_content(withdrawal.id)
       expect(page).to have_content(user.display_name)
       expect(page).to have_content(withdrawal.coin_account.id)
-      expect(page).to have_content('btc')
+      expect(page).to have_content('Btc')
       expect(page).to have_content('1.0')
       expect(page).to have_content('0.0')
       expect(page).to have_content('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa')
-      expect(page).to have_content('btc')
       expect(page).to have_content('Pending')
 
       # Operation details
@@ -105,8 +103,8 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
       within('div#transaction') do
         expect(page).to have_content('Amount')
         expect(page).to have_content('-1.0')
-        expect(page).to have_content('btc')
-        expect(page).to have_content('transfer')
+        expect(page).to have_content('Btc')
+        expect(page).to have_content('Transfer')
       end
 
       # Cancel button for pending withdrawal

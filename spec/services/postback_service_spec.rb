@@ -50,7 +50,9 @@ RSpec.describe PostbackService, type: :service do
           instance_double(HTTParty::Response, success?: false, code: 500, body: 'Internal Server Error')
         )
 
-        expect { service.post }.to raise_error(PostbackService::RequestError)
+        response = service.post
+        expect(response.code).to eq(500)
+        expect(response.body).to eq('Internal Server Error')
       end
     end
 

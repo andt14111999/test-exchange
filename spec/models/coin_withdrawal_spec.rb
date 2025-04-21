@@ -5,8 +5,8 @@ require 'rails_helper'
 RSpec.describe CoinWithdrawal, type: :model do
   describe 'associations' do
     let(:user) { create(:user) }
-    let(:coin_account) { create(:coin_account, :btc_main, user: user, balance: 100.0) }
-    let(:withdrawal) { create(:coin_withdrawal, user: user, coin_currency: 'btc', coin_layer: 'bitcoin') }
+    let(:coin_account) { create(:coin_account, :usdt_main, user: user, balance: 100.0) }
+    let(:withdrawal) { create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_layer: 'erc20') }
 
     before do
       coin_account
@@ -18,8 +18,8 @@ RSpec.describe CoinWithdrawal, type: :model do
 
   describe 'validations' do
     let(:user) { create(:user) }
-    let(:coin_account) { create(:coin_account, :btc_main, user: user, balance: 100.0) }
-    let(:withdrawal) { create(:coin_withdrawal, user: user, coin_currency: 'btc', coin_layer: 'bitcoin') }
+    let(:coin_account) { create(:coin_account, :usdt_main, user: user, balance: 100.0) }
+    let(:withdrawal) { create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_layer: 'erc20') }
 
     before do
       coin_account
@@ -34,8 +34,8 @@ RSpec.describe CoinWithdrawal, type: :model do
 
   describe 'custom validations' do
     let(:user) { create(:user) }
-    let(:coin_account) { create(:coin_account, :btc_main, user: user, balance: 10.0) }
-    let(:withdrawal) { build(:coin_withdrawal, user: user, coin_currency: 'btc', coin_layer: nil) }
+    let(:coin_account) { create(:coin_account, :usdt_main, user: user, balance: 100.0) }
+    let(:withdrawal) { build(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_layer: nil) }
 
     before do
       coin_account
@@ -43,19 +43,19 @@ RSpec.describe CoinWithdrawal, type: :model do
 
     describe '#validate_coin_amount' do
       it 'is valid when amount + fee is less than available balance' do
-        withdrawal.coin_layer = 'bitcoin'
+        withdrawal.coin_layer = 'erc20'
         expect(withdrawal).to be_valid
       end
 
       it 'is invalid when amount + fee exceeds available balance' do
-        withdrawal.coin_layer = 'bitcoin'
-        withdrawal.coin_amount = 15.0
+        withdrawal.coin_layer = 'erc20'
+        withdrawal.coin_amount = 100.0
         expect(withdrawal).to be_invalid
         expect(withdrawal.errors[:coin_amount]).to include('exceeds available balance')
       end
 
       it 'is invalid when coin_amount is nil' do
-        withdrawal.coin_layer = 'bitcoin'
+        withdrawal.coin_layer = 'erc20'
         withdrawal.coin_amount = nil
         expect(withdrawal).to be_invalid
         expect(withdrawal.errors[:coin_amount]).to include("can't be blank")
@@ -64,12 +64,12 @@ RSpec.describe CoinWithdrawal, type: :model do
 
     describe '#validate_coin_address_and_layer' do
       it 'is valid with both address and layer' do
-        withdrawal.coin_layer = 'bitcoin'
+        withdrawal.coin_layer = 'erc20'
         expect(withdrawal).to be_valid
       end
 
       it 'is invalid without address' do
-        withdrawal.coin_layer = 'bitcoin'
+        withdrawal.coin_layer = 'erc20'
         withdrawal.coin_address = nil
         expect(withdrawal).to be_invalid
         expect(withdrawal.errors[:coin_address]).to include("can't be blank")
@@ -85,8 +85,8 @@ RSpec.describe CoinWithdrawal, type: :model do
 
   describe 'callbacks' do
     let(:user) { create(:user) }
-    let(:coin_account) { create(:coin_account, :btc_main, user: user, balance: 10.0) }
-    let(:withdrawal) { build(:coin_withdrawal, user: user, coin_currency: 'btc', coin_layer: 'bitcoin') }
+    let(:coin_account) { create(:coin_account, :usdt_main, layer: 'all', user: user, balance: 100.0) }
+    let(:withdrawal) { build(:coin_withdrawal, user:, coin_currency: 'usdt', coin_layer: 'erc20') }
 
     before do
       coin_account
@@ -102,13 +102,13 @@ RSpec.describe CoinWithdrawal, type: :model do
       it 'calculates coin_fee before create' do
         withdrawal.coin_fee = nil
         withdrawal.valid?
-        expect(withdrawal.coin_fee).to eq(0)
+        expect(withdrawal.coin_fee).to eq(20)
       end
     end
 
     describe 'after_create callbacks' do
       it 'creates withdrawal operation' do
-        withdrawal.coin_layer = 'bitcoin'
+        withdrawal.coin_layer = 'erc20'
         expect { withdrawal.save }.to change(CoinWithdrawalOperation, :count).by(1)
         expect(withdrawal.coin_withdrawal_operation).to have_attributes(
           coin_amount: withdrawal.coin_amount,
@@ -118,16 +118,82 @@ RSpec.describe CoinWithdrawal, type: :model do
       end
 
       it 'freezes user balance' do
-        withdrawal.coin_layer = 'bitcoin'
-        expect { withdrawal.save }.to change { coin_account.reload.frozen_balance }.by(withdrawal.coin_amount)
+        withdrawal.coin_layer = 'erc20'
+        expect { withdrawal.save }.to change { coin_account.reload.frozen_balance }.by(withdrawal.coin_amount + Setting.usdt_erc20_withdrawal_fee)
+      end
+    end
+
+    describe 'after_update callback for status changes' do
+      let(:user) { create(:user) }
+      let(:coin_account) { create(:coin_account, :usdt_main, user: user, balance: 100.0) }
+      let(:withdrawal) { create(:coin_withdrawal, user:, coin_currency: 'usdt', coin_layer: 'erc20') }
+
+      before do
+        coin_account
+      end
+
+      it 'calls send_event_withdrawal_to_kafka when status changes to completed or cancelled' do
+        # Use object_id equality to match the exact instance
+        expect_any_instance_of(KafkaService::Services::Coin::CoinWithdrawalService).to receive(:create)
+
+        # Change status to trigger callback
+        withdrawal.update!(status: 'completed')
+      end
+
+      it 'does not call send_event_withdrawal_to_kafka when other attributes change' do
+        expect_any_instance_of(KafkaService::Services::Coin::CoinWithdrawalService).not_to receive(:create)
+
+        # Update without changing status
+        withdrawal.update!(coin_amount: withdrawal.coin_amount)
+      end
+    end
+
+    describe '#send_event_withdrawal_to_kafka' do
+      let(:user) { create(:user) }
+      let(:coin_account) { create(:coin_account, :usdt_main, user: user, balance: 100.0) }
+      let(:withdrawal) { create(:coin_withdrawal, user:, coin_currency: 'usdt', coin_layer: 'erc20') }
+
+      before do
+        coin_account
+      end
+
+      it 'sends an event to Kafka with right parameters' do
+        withdrawal_service = instance_double(KafkaService::Services::Coin::CoinWithdrawalService)
+        account_key = "#{user.id}-coin-#{coin_account.id}"
+
+        allow(KafkaService::Services::Coin::CoinWithdrawalService).to receive(:new).and_return(withdrawal_service)
+        allow(KafkaService::Services::AccountKeyBuilderService).to receive(:build_coin_account_key)
+          .with(user_id: user.id, account_id: coin_account.id)
+          .and_return(account_key)
+
+        expect(withdrawal_service).to receive(:create).with(
+          identifier: withdrawal.id,
+          status: 'completed',
+          user_id: user.id,
+          coin: 'usdt',
+          account_key: account_key,
+          amount: withdrawal.coin_amount
+        )
+
+        withdrawal.update!(status: 'completed')
+      end
+
+      it 'handles errors gracefully' do
+        withdrawal_service = instance_double(KafkaService::Services::Coin::CoinWithdrawalService)
+
+        allow(KafkaService::Services::Coin::CoinWithdrawalService).to receive(:new).and_return(withdrawal_service)
+        allow(withdrawal_service).to receive(:create).and_raise(StandardError, 'Kafka error')
+
+        expect(Rails.logger).to receive(:error).with(/Failed to send withdrawal event to Kafka/)
+        withdrawal.update!(status: 'completed')
       end
     end
   end
 
   describe 'state transitions' do
     let(:user) { create(:user) }
-    let(:coin_account) { create(:coin_account, :btc_main, user: user, balance: 100.0) }
-    let(:withdrawal) { build(:coin_withdrawal, user: user, coin_currency: 'btc', coin_layer: 'bitcoin', coin_amount: 1.0) }
+    let(:coin_account) { create(:coin_account, :usdt_main, user: user, balance: 100.0) }
+    let(:withdrawal) { build(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_layer: 'erc20', coin_amount: 1.0) }
 
     before do
       coin_account
@@ -163,8 +229,8 @@ RSpec.describe CoinWithdrawal, type: :model do
 
   describe '#record_tx_hash_arrived_at' do
     let(:user) { create(:user) }
-    let(:coin_account) { create(:coin_account, :btc_main, user: user, balance: 100.0) }
-    let(:withdrawal) { create(:coin_withdrawal, user: user, coin_currency: 'btc', coin_layer: 'bitcoin', tx_hash_arrived_at: nil) }
+    let(:coin_account) { create(:coin_account, :usdt_main, user: user, balance: 100.0) }
+    let(:withdrawal) { create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_layer: 'erc20', tx_hash_arrived_at: nil) }
 
     before do
       coin_account

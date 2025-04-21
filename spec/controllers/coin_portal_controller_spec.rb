@@ -177,5 +177,119 @@ RSpec.describe CoinPortalController, type: :controller do
         expect(json_response['error']).to eq('Internal server error')
       end
     end
+
+    describe 'withdrawal handling' do
+      let(:user) { create(:user) }
+      let(:coin_withdrawal) { create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_layer: 'trc20') }
+      let(:coin_withdrawal_operation) do
+        create(:coin_withdrawal_operation,
+          coin_withdrawal: coin_withdrawal,
+          coin_currency: 'usdt'
+        )
+      end
+
+      let(:withdrawal_params) do
+        {
+          type: 'withdrawal',
+          coin: 'trct',
+          payment_id: coin_withdrawal_operation.id,
+          tx_hash: 'tx456',
+          status: 'processed'
+        }
+      end
+
+      before do
+        allow_any_instance_of(described_class).to receive(:authenticate_request).and_return(true)
+        stub_const('CoinAccount::PORTAL_COIN_TO_COIN_CURRENCY', { 'trct' => 'usdt' })
+      end
+
+      it 'returns bad request when payment_id not found' do
+        post :index, params: {
+          type: 'withdrawal',
+          payment_id: 9999,
+          coin: 'trct'
+        }
+
+        expect(response).to have_http_status(:bad_request)
+        expect(response.body).to eq('payment_id not found')
+      end
+
+      it 'syncs withdrawal information when payment_id is found' do
+        expect_any_instance_of(CoinWithdrawalOperation).to receive(:sync_withdrawal!).with(
+          hash_including('tx_hash' => 'tx456', 'status' => 'processed')
+        )
+
+        post :index, params: withdrawal_params
+
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response).to have_key('created_at')
+        expect(json_response['created_at']).to eq(coin_withdrawal_operation.created_at.to_i)
+      end
+
+      it 'updates operation with provided withdrawal data' do
+        post :index, params: withdrawal_params
+
+        coin_withdrawal_operation.reload
+        expect(coin_withdrawal_operation.tx_hash).to eq('tx456')
+        expect(coin_withdrawal_operation.withdrawal_status).to eq('processed')
+        expect(coin_withdrawal_operation.withdrawal_data).to include('tx_hash' => 'tx456')
+        expect(coin_withdrawal_operation.withdrawal_data).to include('status' => 'processed')
+      end
+
+      it 'handles empty tx_hash in params' do
+        params_without_tx_hash = withdrawal_params.dup
+        params_without_tx_hash.delete(:tx_hash)
+
+        post :index, params: params_without_tx_hash
+
+        coin_withdrawal_operation.reload
+        expect(coin_withdrawal_operation.tx_hash).to be_nil
+        expect(coin_withdrawal_operation.withdrawal_status).to eq('processed')
+        expect(response).to have_http_status(:ok)
+      end
+
+      it 'handles empty status in params' do
+        params_without_status = withdrawal_params.dup
+        params_without_status.delete(:status)
+
+        post :index, params: params_without_status
+
+        coin_withdrawal_operation.reload
+        expect(coin_withdrawal_operation.tx_hash).to eq('tx456')
+        expect(coin_withdrawal_operation.withdrawal_status).to be_nil
+        expect(response).to have_http_status(:ok)
+      end
+
+      it 'converts portal_coin to coin_currency correctly' do
+        allow(CoinAccount).to receive(:portal_coin_to_coin_currency).with('trct').and_return('usdt')
+        allow(CoinWithdrawalOperation).to receive(:where).with(coin_currency: 'usdt').and_return(
+          CoinWithdrawalOperation.where(id: coin_withdrawal_operation.id)
+        )
+
+        post :index, params: withdrawal_params
+
+        expect(response).to have_http_status(:ok)
+      end
+
+      it 'handles portal_coin that is already a coin_currency' do
+        direct_currency_params = withdrawal_params.dup
+        direct_currency_params[:coin] = 'usdt'
+
+        post :index, params: direct_currency_params
+
+        expect(response).to have_http_status(:ok)
+      end
+
+      it 'handles errors during sync_withdrawal!' do
+        allow_any_instance_of(CoinWithdrawalOperation).to receive(:sync_withdrawal!).and_raise(StandardError, 'Test error')
+
+        post :index, params: withdrawal_params
+
+        expect(response).to have_http_status(:internal_server_error)
+        json_response = JSON.parse(response.body)
+        expect(json_response['error']).to eq('Internal server error')
+      end
+    end
   end
 end

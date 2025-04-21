@@ -25,9 +25,9 @@ RSpec.describe 'Admin::CoinWithdrawalOperations', type: :system do
 
       expect(page).to have_content(coin_withdrawal_operation.id)
       expect(page).to have_content(coin_withdrawal_operation.coin_withdrawal.id)
-      expect(page).to have_content('btc')
-      expect(page).to have_content('1.5')
-      expect(page).to have_content('0.0001')
+      expect(page).to have_content('usdt')
+      expect(page).to have_content('1.0')
+      expect(page).to have_content('0.0')
       expect(page).to have_content('Pending')
     end
 
@@ -49,7 +49,7 @@ RSpec.describe 'Admin::CoinWithdrawalOperations', type: :system do
 
       expect(page).to have_content(coin_withdrawal_operation.id)
       expect(page).to have_content(coin_withdrawal_operation.coin_withdrawal.id)
-      expect(page).to have_content('btc')
+      expect(page).to have_content('usdt')
       expect(page).to have_content('1.5')
       expect(page).to have_content('0.0001')
       expect(page).to have_content('Pending')

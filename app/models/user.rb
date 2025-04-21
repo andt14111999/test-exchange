@@ -7,6 +7,7 @@ class User < ApplicationRecord
   has_many :notifications, dependent: :destroy
   has_many :merchant_escrows, dependent: :destroy, inverse_of: :user
   has_many :merchant_escrow_operations, through: :merchant_escrows
+  has_many :coin_withdrawals, dependent: :nullify
 
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :role, inclusion: { in: %w[merchant user] }

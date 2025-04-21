@@ -17,15 +17,12 @@ class PostbackService
 
   def post
     sign_payload
-    response = HTTParty.post(
+    HTTParty.post(
       target_url,
       body: json_payload,
       headers: headers,
       timeout: options.fetch(:timeout, 30)
     )
-
-    validate_response(response)
-    response
   end
 
   private
@@ -66,13 +63,5 @@ class PostbackService
 
   def public_key_hex
     @public_key_hex ||= signing_key.verify_key.to_bytes.unpack1('H*')
-  end
-
-  def validate_response(response)
-    return if response.success?
-
-    message = "Request failed with status #{response.code}: #{response.body}"
-    Rails.logger.error(message)
-    raise RequestError, message
   end
 end

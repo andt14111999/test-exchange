@@ -7,6 +7,7 @@ module V1
     mount V1::Balances::Api
     mount V1::CoinAccounts::Api
     mount V1::CoinTransactions::Api
+    mount V1::CoinWithdrawals::Api
     mount V1::Notifications::Api
     mount V1::Users::Api
     mount V1::Merchant::Escrows

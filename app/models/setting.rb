@@ -8,6 +8,10 @@ class Setting < RailsSettings::Base
     field :usdt_to_ngn_rate, type: :decimal, default: 450.0
   end
 
+  scope :withdrawal_fees do
+    field :usdt_erc20_withdrawal_fee, type: :decimal, default: 20
+  end
+
   def self.ransackable_attributes(auth_object = nil)
     %w[var value created_at updated_at]
   end

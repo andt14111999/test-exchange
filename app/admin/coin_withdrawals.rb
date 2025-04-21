@@ -21,11 +21,11 @@ ActiveAdmin.register CoinWithdrawal do
     id_column
     column :user
     column :coin_account
-    column :coin_currency
+    tag_column :coin_currency
     column :coin_amount
     column :coin_fee
     column :coin_address
-    column :coin_layer
+    tag_column :coin_layer
     column :status do |withdrawal|
       status_tag withdrawal.status
     end
@@ -39,11 +39,11 @@ ActiveAdmin.register CoinWithdrawal do
       row :id
       row :user
       row :coin_account
-      row :coin_currency
+      tag_row :coin_currency
       row :coin_amount
       row :coin_fee
       row :coin_address
-      row :coin_layer
+      tag_row :coin_layer
       row :status do |withdrawal|
         status_tag withdrawal.status
       end
@@ -58,7 +58,7 @@ ActiveAdmin.register CoinWithdrawal do
           row :status do |operation|
             status_tag operation.status
           end
-          row :withdrawal_status
+          tag_row :withdrawal_status
           row :tx_hash
           row :scheduled_at
           row :withdrawal_data
@@ -75,8 +75,8 @@ ActiveAdmin.register CoinWithdrawal do
         attributes_table_for resource.coin_withdrawal_operation.coin_transactions.first do
           row :id
           row :amount
-          row :coin_currency
-          row :transaction_type
+          tag_row :coin_currency
+          tag_row :transaction_type
           row :created_at
           row :updated_at
         end

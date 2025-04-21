@@ -33,7 +33,7 @@ class AddressGenerationService
 
   def call_address_api
     PostbackService.new(
-      target_url: 'https://coin-portal.exchange.snowfoxglobal.org/api/v1/coin_addresses',
+      target_url: "#{ENV['COIN_PORTAL_URL']}/api/v1/coin_addresses",
       payload: {
         account_type: account.account_type,
         coin: account.coin_currency,
