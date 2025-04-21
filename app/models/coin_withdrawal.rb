@@ -21,6 +21,7 @@ class CoinWithdrawal < ApplicationRecord
   before_validation :calculate_coin_fee, on: :create
   after_create :create_withdrawal_operation
   after_create :freeze_user_balance
+  after_commit :send_event_withdrawal_to_kafka, if: -> { previous_changes.key?('status') }
 
   scope :sorted, -> { order(created_at: :desc) }
 
@@ -121,5 +122,29 @@ class CoinWithdrawal < ApplicationRecord
       coin_fee: coin_fee,
       coin_currency: coin_currency
     )
+  end
+
+  def send_event_withdrawal_to_kafka
+    return unless completed? || cancelled? || failed?
+
+    account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
+      user_id: user_id,
+      account_id: main_coin_account.id
+    )
+
+    KafkaService::Services::Coin::CoinWithdrawalService.new.create(
+      identifier: id,
+      status: status,
+      user_id: user_id,
+      coin: coin_currency,
+      account_key: account_key,
+      amount: coin_amount
+    )
+  rescue StandardError => e
+    Rails.logger.error("Failed to send withdrawal event to Kafka: #{e.message}")
+  end
+
+  def main_coin_account
+    @main_coin_account ||= user.coin_accounts.of_coin(coin_currency).main
   end
 end

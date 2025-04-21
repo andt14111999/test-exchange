@@ -122,6 +122,72 @@ RSpec.describe CoinWithdrawal, type: :model do
         expect { withdrawal.save }.to change { coin_account.reload.frozen_balance }.by(withdrawal.coin_amount + Setting.usdt_erc20_withdrawal_fee)
       end
     end
+
+    describe 'after_update callback for status changes' do
+      let(:user) { create(:user) }
+      let(:coin_account) { create(:coin_account, :usdt_main, user: user, balance: 100.0) }
+      let(:withdrawal) { create(:coin_withdrawal, user:, coin_currency: 'usdt', coin_layer: 'erc20') }
+
+      before do
+        coin_account
+      end
+
+      it 'calls send_event_withdrawal_to_kafka when status changes to completed or cancelled' do
+        # Use object_id equality to match the exact instance
+        expect_any_instance_of(KafkaService::Services::Coin::CoinWithdrawalService).to receive(:create)
+
+        # Change status to trigger callback
+        withdrawal.update!(status: 'completed')
+      end
+
+      it 'does not call send_event_withdrawal_to_kafka when other attributes change' do
+        expect_any_instance_of(KafkaService::Services::Coin::CoinWithdrawalService).not_to receive(:create)
+
+        # Update without changing status
+        withdrawal.update!(coin_amount: withdrawal.coin_amount)
+      end
+    end
+
+    describe '#send_event_withdrawal_to_kafka' do
+      let(:user) { create(:user) }
+      let(:coin_account) { create(:coin_account, :usdt_main, user: user, balance: 100.0) }
+      let(:withdrawal) { create(:coin_withdrawal, user:, coin_currency: 'usdt', coin_layer: 'erc20') }
+
+      before do
+        coin_account
+      end
+
+      it 'sends an event to Kafka with right parameters' do
+        withdrawal_service = instance_double(KafkaService::Services::Coin::CoinWithdrawalService)
+        account_key = "#{user.id}-coin-#{coin_account.id}"
+
+        allow(KafkaService::Services::Coin::CoinWithdrawalService).to receive(:new).and_return(withdrawal_service)
+        allow(KafkaService::Services::AccountKeyBuilderService).to receive(:build_coin_account_key)
+          .with(user_id: user.id, account_id: coin_account.id)
+          .and_return(account_key)
+
+        expect(withdrawal_service).to receive(:create).with(
+          identifier: withdrawal.id,
+          status: 'completed',
+          user_id: user.id,
+          coin: 'usdt',
+          account_key: account_key,
+          amount: withdrawal.coin_amount
+        )
+
+        withdrawal.update!(status: 'completed')
+      end
+
+      it 'handles errors gracefully' do
+        withdrawal_service = instance_double(KafkaService::Services::Coin::CoinWithdrawalService)
+
+        allow(KafkaService::Services::Coin::CoinWithdrawalService).to receive(:new).and_return(withdrawal_service)
+        allow(withdrawal_service).to receive(:create).and_raise(StandardError, 'Kafka error')
+
+        expect(Rails.logger).to receive(:error).with(/Failed to send withdrawal event to Kafka/)
+        withdrawal.update!(status: 'completed')
+      end
+    end
   end
 
   describe 'state transitions' do
