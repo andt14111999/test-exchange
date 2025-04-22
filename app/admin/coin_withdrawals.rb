@@ -43,6 +43,7 @@ ActiveAdmin.register CoinWithdrawal do
       row :coin_amount
       row :coin_fee
       row :coin_address
+      row :tx_hash
       tag_row :coin_layer
       row :status do |withdrawal|
         status_tag withdrawal.status

@@ -167,7 +167,7 @@ class CoinWithdrawalOperation < Operation
   def mark_withdrawal_release_succeed
     return unless withdrawal_status_processed? && tx_hash.present?
     coin_withdrawal.tx_hash = tx_hash
-    coin_withdrawal.complete! if coin_withdrawal.may_complete?
+    coin_withdrawal.complete!
   rescue StandardError => e
     Rails.logger.error("CoinWithdrawalOperation##{id} mark_withdrawal_release_succeed error: #{e.message}")
   end

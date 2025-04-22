@@ -240,19 +240,19 @@ RSpec.describe CoinWithdrawalOperation, type: :model do
     let(:withdrawal) { create(:coin_withdrawal, user: user) }
     let(:operation) { create(:coin_withdrawal_operation, coin_withdrawal: withdrawal) }
 
-    it 'does not raise error when withdrawal cannot be completed' do
+    it 'does not raise error when withdrawal can be completed' do
       operation.start_relaying!
       operation.withdrawal_status = 'processed'
       operation.tx_hash = 'tx_123'
-      allow(withdrawal).to receive(:may_complete?).and_return(false)
       expect { operation.relay! }.not_to raise_error
+      expect(withdrawal.reload.status).to eq('completed')
+      expect(withdrawal.tx_hash).to eq('tx_123')
     end
 
     it 'logs error when complete! raises an error' do
       operation.start_relaying!
       operation.withdrawal_status = 'processed'
       operation.tx_hash = 'tx_123'
-      allow(withdrawal).to receive(:may_complete?).and_return(true)
       allow(withdrawal).to receive(:complete!).and_raise(StandardError, 'test error')
       allow(Rails.logger).to receive(:error)
       operation.send(:mark_withdrawal_release_succeed)
