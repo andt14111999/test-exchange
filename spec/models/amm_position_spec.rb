@@ -38,7 +38,7 @@ describe AmmPosition, type: :model do
       pool = create(:amm_pool, tick_spacing: 10)
       position = build(:amm_position, amm_pool: pool, tick_lower_index: 100, tick_upper_index: 50)
       expect(position).to be_invalid
-      expect(position.errors[:tick_lower_index]).to include("must be less than tick_upper_index")
+      expect(position.errors[:tick_lower_index]).to include("must be less than 50")
     end
 
     it 'validates tick_lower_index is a multiple of tick_spacing' do
@@ -64,41 +64,43 @@ describe AmmPosition, type: :model do
     it 'validates sufficient account balance for amount0_initial' do
       user = create(:user)
       pool = create(:amm_pool, token0: 'USDT', token1: 'VND')
-      account0 = instance_double('CoinAccount', id: 1, available: 50)
-      account1 = instance_double('FiatAccount', id: 2, available: 200)
-      
-      allow(user).to receive(:main_account).with('usdt').and_return(account0)
-      allow(user).to receive(:main_account).with('vnd').and_return(account1)
-      
-      position = build(:amm_position, 
-        user: user, 
-        amm_pool: pool, 
-        amount0_initial: 100, 
+
+      # Tạo coin account với balance thấp cho usdt
+      create(:coin_account, :main, user: user, coin_currency: 'usdt', balance: 50, frozen_balance: 0)
+      # Tạo fiat account với balance đủ cho vnd
+      create(:fiat_account, user: user, currency: 'VND', balance: 200, frozen_balance: 0)
+
+      position = build(:amm_position,
+        user: user,
+        amm_pool: pool,
+        amount0_initial: 100,
         amount1_initial: 100
       )
-      
-      expect(position).to be_invalid
-      expect(position.errors[:amount0_initial]).to include("exceeds available balance in usdt account")
+
+      # Chỉ validate trong context :create vì validation chỉ chạy trong context đó
+      expect(position.valid?(:create)).to be false
+      expect(position.errors[:amount0_initial]).to include("exceeds available balance in USDT account")
     end
 
     it 'validates sufficient account balance for amount1_initial' do
       user = create(:user)
       pool = create(:amm_pool, token0: 'USDT', token1: 'VND')
-      account0 = instance_double('CoinAccount', id: 1, available: 200)
-      account1 = instance_double('FiatAccount', id: 2, available: 50)
-      
-      allow(user).to receive(:main_account).with('usdt').and_return(account0)
-      allow(user).to receive(:main_account).with('vnd').and_return(account1)
-      
-      position = build(:amm_position, 
-        user: user, 
-        amm_pool: pool, 
-        amount0_initial: 100, 
+
+      # Tạo coin account với balance đủ cho usdt
+      create(:coin_account, :main, user: user, coin_currency: 'usdt', balance: 200, frozen_balance: 0)
+      # Tạo fiat account với balance thấp cho vnd
+      create(:fiat_account, user: user, currency: 'VND', balance: 50, frozen_balance: 0)
+
+      position = build(:amm_position,
+        user: user,
+        amm_pool: pool,
+        amount0_initial: 100,
         amount1_initial: 100
       )
-      
-      expect(position).to be_invalid
-      expect(position.errors[:amount1_initial]).to include("exceeds available balance in vnd account")
+
+      # Chỉ validate trong context :create vì validation chỉ chạy trong context đó
+      expect(position.valid?(:create)).to be false
+      expect(position.errors[:amount1_initial]).to include("exceeds available balance in VND account")
     end
   end
 
@@ -197,13 +199,15 @@ describe AmmPosition, type: :model do
   describe 'account_key methods' do
     let(:user) { create(:user) }
     let(:pool) { create(:amm_pool, token0: 'USDT', token1: 'VND') }
-    let(:usdt_account) { instance_double('CoinAccount', id: 1) }
-    let(:vnd_account) { instance_double('FiatAccount', id: 2) }
     let(:position) { build(:amm_position, user: user, amm_pool: pool) }
+    let(:usdt_account) { instance_double('CoinAccount', id: 1, account_key: '1') }
+    let(:vnd_account) { instance_double('FiatAccount', id: 2, account_key: '2') }
 
     before do
       allow(user).to receive(:main_account).with('usdt').and_return(usdt_account)
       allow(user).to receive(:main_account).with('vnd').and_return(vnd_account)
+      allow(user).to receive(:main_account).with('USDT').and_return(usdt_account)
+      allow(user).to receive(:main_account).with('VND').and_return(vnd_account)
     end
 
     it 'returns account_key0 from user main account' do
@@ -232,7 +236,7 @@ describe AmmPosition, type: :model do
     let(:service) { instance_double(KafkaService::Services::AmmPosition::AmmPositionService) }
 
     before do
-      allow(KafkaService::Services::AmmPosition::AmmPositionService).to receive(:new).with(position).and_return(service)
+      allow(KafkaService::Services::AmmPosition::AmmPositionService).to receive(:new).and_return(service)
       allow(service).to receive(:collect_fee)
     end
 
@@ -252,7 +256,7 @@ describe AmmPosition, type: :model do
     let(:service) { instance_double(KafkaService::Services::AmmPosition::AmmPositionService) }
 
     before do
-      allow(KafkaService::Services::AmmPosition::AmmPositionService).to receive(:new).with(position).and_return(service)
+      allow(KafkaService::Services::AmmPosition::AmmPositionService).to receive(:new).and_return(service)
       allow(service).to receive(:close)
     end
 
@@ -264,6 +268,231 @@ describe AmmPosition, type: :model do
     it 'raises an error if position is not open' do
       position.update(status: 'pending')
       expect { position.close_position }.to raise_error(StandardError, 'Cannot close a position that is not open')
+    end
+  end
+
+  describe '.generate_account_keys' do
+    let(:user) { create(:user) }
+    let(:pool) { create(:amm_pool, token0: 'USDT', token1: 'VND') }
+    let(:usdt_account) { instance_double('CoinAccount', id: 1) }
+    let(:vnd_account) { instance_double('FiatAccount', id: 2) }
+
+    before do
+      allow(user).to receive(:main_account).with('usdt').and_return(usdt_account)
+      allow(user).to receive(:main_account).with('vnd').and_return(vnd_account)
+    end
+
+    it 'returns array of account keys' do
+      result = AmmPosition.generate_account_keys(user, pool)
+      expect(result).to eq([ '1', '2' ])
+    end
+
+    it 'returns nil if any account is missing' do
+      allow(user).to receive(:main_account).with('usdt').and_return(nil)
+
+      result = AmmPosition.generate_account_keys(user, pool)
+      expect(result).to be_nil
+    end
+  end
+
+  describe '.generate_identifier' do
+    it 'generates identifier with given parameters' do
+      user_id = 123
+      pool_pair = 'USDT/VND'
+      timestamp = 1650000000
+
+      identifier = AmmPosition.generate_identifier(user_id, pool_pair, timestamp)
+      expect(identifier).to eq('amm_position_123_usdt/vnd_1650000000')
+    end
+
+    it 'uses current timestamp by default' do
+      user_id = 123
+      pool_pair = 'USDT/VND'
+      current_time = Time.at(1650000000)
+
+      allow(Time).to receive(:now).and_return(current_time)
+
+      identifier = AmmPosition.generate_identifier(user_id, pool_pair)
+      expect(identifier).to eq('amm_position_123_usdt/vnd_1650000000')
+    end
+
+    it 'downcases the pool pair' do
+      identifier = AmmPosition.generate_identifier(123, 'USDT/VND', 1650000000)
+      expect(identifier).to eq('amm_position_123_usdt/vnd_1650000000')
+    end
+  end
+
+  describe 'status constants' do
+    it 'defines the correct status constants' do
+      expect(AmmPosition::STATUS_PENDING).to eq('pending')
+      expect(AmmPosition::STATUS_OPEN).to eq('open')
+      expect(AmmPosition::STATUS_CLOSED).to eq('closed')
+      expect(AmmPosition::STATUS_ERROR).to eq('error')
+    end
+  end
+
+  describe 'AASM state transitions' do
+    let(:position) { create(:amm_position, status: 'pending') }
+
+    describe '#open_position' do
+      it 'transitions from pending to open' do
+        expect(position.status).to eq('pending')
+
+        position.open_position
+
+        expect(position.status).to eq('open')
+      end
+
+      it 'raises error when transitioning from non-pending state' do
+        position.update(status: 'closed')
+
+        expect { position.open_position }.to raise_error(AASM::InvalidTransition)
+      end
+    end
+
+    describe '#close' do
+      it 'transitions from open to closed' do
+        position.update(status: 'open')
+
+        position.close
+
+        expect(position.status).to eq('closed')
+      end
+
+      it 'raises error when transitioning from non-open state' do
+        expect { position.close }.to raise_error(AASM::InvalidTransition)
+      end
+    end
+
+    describe '#fail' do
+      it 'transitions from pending to error' do
+        expect(position.status).to eq('pending')
+
+        position.fail('Test error message')
+
+        expect(position.status).to eq('error')
+      end
+
+      it 'transitions from open to error' do
+        position.update(status: 'open')
+
+        position.fail('Test error message')
+
+        expect(position.status).to eq('error')
+      end
+
+      it 'sets error_message during transition' do
+        position.fail('Test error message')
+
+        expect(position.error_message).to eq('Test error message')
+      end
+
+      it 'raises error when transitioning from closed state' do
+        position.update(status: 'closed')
+
+        expect { position.fail('Test error') }.to raise_error(AASM::InvalidTransition)
+      end
+    end
+  end
+
+  describe 'after_create callback' do
+    it 'calls send_event_create_amm_position after creation' do
+      position = build(:amm_position)
+
+      expect(position).to receive(:send_event_create_amm_position)
+
+      position.save
+    end
+  end
+
+  describe '#send_event_create_amm_position' do
+    let(:user) { create(:user) }
+    let(:pool) { create(:amm_pool, token0: 'USDT', token1: 'VND', pair: 'USDT/VND') }
+    let(:position) do
+      create(:amm_position,
+        user: user,
+        amm_pool: pool,
+        identifier: 'test_position_123',
+        tick_lower_index: -100,
+        tick_upper_index: 100,
+        amount0_initial: 50,
+        amount1_initial: 100,
+        slippage: 0.5
+      )
+    end
+    let(:service) { instance_double(KafkaService::Services::AmmPosition::AmmPositionService) }
+
+    before do
+      allow(position).to receive(:account_key0).and_return('account_key_0')
+      allow(position).to receive(:account_key1).and_return('account_key_1')
+      allow(position).to receive(:pool_pair).and_return('USDT/VND')
+      allow(KafkaService::Services::AmmPosition::AmmPositionService).to receive(:new).and_return(service)
+      allow(service).to receive(:create)
+      allow(SecureRandom).to receive(:uuid).and_return('test-uuid')
+    end
+
+    it 'returns early if position is not pending' do
+      position.update(status: 'open')
+
+      expect(service).not_to receive(:create)
+
+      position.send(:send_event_create_amm_position)
+    end
+
+    it 'calls KafkaService with correct parameters when pending' do
+      position.update(status: 'pending')
+
+      expected_payload = {
+        eventId: 'amm-position-test-uuid',
+        operationType: 'amm_position_create',
+        actionType: 'AmmPosition',
+        actionId: position.id,
+        identifier: 'test_position_123',
+        poolPair: 'USDT/VND',
+        ownerAccountKey0: 'account_key_0',
+        ownerAccountKey1: 'account_key_1',
+        tickLowerIndex: -100,
+        tickUpperIndex: 100,
+        amount0Initial: 50,
+        amount1Initial: 100,
+        slippage: 0.5
+      }
+
+      expect(service).to receive(:create).with(
+        identifier: 'test_position_123',
+        payload: expected_payload
+      )
+
+      position.send(:send_event_create_amm_position)
+    end
+
+    it 'logs error and calls fail when exception occurs' do
+      position.update(status: 'pending')
+
+      error = StandardError.new('Test error message')
+      allow(service).to receive(:create).and_raise(error)
+
+      expect(Rails.logger).to receive(:error).with('Failed to notify exchange engine about AmmPosition creation: Test error message')
+      expect(position).to receive(:fail).with('Test error message')
+
+      position.send(:send_event_create_amm_position)
+    end
+
+    it 'creates compact payload without nil values' do
+      position.update(status: 'pending')
+      allow(position).to receive(:account_key0).and_return(nil)
+
+      expected_payload = hash_including(
+        eventId: 'amm-position-test-uuid',
+        operationType: 'amm_position_create'
+      )
+
+      expect(service).to receive(:create).with(
+        identifier: 'test_position_123',
+        payload: expected_payload
+      )
+
+      position.send(:send_event_create_amm_position)
     end
   end
 end

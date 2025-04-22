@@ -22,5 +22,6 @@ class AdminAbility
 
   def apply_implementor_actions
     can :manage, AmmPool
+    can :read, AmmPosition
   end
 end
