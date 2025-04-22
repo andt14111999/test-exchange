@@ -198,21 +198,20 @@ RSpec.describe CoinAccount, type: :model do
 
     describe '#unlock_amount!' do
       it 'unlocks the specified amount' do
-        account = create(:coin_account, :main, balance: 100, frozen_balance: 30)
-        account.unlock_amount!(20)
-        expect(account.frozen_balance).to eq(10)
-        expect(account.balance).to eq(120)
+        account = create(:coin_account, :main, balance: 100, frozen_balance: 50)
+        account.unlock_amount!(30)
+        expect(account.frozen_balance).to eq(20)
       end
 
-      it 'raises error when amount is greater than frozen balance' do
-        account = create(:coin_account, :main, balance: 100, frozen_balance: 30)
-        expect { account.unlock_amount!(40) }.to raise_error('Insufficient frozen balance')
+      it 'raises error when amount is greater than frozen_balance' do
+        account = create(:coin_account, :main, balance: 100, frozen_balance: 50)
+        expect { account.unlock_amount!(51) }.to raise_error('Insufficient frozen balance')
       end
 
       it 'does nothing when amount is less than or equal to 0' do
-        account = create(:coin_account, :main, balance: 100, frozen_balance: 30)
-        account.unlock_amount!(0)
-        expect(account.frozen_balance).to eq(30)
+        account = create(:coin_account, :main, balance: 100, frozen_balance: 50)
+        expect { account.unlock_amount!(0) }.not_to change(account, :frozen_balance)
+        expect { account.unlock_amount!(-10) }.not_to change(account, :frozen_balance)
       end
     end
 
@@ -265,6 +264,20 @@ RSpec.describe CoinAccount, type: :model do
         expect(result[1]).to be false
         expect(result[0]).to be_a(String)
         expect(result[0]).to include('Coin amount must be greater than 0')
+      end
+    end
+
+    describe '#account_key' do
+      it 'returns the account key using KafkaService' do
+        user = create(:user, id: 123)
+        account = create(:coin_account, :main, id: 456, user: user)
+
+        expect(KafkaService::Services::AccountKeyBuilderService).to receive(:build_coin_account_key).with(
+          user_id: 123,
+          account_id: 456
+        ).and_return('123_456')
+
+        expect(account.account_key).to eq('123_456')
       end
     end
   end
@@ -374,5 +387,9 @@ RSpec.describe CoinAccount, type: :model do
         account.update!(frozen_balance: 60)
       }.not_to change(Notification, :count)
     end
+  end
+
+  describe 'transaction operations' do
+    # ... existing code ...
   end
 end

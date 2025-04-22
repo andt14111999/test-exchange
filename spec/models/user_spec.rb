@@ -42,6 +42,12 @@ RSpec.describe User, type: :model do
       expect(association.macro).to eq :has_many
       expect(association.options[:through]).to eq :merchant_escrows
     end
+
+    it 'has many amm_positions' do
+      association = described_class.reflect_on_association(:amm_positions)
+      expect(association.macro).to eq :has_many
+      expect(association.options[:dependent]).to eq :destroy
+    end
   end
 
   describe 'validations' do
@@ -277,6 +283,27 @@ RSpec.describe User, type: :model do
     it 'returns false when role is not merchant' do
       user = build(:user, role: 'user')
       expect(user).not_to be_merchant
+    end
+  end
+
+  describe '#main_account' do
+    let(:user) { create(:user) }
+    let!(:usdt_account) { create(:coin_account, :main, user: user, coin_currency: 'usdt') }
+    let!(:eth_account) { create(:coin_account, :main, user: user, coin_currency: 'eth') }
+    let!(:vnd_account) { create(:fiat_account, user: user, currency: 'VND') }
+
+    it 'returns the main coin account for the given currency' do
+      expect(user.main_account('usdt')).to eq(usdt_account)
+      expect(user.main_account('USDT')).to eq(usdt_account)
+    end
+
+    it 'returns the fiat account for the given currency' do
+      expect(user.main_account('vnd')).to eq(vnd_account)
+      expect(user.main_account('VND')).to eq(vnd_account)
+    end
+
+    it 'returns nil when no account exists for the currency' do
+      expect(user.main_account('UNKNOWN')).to be_nil
     end
   end
 

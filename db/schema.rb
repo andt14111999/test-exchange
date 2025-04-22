@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_04_07_060833) do
+ActiveRecord::Schema[8.0].define(version: 2025_04_17_025643) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -73,6 +73,34 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_07_060833) do
     t.index ["pair"], name: "index_amm_pools_on_pair", unique: true
     t.index ["status"], name: "index_amm_pools_on_status"
     t.index ["token0", "token1", "fee_percentage"], name: "index_amm_pools_on_token0_and_token1_and_fee_percentage", unique: true
+  end
+
+  create_table "amm_positions", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "amm_pool_id", null: false
+    t.string "identifier", null: false
+    t.string "status", default: "pending", null: false
+    t.decimal "liquidity", default: "0.0", null: false
+    t.decimal "slippage", default: "1.0", null: false
+    t.integer "tick_lower_index", null: false
+    t.integer "tick_upper_index", null: false
+    t.decimal "amount0", default: "0.0", null: false
+    t.decimal "amount1", default: "0.0", null: false
+    t.decimal "amount0_initial", default: "0.0", null: false
+    t.decimal "amount1_initial", default: "0.0", null: false
+    t.decimal "fee_growth_inside0_last", default: "0.0", null: false
+    t.decimal "fee_growth_inside1_last", default: "0.0", null: false
+    t.decimal "tokens_owed0", default: "0.0", null: false
+    t.decimal "tokens_owed1", default: "0.0", null: false
+    t.decimal "fee_collected0", default: "0.0", null: false
+    t.decimal "fee_collected1", default: "0.0", null: false
+    t.string "error_message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["amm_pool_id"], name: "index_amm_positions_on_amm_pool_id"
+    t.index ["identifier"], name: "index_amm_positions_on_identifier", unique: true
+    t.index ["status"], name: "index_amm_positions_on_status"
+    t.index ["user_id"], name: "index_amm_positions_on_user_id"
   end
 
   create_table "coin_accounts", force: :cascade do |t|
@@ -338,6 +366,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_07_060833) do
     t.index ["item_type", "item_id"], name: "index_versions_on_item_type_and_item_id"
   end
 
+  add_foreign_key "amm_positions", "amm_pools"
+  add_foreign_key "amm_positions", "users"
   add_foreign_key "coin_accounts", "users"
   add_foreign_key "coin_deposit_operations", "coin_accounts"
   add_foreign_key "coin_deposit_operations", "coin_deposits"

@@ -13,8 +13,8 @@ if Rails.env.development?
   AdminUser::ROLES.each do |role|
     AdminUser.create!(
       email: "#{role}@snowfoxglobal.org",
-      password: '1C+£eg(2oT3k',
-      password_confirmation: '1C+£eg(2oT3k',
+      password: '123456',
+      password_confirmation: '123456',
       fullname: 'Test User',
       roles: role
     )

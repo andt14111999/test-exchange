@@ -157,6 +157,13 @@ class CoinAccount < ApplicationRecord
     end
   end
 
+  def account_key
+    KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
+      user_id: user_id,
+      account_id: id
+    )
+  end
+
   private
 
   def validate_balances

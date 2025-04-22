@@ -4,6 +4,8 @@ class AmmPool < ApplicationRecord
   include AASM
   include Ransackable
 
+  has_many :amm_positions, dependent: :restrict_with_error
+
   validates :pair, presence: true, uniqueness: true
   validates :token0, presence: true
   validates :token1, presence: true
@@ -39,6 +41,10 @@ class AmmPool < ApplicationRecord
 
   after_create :send_event_create_amm_pool
   after_commit :broadcast_update
+
+  def title
+    "#{pair} - #{status}"
+  end
 
   # Tính toán APR (Annual Percentage Rate) của pool
   # Để tính APR chính xác, cần:

@@ -14,5 +14,7 @@ module V1
     mount V1::Users::MerchantRegistration
     mount V1::Settings::Api
     mount V1::AmmPools::Api
+    mount V1::AmmPositions::Api
+    mount V1::Coins::Api
   end
 end
