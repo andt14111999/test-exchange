@@ -232,7 +232,7 @@ describe KafkaService::Handlers::AmmPositionHandler do
       }
       params = handler.send(:extract_params_from_response, object_with_nils)
 
-      expect(params.key?(:amount0)).to be_falsey
+      expect(params).not_to be_key(:amount0)
       expect(params[:liquidity]).to eq('1000')
     end
   end

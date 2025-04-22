@@ -289,7 +289,6 @@ RSpec.describe User, type: :model do
   describe '#main_account' do
     let(:user) { create(:user) }
     let!(:usdt_account) { create(:coin_account, :main, user: user, coin_currency: 'usdt') }
-    let!(:eth_account) { create(:coin_account, :main, user: user, coin_currency: 'eth') }
     let!(:vnd_account) { create(:fiat_account, user: user, currency: 'VND') }
 
     it 'returns the main coin account for the given currency' do

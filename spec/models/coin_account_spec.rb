@@ -388,8 +388,4 @@ RSpec.describe CoinAccount, type: :model do
       }.not_to change(Notification, :count)
     end
   end
-
-  describe 'transaction operations' do
-    # ... existing code ...
-  end
 end

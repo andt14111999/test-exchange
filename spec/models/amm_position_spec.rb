@@ -168,31 +168,31 @@ describe AmmPosition, type: :model do
 
   describe 'scopes' do
     before do
-      allow_any_instance_of(AmmPosition).to receive(:send_event_create_amm_position)
+      allow_any_instance_of(described_class).to receive(:send_event_create_amm_position)
     end
 
     it 'has a pending scope' do
       create_list(:amm_position, 2, status: 'pending')
       create(:amm_position, status: 'open')
-      expect(AmmPosition.pending.count).to eq(2)
+      expect(described_class.pending.count).to eq(2)
     end
 
     it 'has an open scope' do
       create_list(:amm_position, 3, status: 'open')
       create(:amm_position, status: 'pending')
-      expect(AmmPosition.open.count).to eq(3)
+      expect(described_class.open.count).to eq(3)
     end
 
     it 'has a closed scope' do
       create_list(:amm_position, 1, status: 'closed')
       create(:amm_position, status: 'open')
-      expect(AmmPosition.closed.count).to eq(1)
+      expect(described_class.closed.count).to eq(1)
     end
 
     it 'has an error scope' do
       create_list(:amm_position, 2, status: 'error')
       create(:amm_position, status: 'open')
-      expect(AmmPosition.error.count).to eq(2)
+      expect(described_class.error.count).to eq(2)
     end
   end
 
@@ -200,8 +200,8 @@ describe AmmPosition, type: :model do
     let(:user) { create(:user) }
     let(:pool) { create(:amm_pool, token0: 'USDT', token1: 'VND') }
     let(:position) { build(:amm_position, user: user, amm_pool: pool) }
-    let(:usdt_account) { instance_double('CoinAccount', id: 1, account_key: '1') }
-    let(:vnd_account) { instance_double('FiatAccount', id: 2, account_key: '2') }
+    let(:usdt_account) { instance_double(CoinAccount, id: 1, account_key: '1') }
+    let(:vnd_account) { instance_double(FiatAccount, id: 2, account_key: '2') }
 
     before do
       allow(user).to receive(:main_account).with('usdt').and_return(usdt_account)
@@ -274,8 +274,8 @@ describe AmmPosition, type: :model do
   describe '.generate_account_keys' do
     let(:user) { create(:user) }
     let(:pool) { create(:amm_pool, token0: 'USDT', token1: 'VND') }
-    let(:usdt_account) { instance_double('CoinAccount', id: 1) }
-    let(:vnd_account) { instance_double('FiatAccount', id: 2) }
+    let(:usdt_account) { instance_double(CoinAccount, id: 1) }
+    let(:vnd_account) { instance_double(FiatAccount, id: 2) }
 
     before do
       allow(user).to receive(:main_account).with('usdt').and_return(usdt_account)
@@ -283,14 +283,14 @@ describe AmmPosition, type: :model do
     end
 
     it 'returns array of account keys' do
-      result = AmmPosition.generate_account_keys(user, pool)
+      result = described_class.generate_account_keys(user, pool)
       expect(result).to eq([ '1', '2' ])
     end
 
     it 'returns nil if any account is missing' do
       allow(user).to receive(:main_account).with('usdt').and_return(nil)
 
-      result = AmmPosition.generate_account_keys(user, pool)
+      result = described_class.generate_account_keys(user, pool)
       expect(result).to be_nil
     end
   end
@@ -301,7 +301,7 @@ describe AmmPosition, type: :model do
       pool_pair = 'USDT/VND'
       timestamp = 1650000000
 
-      identifier = AmmPosition.generate_identifier(user_id, pool_pair, timestamp)
+      identifier = described_class.generate_identifier(user_id, pool_pair, timestamp)
       expect(identifier).to eq('amm_position_123_usdt/vnd_1650000000')
     end
 
@@ -312,12 +312,12 @@ describe AmmPosition, type: :model do
 
       allow(Time).to receive(:now).and_return(current_time)
 
-      identifier = AmmPosition.generate_identifier(user_id, pool_pair)
+      identifier = described_class.generate_identifier(user_id, pool_pair)
       expect(identifier).to eq('amm_position_123_usdt/vnd_1650000000')
     end
 
     it 'downcases the pool pair' do
-      identifier = AmmPosition.generate_identifier(123, 'USDT/VND', 1650000000)
+      identifier = described_class.generate_identifier(123, 'USDT/VND', 1650000000)
       expect(identifier).to eq('amm_position_123_usdt/vnd_1650000000')
     end
   end
@@ -423,9 +423,11 @@ describe AmmPosition, type: :model do
     let(:service) { instance_double(KafkaService::Services::AmmPosition::AmmPositionService) }
 
     before do
-      allow(position).to receive(:account_key0).and_return('account_key_0')
-      allow(position).to receive(:account_key1).and_return('account_key_1')
-      allow(position).to receive(:pool_pair).and_return('USDT/VND')
+      allow(position).to receive_messages(
+        account_key0: '7216-coin-',
+        account_key1: 'account_key_1',
+        pool_pair: 'USDT/VND'
+      )
       allow(KafkaService::Services::AmmPosition::AmmPositionService).to receive(:new).and_return(service)
       allow(service).to receive(:create)
       allow(SecureRandom).to receive(:uuid).and_return('test-uuid')
@@ -449,13 +451,13 @@ describe AmmPosition, type: :model do
         actionId: position.id,
         identifier: 'test_position_123',
         poolPair: 'USDT/VND',
-        ownerAccountKey0: 'account_key_0',
+        ownerAccountKey0: '7216-coin-',
         ownerAccountKey1: 'account_key_1',
         tickLowerIndex: -100,
         tickUpperIndex: 100,
-        amount0Initial: 50,
-        amount1Initial: 100,
-        slippage: 0.5
+        amount0Initial: 50.0,
+        amount1Initial: 100.0,
+        slippage: 0.5e0
       }
 
       expect(service).to receive(:create).with(

@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-describe V1::AmmPositions::Api, type: :request do
+describe 'AmmPositions API', type: :request do
   let(:user) { create(:user) }
   let(:auth_token) { JsonWebToken.encode(user_id: user.id) }
   let(:headers) { { 'Authorization' => "Bearer #{auth_token}" } }
