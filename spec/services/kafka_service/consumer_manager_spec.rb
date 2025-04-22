@@ -7,6 +7,7 @@ RSpec.describe KafkaService::ConsumerManager, type: :service do
   let(:coin_deposit_handler) { instance_double(KafkaService::Handlers::CoinDepositHandler) }
   let(:amm_pool_handler) { instance_double(KafkaService::Handlers::AmmPoolHandler) }
   let(:merchant_escrow_handler) { instance_double(KafkaService::Handlers::MerchantEscrowHandler) }
+  let(:amm_position_handler) { instance_double(KafkaService::Handlers::AmmPositionHandler) }
   let(:consumer) { instance_double(KafkaService::Base::Consumer) }
   let(:payload) { { 'data' => 'test' } }
 
@@ -15,6 +16,7 @@ RSpec.describe KafkaService::ConsumerManager, type: :service do
     allow(KafkaService::Handlers::CoinDepositHandler).to receive(:new).and_return(coin_deposit_handler)
     allow(KafkaService::Handlers::AmmPoolHandler).to receive(:new).and_return(amm_pool_handler)
     allow(KafkaService::Handlers::MerchantEscrowHandler).to receive(:new).and_return(merchant_escrow_handler)
+    allow(KafkaService::Handlers::AmmPositionHandler).to receive(:new).and_return(amm_position_handler)
     allow(KafkaService::Base::Consumer).to receive(:new).and_return(consumer)
     allow(consumer).to receive(:start)
     allow(consumer).to receive(:stop)
@@ -29,7 +31,8 @@ RSpec.describe KafkaService::ConsumerManager, type: :service do
         KafkaService::Config::Topics::BALANCE_UPDATE => coin_account_handler,
         KafkaService::Config::Topics::TRANSACTION_RESULT => coin_deposit_handler,
         KafkaService::Config::Topics::AMM_POOL_UPDATE_TOPIC => amm_pool_handler,
-        KafkaService::Config::Topics::MERCHANT_ESCROW_UPDATE => merchant_escrow_handler
+        KafkaService::Config::Topics::MERCHANT_ESCROW_UPDATE => merchant_escrow_handler,
+        KafkaService::Config::Topics::AMM_POSITION_UPDATE_TOPIC => amm_position_handler
       }
 
       # Use a custom matcher instead of eq to verify the keys and values independently
@@ -65,6 +68,10 @@ RSpec.describe KafkaService::ConsumerManager, type: :service do
         group_id: "#{Rails.env}_#{KafkaService::Config::Topics::MERCHANT_ESCROW_UPDATE}_processor",
         topics: [ KafkaService::Config::Topics::MERCHANT_ESCROW_UPDATE ]
       )
+      expect(KafkaService::Base::Consumer).to receive(:new).with(
+        group_id: "#{Rails.env}_#{KafkaService::Config::Topics::AMM_POSITION_UPDATE_TOPIC}_processor",
+        topics: [ KafkaService::Config::Topics::AMM_POSITION_UPDATE_TOPIC ]
+      )
 
       manager.start
     end
@@ -76,7 +83,7 @@ RSpec.describe KafkaService::ConsumerManager, type: :service do
       manager.start
 
       # Adjust the count to match the actual number of handlers
-      expect(consumer).to receive(:stop).exactly(4).times
+      expect(consumer).to receive(:stop).exactly(5).times
       manager.stop
     end
   end
@@ -112,6 +119,7 @@ RSpec.describe KafkaService::ConsumerManager, type: :service do
       allow(manager).to receive(:start_consumer_with_monitor).with(KafkaService::Config::Topics::TRANSACTION_RESULT, coin_deposit_handler)
       allow(manager).to receive(:start_consumer_with_monitor).with(KafkaService::Config::Topics::AMM_POOL_UPDATE_TOPIC, amm_pool_handler)
       allow(manager).to receive(:start_consumer_with_monitor).with(KafkaService::Config::Topics::MERCHANT_ESCROW_UPDATE, merchant_escrow_handler)
+      allow(manager).to receive(:start_consumer_with_monitor).with(KafkaService::Config::Topics::AMM_POSITION_UPDATE_TOPIC, amm_position_handler)
 
       expect(Rails.logger).to receive(:error).with('Failed to start consumer for topic EE.O.coin_account_update: test error')
       expect(manager).to receive(:restart_consumer).with(KafkaService::Config::Topics::BALANCE_UPDATE, coin_account_handler)

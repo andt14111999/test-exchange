@@ -170,5 +170,19 @@ RSpec.describe FiatAccount, type: :model do
         expect { fiat_account.unlock_amount!(-10) }.not_to change { fiat_account.frozen_balance }
       end
     end
+
+    describe '#account_key' do
+      it 'returns the account key using KafkaService' do
+        user = create(:user, id: 123)
+        fiat_account = create(:fiat_account, id: 456, user: user)
+
+        expect(KafkaService::Services::AccountKeyBuilderService).to receive(:build_fiat_account_key).with(
+          user_id: 123,
+          account_id: 456
+        ).and_return('123_456')
+
+        expect(fiat_account.account_key).to eq('123_456')
+      end
+    end
   end
 end

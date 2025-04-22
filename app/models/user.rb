@@ -8,6 +8,7 @@ class User < ApplicationRecord
   has_many :merchant_escrows, dependent: :destroy, inverse_of: :user
   has_many :merchant_escrow_operations, through: :merchant_escrows
   has_many :coin_withdrawals, dependent: :nullify
+  has_many :amm_positions, dependent: :destroy
 
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :role, inclusion: { in: %w[merchant user] }
@@ -83,6 +84,15 @@ class User < ApplicationRecord
 
   def merchant?
     role == 'merchant'
+  end
+
+  def main_account(currency)
+    currency = currency.to_s.downcase
+    if CoinConfig.coins.include?(currency)
+      coin_accounts.of_coin(currency).main
+    else
+      fiat_accounts.of_currency(currency.upcase).first
+    end
   end
 
   private

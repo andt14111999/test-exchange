@@ -328,6 +328,21 @@ describe AmmPool, type: :model do
     end
   end
 
+  describe 'associations' do
+    it 'has many amm_positions' do
+      association = described_class.reflect_on_association(:amm_positions)
+      expect(association.macro).to eq(:has_many)
+      expect(association.options[:dependent]).to eq(:restrict_with_error)
+    end
+  end
+
+  describe '#title' do
+    it 'returns formatted title with pair and status' do
+      pool = create(:amm_pool, pair: 'USDT/VND', status: 'active')
+      expect(pool.title).to eq('USDT/VND - active')
+    end
+  end
+
   describe 'callbacks' do
     describe 'after_commit' do
       it 'broadcasts update after create' do

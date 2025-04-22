@@ -24,6 +24,10 @@ module KafkaService
       # AMM Pool related topics
       AMM_POOL_TOPIC = 'EE.I.amm_pool'.freeze
       AMM_POOL_UPDATE_TOPIC = 'EE.O.amm_pool_update'.freeze
+
+      # AMM Position related topics
+      AMM_POSITION_TOPIC = 'EE.I.amm_position'.freeze
+      AMM_POSITION_UPDATE_TOPIC = 'EE.O.amm_position_update'.freeze
     end
   end
 end
