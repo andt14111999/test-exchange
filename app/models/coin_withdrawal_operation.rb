@@ -165,7 +165,8 @@ class CoinWithdrawalOperation < Operation
   end
 
   def mark_withdrawal_release_succeed
-    return unless withdrawal_status_processed? && tx_hash.present?
+    return if !withdrawal_status_processed? || !tx_hash.present?
+
     coin_withdrawal.tx_hash = tx_hash
     coin_withdrawal.complete!
   rescue StandardError => e

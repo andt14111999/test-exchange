@@ -12,6 +12,7 @@ RSpec.describe KafkaService::Services::Coin::CoinWithdrawalService, type: :servi
       account_key = 'account-123'
       amount = '100.0'
       status = 'pending'
+      fee = 0.1
 
       allow(SecureRandom).to receive_messages(uuid: 'mocked-action-id', hex: 'mocked-hex')
 
@@ -28,7 +29,7 @@ RSpec.describe KafkaService::Services::Coin::CoinWithdrawalService, type: :servi
         txHash: 'tx-mocked-hex',
         layer: 'L1',
         destinationAddress: 'address-mocked-hex',
-        fee: 0.0
+        fee: fee
       }
 
       expect(service).to receive(:send_event).with(
@@ -43,7 +44,8 @@ RSpec.describe KafkaService::Services::Coin::CoinWithdrawalService, type: :servi
         user_id: user_id,
         coin: coin,
         account_key: account_key,
-        amount: amount
+        amount: amount,
+        fee: fee
       )
     end
   end
