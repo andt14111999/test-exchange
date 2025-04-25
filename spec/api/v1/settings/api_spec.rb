@@ -56,4 +56,62 @@ RSpec.describe V1::Settings::Api, type: :request do
       )
     end
   end
+
+  describe 'GET /api/v1/settings/withdrawal_fees' do
+    it 'returns custom withdrawal fees when set' do
+      Setting.delete_all # Clean up existing settings
+
+      Setting.usdt_erc20_withdrawal_fee = '25.5'
+      Setting.usdt_bep20_withdrawal_fee = '10.5'
+      Setting.usdt_solana_withdrawal_fee = '5.2'
+      Setting.usdt_trc20_withdrawal_fee = '1.8'
+
+      get '/api/v1/settings/withdrawal_fees'
+
+      expect(response).to have_http_status(:ok)
+      expect(json_response).to eq(
+        'withdrawal_fees' => {
+          'usdt_erc20' => '25.5',
+          'usdt_bep20' => '10.5',
+          'usdt_solana' => '5.2',
+          'usdt_trc20' => '1.8'
+        }
+      )
+    end
+
+    it 'returns default withdrawal fees when no settings are explicitly set' do
+      Setting.delete_all # Clean up existing settings
+
+      get '/api/v1/settings/withdrawal_fees'
+
+      expect(response).to have_http_status(:ok)
+      expect(json_response).to eq(
+        'withdrawal_fees' => {
+          'usdt_erc20' => 10,
+          'usdt_bep20' => 1,
+          'usdt_solana' => 3,
+          'usdt_trc20' => 2
+        }
+      )
+    end
+
+    it 'returns mix of custom and default withdrawal fees' do
+      Setting.delete_all # Clean up existing settings
+
+      Setting.usdt_erc20_withdrawal_fee = '25.5'
+      Setting.usdt_bep20_withdrawal_fee = '10.5'
+
+      get '/api/v1/settings/withdrawal_fees'
+
+      expect(response).to have_http_status(:ok)
+      expect(json_response).to eq(
+        'withdrawal_fees' => {
+          'usdt_erc20' => '25.5',
+          'usdt_bep20' => '10.5',
+          'usdt_solana' => 3,
+          'usdt_trc20' => 2
+        }
+      )
+    end
+  end
 end

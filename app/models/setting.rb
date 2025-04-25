@@ -9,7 +9,10 @@ class Setting < RailsSettings::Base
   end
 
   scope :withdrawal_fees do
-    field :usdt_erc20_withdrawal_fee, type: :decimal, default: 20
+    field :usdt_erc20_withdrawal_fee, type: :decimal, default: 10
+    field :usdt_bep20_withdrawal_fee, type: :decimal, default: 1
+    field :usdt_solana_withdrawal_fee, type: :decimal, default: 3
+    field :usdt_trc20_withdrawal_fee, type: :decimal, default: 2
   end
 
   def self.ransackable_attributes(auth_object = nil)
