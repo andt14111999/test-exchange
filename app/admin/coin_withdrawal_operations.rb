@@ -43,6 +43,7 @@ ActiveAdmin.register CoinWithdrawalOperation do
       row :status do |operation|
         status_tag operation.status
       end
+      row :status_explanation
       tag_row :withdrawal_status
       row :tx_hash
       row :tx_hash_arrived_at

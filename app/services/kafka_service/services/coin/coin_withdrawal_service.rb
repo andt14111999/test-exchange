@@ -4,7 +4,7 @@ module KafkaService
   module Services
     module Coin
       class CoinWithdrawalService < KafkaService::Base::Service
-        def create(identifier:, status:, user_id:, coin:, account_key:, amount:)
+        def create(identifier:, status:, user_id:, coin:, account_key:, amount:, fee:)
           send_event(
             topic: KafkaService::Config::Topics::COIN_WITHDRAW,
             key: identifier,
@@ -21,7 +21,7 @@ module KafkaService
               txHash: "tx-#{SecureRandom.hex(16)}",
               layer: 'L1',
               destinationAddress: "address-#{SecureRandom.hex(16)}",
-              fee: 0.0
+              fee: fee
             }
           )
         end

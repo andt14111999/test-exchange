@@ -20,17 +20,16 @@ class CoinWithdrawal < ApplicationRecord
   before_validation :assign_coin_layer
   before_validation :calculate_coin_fee, on: :create
   after_create :create_withdrawal_operation
-  after_create :freeze_user_balance
-  after_commit :send_event_withdrawal_to_kafka, if: -> { previous_changes.key?('status') }
+  after_create :send_event_withdrawal_to_kafka
 
   scope :sorted, -> { order(created_at: :desc) }
 
   aasm column: 'status', whiny_transitions: false do
     state :pending, initial: true
     state :processing
-    state :completed
-    state :failed
-    state :cancelled
+    state :completed, after_enter: :send_event_complete_withdrawal_to_kafka
+    state :failed, after_enter: :send_event_fail_withdrawal_to_kafka
+    state :cancelled, after_enter: :send_event_cancel_withdrawal_to_kafka
 
     event :process do
       transitions from: [ :pending ], to: :processing
@@ -41,13 +40,11 @@ class CoinWithdrawal < ApplicationRecord
     end
 
     event :fail do
-      transitions from: [ :processing ], to: :failed,
-        after: :unfreeze_user_balance
+      transitions from: [ :processing ], to: :failed
     end
 
     event :cancel do
-      transitions from: [ :pending, :processing ], to: :cancelled,
-        after: :unfreeze_user_balance
+      transitions from: [ :pending, :processing ], to: :cancelled
     end
   end
 
@@ -82,7 +79,7 @@ class CoinWithdrawal < ApplicationRecord
 
     return unless coin_amount + coin_fee > coin_account.available_balance
 
-      errors.add(:coin_amount, :exceed_available_balance)
+    errors.add(:coin_amount, :exceed_available_balance)
   end
 
   def validate_coin_address_and_layer
@@ -125,8 +122,6 @@ class CoinWithdrawal < ApplicationRecord
   end
 
   def send_event_withdrawal_to_kafka
-    return unless completed? || cancelled? || failed?
-
     account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
       user_id: user_id,
       account_id: main_coin_account.id
@@ -134,14 +129,42 @@ class CoinWithdrawal < ApplicationRecord
 
     KafkaService::Services::Coin::CoinWithdrawalService.new.create(
       identifier: id,
-      status: status,
+      status: pending? || processing? ? 'verified' : status,
       user_id: user_id,
       coin: coin_currency,
       account_key: account_key,
-      amount: coin_amount
+      amount: coin_amount,
+      fee: coin_fee
     )
   rescue StandardError => e
     Rails.logger.error("Failed to send withdrawal event to Kafka: #{e.message}")
+  end
+
+  def send_event_complete_withdrawal_to_kafka
+    return unless completed?
+
+    KafkaService::Services::Coin::CoinWithdrawalService.new.update_status(
+      identifier: id,
+      operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_RELEASING
+    )
+  end
+
+  def send_event_fail_withdrawal_to_kafka
+    return unless failed?
+
+    KafkaService::Services::Coin::CoinWithdrawalService.new.update_status(
+      identifier: id,
+      operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_FAILED
+    )
+  end
+
+  def send_event_cancel_withdrawal_to_kafka
+    return unless cancelled?
+
+    KafkaService::Services::Coin::CoinWithdrawalService.new.update_status(
+      identifier: id,
+      operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_CANCELLED
+    )
   end
 
   def main_coin_account

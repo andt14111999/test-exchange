@@ -116,11 +116,6 @@ RSpec.describe CoinWithdrawal, type: :model do
           coin_currency: withdrawal.coin_currency
         )
       end
-
-      it 'freezes user balance' do
-        withdrawal.coin_layer = 'erc20'
-        expect { withdrawal.save }.to change { coin_account.reload.frozen_balance }.by(withdrawal.coin_amount + Setting.usdt_erc20_withdrawal_fee)
-      end
     end
 
     describe 'after_update callback for status changes' do
@@ -141,6 +136,7 @@ RSpec.describe CoinWithdrawal, type: :model do
       end
 
       it 'does not call send_event_withdrawal_to_kafka when other attributes change' do
+        withdrawal.process!
         expect_any_instance_of(KafkaService::Services::Coin::CoinWithdrawalService).not_to receive(:create)
 
         # Update without changing status
@@ -151,7 +147,6 @@ RSpec.describe CoinWithdrawal, type: :model do
     describe '#send_event_withdrawal_to_kafka' do
       let(:user) { create(:user) }
       let(:coin_account) { create(:coin_account, :usdt_main, user: user, balance: 100.0) }
-      let(:withdrawal) { create(:coin_withdrawal, user:, coin_currency: 'usdt', coin_layer: 'erc20') }
 
       before do
         coin_account
@@ -167,15 +162,23 @@ RSpec.describe CoinWithdrawal, type: :model do
           .and_return(account_key)
 
         expect(withdrawal_service).to receive(:create).with(
-          identifier: withdrawal.id,
-          status: 'completed',
+          identifier: 10000,
+          status: 'verified',
           user_id: user.id,
           coin: 'usdt',
           account_key: account_key,
-          amount: withdrawal.coin_amount
+          amount: 10,
+          fee: Setting.usdt_erc20_withdrawal_fee
         )
+        withdrawal = create(:coin_withdrawal, id: 10000, user:, coin_currency: 'usdt', coin_amount: 10, coin_layer: 'erc20')
 
-        withdrawal.update!(status: 'completed')
+        expect(withdrawal_service).to receive(:update_status).with(
+          identifier: withdrawal.id,
+          operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_RELEASING
+        )
+        withdrawal.process!
+        withdrawal.complete!
+        expect(withdrawal).to be_completed
       end
 
       it 'handles errors gracefully' do
@@ -218,11 +221,10 @@ RSpec.describe CoinWithdrawal, type: :model do
       expect(withdrawal.reload.status).to eq('completed')
     end
 
-    it 'transitions from processing to cancelled and unfreezes balance' do
+    it 'transitions from processing to cancelled' do
       withdrawal.coin_withdrawal_operation.start_relaying!
       expect(withdrawal.reload.status).to eq('processing')
-      expect(coin_account.reload.frozen_balance).to eq(withdrawal.coin_amount + withdrawal.coin_fee)
-      expect { withdrawal.cancel! }.to change { coin_account.reload.frozen_balance }.by(-(withdrawal.coin_amount + withdrawal.coin_fee))
+      withdrawal.cancel!
       expect(withdrawal.reload.status).to eq('cancelled')
     end
   end
