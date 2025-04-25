@@ -21,10 +21,10 @@ RSpec.describe 'Admin Settings', type: :feature do
           fill_in 'settings[usdt_to_vnd_rate]', with: '23000'
           fill_in 'settings[usdt_to_php_rate]', with: '55.5'
           fill_in 'settings[usdt_to_ngn_rate]', with: '1500'
-          click_button 'Update Exchange Rates'
+          click_button 'Update Settings'
         end
 
-        expect(page).to have_content('Exchange rates updated successfully')
+        expect(page).to have_content('Settings updated successfully')
         expect(Setting.usdt_to_vnd_rate.to_f).to eq 23000.0
         expect(Setting.usdt_to_php_rate.to_f).to eq 55.5
         expect(Setting.usdt_to_ngn_rate.to_f).to eq 1500.0
@@ -35,15 +35,15 @@ RSpec.describe 'Admin Settings', type: :feature do
           fill_in 'settings[usdt_to_vnd_rate]', with: ''
           fill_in 'settings[usdt_to_php_rate]', with: ''
           fill_in 'settings[usdt_to_ngn_rate]', with: ''
-          click_button 'Update Exchange Rates'
+          click_button 'Update Settings'
         end
 
-        expect(page).to have_content('Exchange rates updated successfully')
+        expect(page).to have_content('Settings updated successfully')
       end
 
       it 'shows error message when settings params are missing' do
-        page.driver.submit :post, admin_settings_update_rates_path, {}
-        expect(page).to have_content('No exchange rates provided')
+        page.driver.submit :post, admin_settings_update_settings_path, {}
+        expect(page).to have_content('No settings provided')
       end
     end
 

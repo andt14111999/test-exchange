@@ -102,7 +102,7 @@ RSpec.describe CoinWithdrawal, type: :model do
       it 'calculates coin_fee before create' do
         withdrawal.coin_fee = nil
         withdrawal.valid?
-        expect(withdrawal.coin_fee).to eq(20)
+        expect(withdrawal.coin_fee).to eq(Setting.usdt_erc20_withdrawal_fee)
       end
     end
 
