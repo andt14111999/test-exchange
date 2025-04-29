@@ -12,6 +12,12 @@ module KafkaService
 
       # Merchant types
       MERCHANT_ESCROW = 'MerchantEscrow'
+
+      # Trade types
+      TRADE = 'Trade'
+
+      # Offer types
+      OFFER = 'Offer'
     end
   end
 end
