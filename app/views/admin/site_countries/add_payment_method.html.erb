@@ -1,0 +1,70 @@
+<h3>Add Payment Method to <%= @site_country.name %></h3>
+
+<%= form_tag submit_payment_method_admin_site_country_path(@site_country), method: :post do %>
+  <div class="panel">
+    <div class="panel_contents">
+      <div class="attributes_table">
+        <table>
+          <tr>
+            <th>ID</th>
+            <td><%= @site_country.id %></td>
+          </tr>
+          <tr>
+            <th>Country Code</th>
+            <td><%= @site_country.country_code %></td>
+          </tr>
+          <tr>
+            <th>Name</th>
+            <td><%= @site_country.name %></td>
+          </tr>
+          <tr>
+            <th>Currency</th>
+            <td><%= @site_country.currency %></td>
+          </tr>
+          <tr>
+            <th>Current Payment Methods</th>
+            <td>
+              <% if @site_country.supported_payment_methods.present? %>
+                <ul>
+                  <% @site_country.supported_payment_methods.each do |method| %>
+                    <li>
+                      <%= method %>
+                      <%= link_to "Remove", remove_payment_method_admin_site_country_path(@site_country, payment_method: method), method: :delete, data: { confirm: "Are you sure?" }, class: "delete_link" %>
+                    </li>
+                  <% end %>
+                </ul>
+              <% else %>
+                None
+              <% end %>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="inputs">
+    <fieldset class="inputs">
+      <legend><span>Add Payment Method</span></legend>
+      <ol>
+        <li class="select input">
+          <label for="payment_method">Payment Method</label>
+          <select name="payment_method" id="payment_method" required>
+            <option value="">Select a payment method</option>
+            <% @available_methods.each do |method| %>
+              <option value="<%= method %>"><%= method %></option>
+            <% end %>
+            <% if @available_methods.empty? %>
+              <option value="" disabled>No available payment methods for this country</option>
+            <% end %>
+          </select>
+        </li>
+      </ol>
+    </fieldset>
+  </div>
+
+  <div class="actions">
+    <input type="submit" name="commit" value="Add Payment Method" class="button" <%= "disabled" if @available_methods.empty? %>>
+    <%= link_to "Back", admin_site_country_path(@site_country), class: "button" %>
+  </div>
+<% end %>

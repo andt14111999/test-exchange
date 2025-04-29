@@ -1,0 +1,57 @@
+<h3>Resolve Dispute for Buyer</h3>
+
+<%= form_tag submit_resolve_for_buyer_admin_trade_path(@trade), method: :post do %>
+  <div class="panel">
+    <div class="panel_contents">
+      <div class="attributes_table">
+        <table>
+          <tr>
+            <th>ID</th>
+            <td><%= @trade.id %></td>
+          </tr>
+          <tr>
+            <th>Reference</th>
+            <td><%= @trade.ref %></td>
+          </tr>
+          <tr>
+            <th>Buyer</th>
+            <td><%= @trade.buyer.email %></td>
+          </tr>
+          <tr>
+            <th>Seller</th>
+            <td><%= @trade.seller.email %></td>
+          </tr>
+          <tr>
+            <th>Amount</th>
+            <td><%= @trade.coin_amount %> <%= @trade.coin_currency %> (<%= @trade.fiat_amount %> <%= @trade.fiat_currency %>)</td>
+          </tr>
+          <tr>
+            <th>Status</th>
+            <td><%= @trade.status %></td>
+          </tr>
+          <tr>
+            <th>Dispute Reason</th>
+            <td><%= @trade.dispute_reason %></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="inputs">
+    <fieldset class="inputs">
+      <legend><span>Admin Notes</span></legend>
+      <ol>
+        <li class="text input">
+          <label for="admin_notes">Resolution Notes</label>
+          <textarea name="admin_notes" id="admin_notes" rows="5" cols="60" placeholder="Explain why the dispute is being resolved in favor of the buyer" required></textarea>
+        </li>
+      </ol>
+    </fieldset>
+  </div>
+
+  <div class="actions">
+    <input type="submit" name="commit" value="Resolve for Buyer" class="button" data-confirm="This will cancel the trade and return funds to the seller. Are you sure?">
+    <%= link_to "Cancel", admin_trade_path(@trade), class: "button" %>
+  </div>
+<% end %>
