@@ -10,6 +10,17 @@ class User < ApplicationRecord
   has_many :coin_withdrawals, dependent: :nullify
   has_many :amm_positions, dependent: :destroy
 
+  # P2P Trading
+  has_many :offers, dependent: :destroy
+  has_many :buying_trades, class_name: 'Trade', foreign_key: 'buyer_id', dependent: :destroy
+  has_many :selling_trades, class_name: 'Trade', foreign_key: 'seller_id', dependent: :destroy
+  has_many :messages, dependent: :destroy
+  has_many :bank_accounts, dependent: :destroy
+
+  # Fiat operations
+  has_many :fiat_deposits, dependent: :destroy
+  has_many :fiat_withdrawals, dependent: :destroy
+
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :role, inclusion: { in: %w[merchant user] }
   validates :status, inclusion: { in: %w[active suspended banned] }
@@ -43,7 +54,7 @@ class User < ApplicationRecord
 
   # Required for Ransack associations in ActiveAdmin
   def self.ransackable_associations(_auth_object = nil)
-    %w[social_accounts]
+    %w[social_accounts fiat_accounts coin_accounts offers buying_trades selling_trades]
   end
 
   after_create :create_default_accounts
@@ -93,6 +104,26 @@ class User < ApplicationRecord
     else
       fiat_accounts.of_currency(currency.upcase).first
     end
+  end
+
+  def trades
+    Trade.where('buyer_id = ? OR seller_id = ?', id, id)
+  end
+
+  def max_active_offers
+    # For now hardcoded to 5, but could be based on user attributes
+    # like kyc_level, role, etc. in the future
+    5
+  end
+
+  def can_create_offer?
+    # For now let merchants create offers regardless of verification
+    # In production, you might want stricter requirements
+    return true if merchant?
+
+    # For regular users, require at least some verification
+    # Customize these requirements based on your business logic
+    phone_verified || document_verified || kyc_level > 0
   end
 
   private

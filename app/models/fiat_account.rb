@@ -6,6 +6,8 @@ class FiatAccount < ApplicationRecord
 
   belongs_to :user
   has_many :fiat_transactions, dependent: :destroy
+  has_many :fiat_deposits, dependent: :destroy
+  has_many :fiat_withdrawals, dependent: :destroy
 
   SUPPORTED_CURRENCIES = {
     'VND' => 'Vietnam Dong',
@@ -20,17 +22,18 @@ class FiatAccount < ApplicationRecord
   validate :validate_balances
 
   scope :of_currency, ->(currency) { where(currency: currency) }
+  scope :of_country, ->(country_code) { where(country_code: country_code) }
 
   class << self
     def ransackable_attributes(_auth_object = nil)
       %w[
-        id user_id currency balance frozen_balance
-        created_at updated_at
+        id user_id currency balance frozen_balance country_code
+        frozen_reason created_at updated_at
       ]
     end
 
     def ransackable_associations(_auth_object = nil)
-      %w[user fiat_transactions]
+      %w[user fiat_transactions fiat_deposits fiat_withdrawals]
     end
   end
 
@@ -54,12 +57,14 @@ class FiatAccount < ApplicationRecord
     create_fiat_transaction(amount, 'burn')
   end
 
-  def lock_amount!(amount)
+  def lock_amount!(amount, reason = nil)
     return if amount <= 0
 
     raise 'Insufficient balance' if amount > available_balance
 
     self.frozen_balance += amount
+    self.frozen_reason = reason if reason.present?
+    save!
   end
 
   def unlock_amount!(amount)
@@ -68,6 +73,8 @@ class FiatAccount < ApplicationRecord
     raise 'Insufficient frozen balance' if amount > frozen_balance
 
     self.frozen_balance -= amount
+    self.frozen_reason = nil if frozen_balance.zero?
+    save!
   end
 
   def account_key

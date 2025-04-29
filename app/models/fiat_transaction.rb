@@ -8,17 +8,30 @@ class FiatTransaction < ApplicationRecord
   validates :transaction_type, presence: true
   validates :currency, presence: true
 
-  TRANSACTION_TYPES = %w[mint burn].freeze
+  TRANSACTION_TYPES = %w[mint burn deposit withdrawal transfer refund].freeze
+  STATUSES = %w[pending completed failed cancelled].freeze
 
   validates :transaction_type, inclusion: { in: TRANSACTION_TYPES }
+  validates :status, inclusion: { in: STATUSES }, allow_blank: true
 
   delegate :user, to: :fiat_account
 
   scope :sorted, -> { order(created_at: :desc) }
   scope :of_currency, ->(currency) { where(currency: currency) }
   scope :of_transaction_type, ->(type) { where(transaction_type: type) }
+  scope :deposits, -> { where(transaction_type: 'deposit') }
+  scope :withdrawals, -> { where(transaction_type: 'withdrawal') }
+  scope :transfers, -> { where(transaction_type: 'transfer') }
+  scope :refunds, -> { where(transaction_type: 'refund') }
+
+  # Status scopes
+  scope :pending, -> { where(status: 'pending') }
+  scope :completed, -> { where(status: 'completed') }
+  scope :failed, -> { where(status: 'failed') }
+  scope :cancelled, -> { where(status: 'cancelled') }
 
   before_create :set_balance_snapshot, unless: -> { snapshot_balance.present? && snapshot_frozen_balance.present? }
+  before_create :set_default_status
 
   def self.ransackable_associations(_auth_object = nil)
     %w[fiat_account operation]
@@ -26,10 +39,49 @@ class FiatTransaction < ApplicationRecord
 
   def self.ransackable_attributes(_auth_object = nil)
     %w[
-      id fiat_account_id amount transaction_type currency
+      id fiat_account_id amount transaction_type currency status
+      reference_id reference_type description
       snapshot_balance snapshot_frozen_balance
       created_at updated_at
     ]
+  end
+
+  # Status check methods
+  def pending?
+    status == 'pending'
+  end
+
+  def completed?
+    status == 'completed'
+  end
+
+  def failed?
+    status == 'failed'
+  end
+
+  def cancelled?
+    status == 'cancelled'
+  end
+
+  # Status change methods
+  def complete!
+    update!(status: 'completed')
+  end
+
+  def fail!(error_message = nil)
+    if error_message.present?
+      update!(status: 'failed', description: error_message)
+    else
+      update!(status: 'failed')
+    end
+  end
+
+  def cancel!(reason = nil)
+    if reason.present?
+      update!(status: 'cancelled', description: reason)
+    else
+      update!(status: 'cancelled')
+    end
   end
 
   private
@@ -37,5 +89,9 @@ class FiatTransaction < ApplicationRecord
   def set_balance_snapshot
     self.snapshot_balance = fiat_account.balance
     self.snapshot_frozen_balance = fiat_account.frozen_balance
+  end
+
+  def set_default_status
+    self.status = 'pending' if status.blank?
   end
 end
