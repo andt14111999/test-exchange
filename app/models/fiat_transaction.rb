@@ -39,8 +39,7 @@ class FiatTransaction < ApplicationRecord
 
   def self.ransackable_attributes(_auth_object = nil)
     %w[
-      id fiat_account_id amount transaction_type currency status
-      reference_id reference_type description
+      id fiat_account_id amount transaction_type currency
       snapshot_balance snapshot_frozen_balance
       created_at updated_at
     ]

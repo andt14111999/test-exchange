@@ -54,7 +54,7 @@ class User < ApplicationRecord
 
   # Required for Ransack associations in ActiveAdmin
   def self.ransackable_associations(_auth_object = nil)
-    %w[social_accounts fiat_accounts coin_accounts offers buying_trades selling_trades]
+    %w[social_accounts]
   end
 
   after_create :create_default_accounts

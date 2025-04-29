@@ -27,13 +27,13 @@ class FiatAccount < ApplicationRecord
   class << self
     def ransackable_attributes(_auth_object = nil)
       %w[
-        id user_id currency balance frozen_balance country_code
-        frozen_reason created_at updated_at
+        id user_id currency balance frozen_balance
+        created_at updated_at
       ]
     end
 
     def ransackable_associations(_auth_object = nil)
-      %w[user fiat_transactions fiat_deposits fiat_withdrawals]
+      %w[user fiat_transactions]
     end
   end
 
