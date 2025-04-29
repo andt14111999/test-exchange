@@ -42,4 +42,20 @@ RSpec.describe KafkaService::Services::IdentifierBuilderService, type: :service 
       expect(result).to eq("fiat-withdrawal-#{withdrawal_id}")
     end
   end
+
+  describe '.build_trade_identifier' do
+    it 'returns correctly formatted trade identifier' do
+      trade_id = 161718
+      result = described_class.build_trade_identifier(trade_id: trade_id)
+      expect(result).to eq("trade-#{trade_id}")
+    end
+  end
+
+  describe '.build_offer_identifier' do
+    it 'returns correctly formatted offer identifier' do
+      offer_id = 192021
+      result = described_class.build_offer_identifier(offer_id: offer_id)
+      expect(result).to eq("offer-#{offer_id}")
+    end
+  end
 end
