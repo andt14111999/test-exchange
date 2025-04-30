@@ -3,17 +3,12 @@
 FactoryBot.define do
   factory :payment_method do
     sequence(:name) { |n| "payment_method_#{n}" }
-    display_name { "Payment Method #{name.capitalize}" }
-    description { "Description for #{display_name}" }
-    country_code { 'vn' }
+    sequence(:display_name) { |n| "Payment Method #{n}" }
+    country_code { 'US' }
     enabled { true }
-    fields_required do
-      {
-        'account_number' => { 'type' => 'string', 'required' => true },
-        'account_name' => { 'type' => 'string', 'required' => true }
-      }
-    end
-    icon_url { 'https://example.com/payment_icon.png' }
+    fields_required { { 'account_number' => 'string', 'bank_name' => 'string' } }
+    description { 'A payment method description' }
+    icon_url { 'https://example.com/icon.png' }
 
     trait :bank_transfer do
       name { 'bank_transfer' }
