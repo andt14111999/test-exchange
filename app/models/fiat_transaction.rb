@@ -67,20 +67,12 @@ class FiatTransaction < ApplicationRecord
     update!(status: 'completed')
   end
 
-  def fail!(error_message = nil)
-    if error_message.present?
-      update!(status: 'failed', description: error_message)
-    else
-      update!(status: 'failed')
-    end
+  def fail!
+    update!(status: 'failed')
   end
 
-  def cancel!(reason = nil)
-    if reason.present?
-      update!(status: 'cancelled', description: reason)
-    else
-      update!(status: 'cancelled')
-    end
+  def cancel!
+    update!(status: 'cancelled')
   end
 
   private

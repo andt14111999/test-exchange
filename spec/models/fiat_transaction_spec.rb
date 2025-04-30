@@ -48,6 +48,18 @@ describe FiatTransaction, type: :model do
       expect(fiat_transaction).to be_invalid
       expect(fiat_transaction.errors[:currency]).to include("can't be blank")
     end
+
+    it 'validates inclusion of status in STATUSES' do
+      fiat_transaction = build(:fiat_transaction, status: 'invalid')
+      expect(fiat_transaction).to be_invalid
+      expect(fiat_transaction.errors[:status]).to include('is not included in the list')
+    end
+
+    it 'allows blank status' do
+      fiat_transaction = build(:fiat_transaction, status: nil)
+      fiat_transaction.valid?
+      expect(fiat_transaction.errors[:status]).to be_empty
+    end
   end
 
   describe 'scopes' do
@@ -68,6 +80,87 @@ describe FiatTransaction, type: :model do
       vnd_transactions = described_class.of_currency('VND')
       expect(vnd_transactions).to include(vnd_transaction)
       expect(vnd_transactions).not_to include(php_transaction)
+    end
+
+    it 'filters by transaction_type' do
+      mint_transaction = create(:fiat_transaction, transaction_type: 'mint')
+      burn_transaction = create(:fiat_transaction, transaction_type: 'burn')
+
+      mint_transactions = described_class.of_transaction_type('mint')
+      expect(mint_transactions).to include(mint_transaction)
+      expect(mint_transactions).not_to include(burn_transaction)
+    end
+
+    it 'filters deposits' do
+      deposit_transaction = create(:fiat_transaction, transaction_type: 'deposit')
+      withdrawal_transaction = create(:fiat_transaction, transaction_type: 'withdrawal')
+
+      deposits = described_class.deposits
+      expect(deposits).to include(deposit_transaction)
+      expect(deposits).not_to include(withdrawal_transaction)
+    end
+
+    it 'filters withdrawals' do
+      deposit_transaction = create(:fiat_transaction, transaction_type: 'deposit')
+      withdrawal_transaction = create(:fiat_transaction, transaction_type: 'withdrawal')
+
+      withdrawals = described_class.withdrawals
+      expect(withdrawals).to include(withdrawal_transaction)
+      expect(withdrawals).not_to include(deposit_transaction)
+    end
+
+    it 'filters transfers' do
+      transfer_transaction = create(:fiat_transaction, transaction_type: 'transfer')
+      deposit_transaction = create(:fiat_transaction, transaction_type: 'deposit')
+
+      transfers = described_class.transfers
+      expect(transfers).to include(transfer_transaction)
+      expect(transfers).not_to include(deposit_transaction)
+    end
+
+    it 'filters refunds' do
+      refund_transaction = create(:fiat_transaction, transaction_type: 'refund')
+      deposit_transaction = create(:fiat_transaction, transaction_type: 'deposit')
+
+      refunds = described_class.refunds
+      expect(refunds).to include(refund_transaction)
+      expect(refunds).not_to include(deposit_transaction)
+    end
+
+    it 'filters pending transactions' do
+      pending_transaction = create(:fiat_transaction, status: 'pending')
+      completed_transaction = create(:fiat_transaction, status: 'completed')
+
+      pending = described_class.pending
+      expect(pending).to include(pending_transaction)
+      expect(pending).not_to include(completed_transaction)
+    end
+
+    it 'filters completed transactions' do
+      pending_transaction = create(:fiat_transaction, status: 'pending')
+      completed_transaction = create(:fiat_transaction, status: 'completed')
+
+      completed = described_class.completed
+      expect(completed).to include(completed_transaction)
+      expect(completed).not_to include(pending_transaction)
+    end
+
+    it 'filters failed transactions' do
+      failed_transaction = create(:fiat_transaction, status: 'failed')
+      completed_transaction = create(:fiat_transaction, status: 'completed')
+
+      failed = described_class.failed
+      expect(failed).to include(failed_transaction)
+      expect(failed).not_to include(completed_transaction)
+    end
+
+    it 'filters cancelled transactions' do
+      cancelled_transaction = create(:fiat_transaction, status: 'cancelled')
+      completed_transaction = create(:fiat_transaction, status: 'completed')
+
+      cancelled = described_class.cancelled
+      expect(cancelled).to include(cancelled_transaction)
+      expect(cancelled).not_to include(completed_transaction)
     end
   end
 
@@ -91,6 +184,80 @@ describe FiatTransaction, type: :model do
 
       expect(fiat_transaction.snapshot_balance).to eq(500)
       expect(fiat_transaction.snapshot_frozen_balance).to eq(100)
+    end
+
+    it 'sets default status to pending if blank' do
+      fiat_transaction = build(:fiat_transaction, status: nil)
+      fiat_transaction.save!
+      expect(fiat_transaction.status).to eq('pending')
+    end
+
+    it 'does not override existing status' do
+      fiat_transaction = build(:fiat_transaction, status: 'completed')
+      fiat_transaction.save!
+      expect(fiat_transaction.status).to eq('completed')
+    end
+  end
+
+  describe 'status check methods' do
+    it 'returns true for pending?' do
+      fiat_transaction = create(:fiat_transaction, status: 'pending')
+      expect(fiat_transaction.pending?).to be true
+    end
+
+    it 'returns false for pending? when not pending' do
+      fiat_transaction = create(:fiat_transaction, status: 'completed')
+      expect(fiat_transaction.pending?).to be false
+    end
+
+    it 'returns true for completed?' do
+      fiat_transaction = create(:fiat_transaction, status: 'completed')
+      expect(fiat_transaction.completed?).to be true
+    end
+
+    it 'returns false for completed? when not completed' do
+      fiat_transaction = create(:fiat_transaction, status: 'pending')
+      expect(fiat_transaction.completed?).to be false
+    end
+
+    it 'returns true for failed?' do
+      fiat_transaction = create(:fiat_transaction, status: 'failed')
+      expect(fiat_transaction.failed?).to be true
+    end
+
+    it 'returns false for failed? when not failed' do
+      fiat_transaction = create(:fiat_transaction, status: 'pending')
+      expect(fiat_transaction.failed?).to be false
+    end
+
+    it 'returns true for cancelled?' do
+      fiat_transaction = create(:fiat_transaction, status: 'cancelled')
+      expect(fiat_transaction.cancelled?).to be true
+    end
+
+    it 'returns false for cancelled? when not cancelled' do
+      fiat_transaction = create(:fiat_transaction, status: 'pending')
+      expect(fiat_transaction.cancelled?).to be false
+    end
+  end
+
+  describe 'status change methods' do
+    it 'changes status to completed with complete!' do
+      fiat_transaction = create(:fiat_transaction, status: 'pending')
+      fiat_transaction.complete!
+      expect(fiat_transaction.status).to eq('completed')
+    end
+
+    it 'changes status to failed with fail!' do
+      fiat_transaction = create(:fiat_transaction, status: 'pending')
+      fiat_transaction.fail!
+      expect(fiat_transaction.status).to eq('failed')
+    end
+
+    it 'changes status to cancelled with cancel!' do
+      fiat_transaction = create(:fiat_transaction, status: 'pending')
+      fiat_transaction.cancel!
+      expect(fiat_transaction.status).to eq('cancelled')
     end
   end
 
