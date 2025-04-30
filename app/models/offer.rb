@@ -28,7 +28,8 @@ class Offer < ApplicationRecord
   scope :scheduled, -> { where('schedule_start_time IS NOT NULL OR schedule_end_time IS NOT NULL') }
   scope :currently_active, -> {
     active.where('(schedule_start_time IS NULL AND schedule_end_time IS NULL) OR
-                 (schedule_start_time <= ? AND (schedule_end_time IS NULL OR schedule_end_time >= ?))',
+                 ((schedule_start_time IS NULL OR schedule_start_time <= ?) AND
+                  (schedule_end_time IS NULL OR schedule_end_time >= ?))',
                  Time.zone.now, Time.zone.now)
   }
   scope :buy_offers, -> { where(offer_type: 'buy') }

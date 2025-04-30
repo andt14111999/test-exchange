@@ -5,22 +5,25 @@ FactoryBot.define do
     association :user
     association :payment_method
 
-    offer_type { %w[buy sell].sample }
-    coin_currency { 'btc' }
-    currency { 'VND' }
-    price { 600_000_000 } # 600M VND per BTC
+    offer_type { 'buy' }
+    coin_currency { 'BTC' }
+    currency { 'USD' }
+    price { 50000.0 }
     min_amount { 0.001 }
     max_amount { 0.1 }
     total_amount { 1.0 }
     payment_time { 30 }
-    payment_details { { 'instructions' => 'Please transfer with reference code' } }
-    country_code { 'vn' }
+    country_code { 'US' }
+    payment_details { { 'bank_account' => '1234567890' } }
+    terms_of_trade { 'Please transfer the exact amount' }
+    bank_names { [ 'Bank of America', 'Chase' ] }
     disabled { false }
     deleted { false }
     automatic { false }
     online { true }
-    terms_of_trade { 'Please complete the payment within the time limit.' }
-    bank_names { %w[Vietcombank BIDV Techcombank] }
+    margin { nil }
+    schedule_start_time { nil }
+    schedule_end_time { nil }
 
     trait :buy do
       offer_type { 'buy' }
@@ -32,24 +35,24 @@ FactoryBot.define do
 
     trait :disabled do
       disabled { true }
-      disable_reason { 'Temporarily unavailable' }
+      disable_reason { 'Disabled for testing' }
     end
 
     trait :deleted do
       deleted { true }
     end
 
+    trait :scheduled do
+      schedule_start_time { Time.zone.now - 1.hour }
+      schedule_end_time { Time.zone.now + 1.hour }
+    end
+
+    trait :with_margin do
+      margin { 0.05 }
+    end
+
     trait :automatic do
       automatic { true }
-    end
-
-    trait :offline do
-      online { false }
-    end
-
-    trait :with_dynamic_pricing do
-      margin { 0.05 } # 5% margin
-      fixed_coin_price { nil }
     end
 
     trait :vietnam do

@@ -4,10 +4,10 @@ FactoryBot.define do
   factory :payment_method do
     sequence(:name) { |n| "payment_method_#{n}" }
     sequence(:display_name) { |n| "Payment Method #{n}" }
+    description { 'A payment method description' }
     country_code { 'US' }
     enabled { true }
     fields_required { { 'account_number' => 'string', 'bank_name' => 'string' } }
-    description { 'A payment method description' }
     icon_url { 'https://example.com/icon.png' }
 
     trait :bank_transfer do
