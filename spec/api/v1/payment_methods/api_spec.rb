@@ -54,7 +54,7 @@ RSpec.describe V1::PaymentMethods::Api, type: :request do
         json_response = JSON.parse(response.body)
         expect(json_response.size).to eq(1)
         expect(json_response[0]['id']).to eq(enabled_payment_method.id)
-        expect(json_response[0]['enabled']).to eq(true)
+        expect(json_response[0]['enabled']).to be(true)
       end
 
       it 'filters payment methods by enabled=false' do
@@ -67,7 +67,7 @@ RSpec.describe V1::PaymentMethods::Api, type: :request do
         json_response = JSON.parse(response.body)
         expect(json_response.size).to eq(1)
         expect(json_response[0]['id']).to eq(disabled_payment_method.id)
-        expect(json_response[0]['enabled']).to eq(false)
+        expect(json_response[0]['enabled']).to be(false)
       end
 
       it 'combines country_code and enabled filters' do
@@ -84,7 +84,7 @@ RSpec.describe V1::PaymentMethods::Api, type: :request do
         expect(json_response.size).to eq(1)
         expect(json_response[0]['id']).to eq(us_enabled.id)
         expect(json_response[0]['country_code']).to eq('US')
-        expect(json_response[0]['enabled']).to eq(true)
+        expect(json_response[0]['enabled']).to be(true)
       end
     end
   end
@@ -120,7 +120,7 @@ RSpec.describe V1::PaymentMethods::Api, type: :request do
         expect(json_response['name']).to eq('bank_transfer')
         expect(json_response['display_name']).to eq('Bank Transfer')
         expect(json_response['country_code']).to eq('US')
-        expect(json_response['enabled']).to eq(true)
+        expect(json_response['enabled']).to be(true)
       end
 
       it 'returns 404 when payment method is not found' do

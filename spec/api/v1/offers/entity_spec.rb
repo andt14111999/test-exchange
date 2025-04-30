@@ -42,8 +42,7 @@ RSpec.describe V1::Offers::Entity do
 
       it 'returns disabled when offer is disabled' do
         offer = create(:offer)
-        allow(offer).to receive(:deleted?).and_return(false)
-        allow(offer).to receive(:disabled?).and_return(true)
+        allow(offer).to receive_messages(deleted?: false, disabled?: true)
 
         entity = described_class.represent(offer)
         expect(entity.as_json[:status]).to eq('disabled')
@@ -51,10 +50,7 @@ RSpec.describe V1::Offers::Entity do
 
       it 'returns scheduled_active when offer is scheduled and currently active' do
         offer = create(:offer)
-        allow(offer).to receive(:deleted?).and_return(false)
-        allow(offer).to receive(:disabled?).and_return(false)
-        allow(offer).to receive(:scheduled?).and_return(true)
-        allow(offer).to receive(:currently_active?).and_return(true)
+        allow(offer).to receive_messages(deleted?: false, disabled?: false, scheduled?: true, currently_active?: true)
 
         entity = described_class.represent(offer)
         expect(entity.as_json[:status]).to eq('scheduled_active')
@@ -62,10 +58,7 @@ RSpec.describe V1::Offers::Entity do
 
       it 'returns scheduled_inactive when offer is scheduled but not currently active' do
         offer = create(:offer)
-        allow(offer).to receive(:deleted?).and_return(false)
-        allow(offer).to receive(:disabled?).and_return(false)
-        allow(offer).to receive(:scheduled?).and_return(true)
-        allow(offer).to receive(:currently_active?).and_return(false)
+        allow(offer).to receive_messages(deleted?: false, disabled?: false, scheduled?: true, currently_active?: false)
 
         entity = described_class.represent(offer)
         expect(entity.as_json[:status]).to eq('scheduled_inactive')
@@ -73,9 +66,7 @@ RSpec.describe V1::Offers::Entity do
 
       it 'returns active when offer is not deleted, disabled, or scheduled' do
         offer = create(:offer)
-        allow(offer).to receive(:deleted?).and_return(false)
-        allow(offer).to receive(:disabled?).and_return(false)
-        allow(offer).to receive(:scheduled?).and_return(false)
+        allow(offer).to receive_messages(deleted?: false, disabled?: false, scheduled?: false)
 
         entity = described_class.represent(offer)
         expect(entity.as_json[:status]).to eq('active')

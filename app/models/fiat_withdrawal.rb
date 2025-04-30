@@ -304,7 +304,7 @@ class FiatWithdrawal < ApplicationRecord
   def create_transaction_and_release_funds
     fiat_account.with_lock do
       # Create a withdrawal transaction
-      FiatAccountTransaction.create!(
+      FiatTransaction.create!(
         fiat_account: fiat_account,
         transaction_type: 'withdrawal',
         amount: -fiat_amount,
@@ -335,7 +335,7 @@ class FiatWithdrawal < ApplicationRecord
   def refund_funds_on_cancel
     fiat_account.with_lock do
       # Create a refund transaction
-      FiatAccountTransaction.create!(
+      FiatTransaction.create!(
         fiat_account: fiat_account,
         transaction_type: 'withdrawal_refund',
         amount: fiat_amount,

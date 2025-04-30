@@ -307,7 +307,7 @@ class FiatDeposit < ApplicationRecord
       # Update balance for direct deposits
       if payable_type.blank?
         # Create an account transaction record
-        FiatAccountTransaction.create!(
+        FiatTransaction.create!(
           fiat_account: fiat_account,
           transaction_type: 'deposit',
           amount: amount_after_fee,

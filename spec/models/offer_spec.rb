@@ -11,7 +11,7 @@ RSpec.describe Offer, type: :model do
     it 'belongs to payment method optionally' do
       association = described_class.reflect_on_association(:payment_method)
       expect(association.macro).to eq :belongs_to
-      expect(association.options[:optional]).to eq true
+      expect(association.options[:optional]).to be true
     end
 
     it 'has many trades' do
@@ -338,75 +338,75 @@ RSpec.describe Offer, type: :model do
   describe '#buy?' do
     it 'returns true when offer_type is buy' do
       offer = described_class.new(offer_type: 'buy')
-      expect(offer.buy?).to eq true
+      expect(offer.buy?).to be true
     end
 
     it 'returns false when offer_type is not buy' do
       offer = described_class.new(offer_type: 'sell')
-      expect(offer.buy?).to eq false
+      expect(offer.buy?).to be false
     end
   end
 
   describe '#sell?' do
     it 'returns true when offer_type is sell' do
       offer = described_class.new(offer_type: 'sell')
-      expect(offer.sell?).to eq true
+      expect(offer.sell?).to be true
     end
 
     it 'returns false when offer_type is not sell' do
       offer = described_class.new(offer_type: 'buy')
-      expect(offer.sell?).to eq false
+      expect(offer.sell?).to be false
     end
   end
 
   describe '#active?' do
     it 'returns true when offer is active' do
       offer = described_class.new(disabled: false, deleted: false)
-      expect(offer.active?).to eq true
+      expect(offer.active?).to be true
     end
 
     it 'returns false when offer is disabled' do
       offer = described_class.new(disabled: true, deleted: false)
-      expect(offer.active?).to eq false
+      expect(offer.active?).to be false
     end
 
     it 'returns false when offer is deleted' do
       offer = described_class.new(disabled: false, deleted: true)
-      expect(offer.active?).to eq false
+      expect(offer.active?).to be false
     end
   end
 
   describe '#scheduled?' do
     it 'returns true when schedule_start_time is present' do
       offer = described_class.new(schedule_start_time: Time.zone.now)
-      expect(offer.scheduled?).to eq true
+      expect(offer.scheduled?).to be true
     end
 
     it 'returns true when schedule_end_time is present' do
       offer = described_class.new(schedule_end_time: Time.zone.now)
-      expect(offer.scheduled?).to eq true
+      expect(offer.scheduled?).to be true
     end
 
     it 'returns false when neither schedule time is present' do
       offer = described_class.new
-      expect(offer.scheduled?).to eq false
+      expect(offer.scheduled?).to be false
     end
   end
 
   describe '#currently_active?' do
     it 'returns false when offer is disabled' do
       offer = described_class.new(disabled: true)
-      expect(offer.currently_active?).to eq false
+      expect(offer.currently_active?).to be false
     end
 
     it 'returns false when offer is deleted' do
       offer = described_class.new(deleted: true)
-      expect(offer.currently_active?).to eq false
+      expect(offer.currently_active?).to be false
     end
 
     it 'returns true when offer is active and not scheduled' do
       offer = described_class.new(disabled: false, deleted: false)
-      expect(offer.currently_active?).to eq true
+      expect(offer.currently_active?).to be true
     end
 
     it 'returns true when offer is active and current time is within schedule' do
@@ -416,7 +416,7 @@ RSpec.describe Offer, type: :model do
         schedule_start_time: Time.zone.now - 1.hour,
         schedule_end_time: Time.zone.now + 1.hour
       )
-      expect(offer.currently_active?).to eq true
+      expect(offer.currently_active?).to be true
     end
 
     it 'returns false when offer is active but current time is before schedule_start_time' do
@@ -425,7 +425,7 @@ RSpec.describe Offer, type: :model do
         deleted: false,
         schedule_start_time: Time.zone.now + 1.hour
       )
-      expect(offer.currently_active?).to eq false
+      expect(offer.currently_active?).to be false
     end
 
     it 'returns false when offer is active but current time is after schedule_end_time' do
@@ -434,7 +434,7 @@ RSpec.describe Offer, type: :model do
         deleted: false,
         schedule_end_time: Time.zone.now - 1.hour
       )
-      expect(offer.currently_active?).to eq false
+      expect(offer.currently_active?).to be false
     end
   end
 
@@ -469,7 +469,7 @@ RSpec.describe Offer, type: :model do
 
       result = offer.disable!
 
-      expect(result).to eq false
+      expect(result).to be false
       expect(offer.errors[:base]).to include('Kafka error')
     end
   end
@@ -514,7 +514,7 @@ RSpec.describe Offer, type: :model do
 
       result = offer.enable!
 
-      expect(result).to eq false
+      expect(result).to be false
       expect(offer.errors[:base]).to include('Kafka error')
     end
   end
@@ -525,20 +525,17 @@ RSpec.describe Offer, type: :model do
       trades = double('trades')
 
       allow(offer).to receive(:trades).and_return(trades)
-      allow(trades).to receive(:in_progress).and_return(trades)
-      allow(trades).to receive(:exists?).and_return(true)
+      allow(trades).to receive_messages(in_progress: trades, exists?: true)
 
-      expect(offer.delete!).to eq false
+      expect(offer.delete!).to be false
     end
 
     it 'sends offer delete to Kafka when no trades in progress' do
       offer = described_class.new
       trades = double('trades')
 
-      allow(offer).to receive(:trades).and_return(trades)
-      allow(trades).to receive(:in_progress).and_return(trades)
-      allow(trades).to receive(:exists?).and_return(false)
-      allow(offer).to receive(:send_offer_delete_to_kafka).and_return(true)
+      allow(trades).to receive_messages(in_progress: trades, exists?: false)
+      allow(offer).to receive_messages(trades: trades, send_offer_delete_to_kafka: true)
 
       offer.delete!
       expect(offer).to have_received(:send_offer_delete_to_kafka)
@@ -671,21 +668,21 @@ RSpec.describe Offer, type: :model do
       offer = described_class.new
       allow(offer).to receive(:available_amount).and_return(1.0)
 
-      expect(offer.has_available_amount?(0.5)).to eq true
+      expect(offer.has_available_amount?(0.5)).to be true
     end
 
     it 'returns true when amount equals available amount' do
       offer = described_class.new
       allow(offer).to receive(:available_amount).and_return(1.0)
 
-      expect(offer.has_available_amount?(1.0)).to eq true
+      expect(offer.has_available_amount?(1.0)).to be true
     end
 
     it 'returns false when amount is greater than available amount' do
       offer = described_class.new
       allow(offer).to receive(:available_amount).and_return(1.0)
 
-      expect(offer.has_available_amount?(1.5)).to eq false
+      expect(offer.has_available_amount?(1.5)).to be false
     end
   end
 

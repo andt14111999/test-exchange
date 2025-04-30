@@ -27,8 +27,8 @@ RSpec.describe PaymentMethod, type: :model do
         enabled_payment_method = create(:payment_method, enabled: true)
         disabled_payment_method = create(:payment_method, enabled: false)
 
-        expect(PaymentMethod.enabled).to include(enabled_payment_method)
-        expect(PaymentMethod.enabled).not_to include(disabled_payment_method)
+        expect(described_class.enabled).to include(enabled_payment_method)
+        expect(described_class.enabled).not_to include(disabled_payment_method)
       end
     end
 
@@ -37,8 +37,8 @@ RSpec.describe PaymentMethod, type: :model do
         enabled_payment_method = create(:payment_method, enabled: true)
         disabled_payment_method = create(:payment_method, enabled: false)
 
-        expect(PaymentMethod.disabled).to include(disabled_payment_method)
-        expect(PaymentMethod.disabled).not_to include(enabled_payment_method)
+        expect(described_class.disabled).to include(disabled_payment_method)
+        expect(described_class.disabled).not_to include(enabled_payment_method)
       end
     end
 
@@ -47,8 +47,8 @@ RSpec.describe PaymentMethod, type: :model do
         us_payment_method = create(:payment_method, country_code: 'US')
         vn_payment_method = create(:payment_method, country_code: 'VN')
 
-        expect(PaymentMethod.of_country('US')).to include(us_payment_method)
-        expect(PaymentMethod.of_country('US')).not_to include(vn_payment_method)
+        expect(described_class.of_country('US')).to include(us_payment_method)
+        expect(described_class.of_country('US')).not_to include(vn_payment_method)
       end
     end
   end
