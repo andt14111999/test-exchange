@@ -73,7 +73,7 @@ gem 'kaminari' # Pagination
 ################################################################################
 gem 'ed25519'
 gem 'rotp', '>= 6.3.0'       # 2FA support
-gem 'rqrcode', '~> 2.0'      # QR code generation
+gem 'rqrcode', '~> 3.1'      # QR code generation
 
 ################################################################################
 # Kafka & Event Processing
