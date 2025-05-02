@@ -318,20 +318,15 @@ RSpec.describe Offer, type: :model do
       expect(offer).to have_received(:update_price_from_market!)
     end
 
-    # Let's bypass the actual implementation and test the condition directly
     it 'does not update price from margin when margin is not changed' do
-      # Create a custom class for testing to avoid actual method calls
-      class TestOffer < Offer
-        def update_price_from_margin_test
-          return unless margin.present? && margin_changed?
-          "would update price"
-        end
-      end
-
-      offer = TestOffer.new(margin: 0.05)
+      offer = described_class.new(margin: 0.05)
       allow(offer).to receive(:margin_changed?).and_return(false)
+      allow(offer).to receive(:update_price_from_market!)
 
-      expect(offer.update_price_from_margin_test).to be_nil
+      # Call the callback directly
+      offer.run_callbacks(:save) { true }
+
+      expect(offer).not_to have_received(:update_price_from_market!)
     end
   end
 
@@ -522,20 +517,25 @@ RSpec.describe Offer, type: :model do
   describe '#delete!' do
     it 'returns false when trades in progress exist' do
       offer = described_class.new
-      trades = double('trades')
+      trades = instance_double(ActiveRecord::Relation)
+      trade_class = class_double(Trade, in_progress: trades)
 
-      allow(offer).to receive(:trades).and_return(trades)
-      allow(trades).to receive_messages(in_progress: trades, exists?: true)
+      allow(offer).to receive(:trades).and_return(trade_class)
+      allow(trades).to receive(:exists?).and_return(true)
 
       expect(offer.delete!).to be false
     end
 
     it 'sends offer delete to Kafka when no trades in progress' do
       offer = described_class.new
-      trades = double('trades')
+      trades = instance_double(ActiveRecord::Relation)
+      trade_class = class_double(Trade, in_progress: trades)
 
-      allow(trades).to receive_messages(in_progress: trades, exists?: false)
-      allow(offer).to receive_messages(trades: trades, send_offer_delete_to_kafka: true)
+      allow(offer).to receive_messages(
+        trades: trade_class,
+        send_offer_delete_to_kafka: true
+      )
+      allow(trades).to receive(:exists?).and_return(false)
 
       offer.delete!
       expect(offer).to have_received(:send_offer_delete_to_kafka)
@@ -652,12 +652,11 @@ RSpec.describe Offer, type: :model do
   describe '#in_progress_amount' do
     it 'sums coin_amount from in-progress trades' do
       offer = described_class.new
-      trades = double('trades')
-      in_progress = double('in_progress')
+      trades = instance_double(ActiveRecord::Relation)
+      trade_class = class_double(Trade, in_progress: trades)
 
-      allow(offer).to receive(:trades).and_return(trades)
-      allow(trades).to receive(:in_progress).and_return(in_progress)
-      allow(in_progress).to receive(:sum).with(:coin_amount).and_return(0.3)
+      allow(offer).to receive(:trades).and_return(trade_class)
+      allow(trades).to receive(:sum).with(:coin_amount).and_return(0.3)
 
       expect(offer.in_progress_amount).to eq 0.3
     end
@@ -689,7 +688,7 @@ RSpec.describe Offer, type: :model do
   describe 'Kafka event methods' do
     it 'sends offer create to Kafka' do
       offer = described_class.new
-      service = double('service')
+      service = instance_double(KafkaService::Services::Offer::OfferService)
 
       allow(offer).to receive(:offer_service).and_return(service)
       allow(service).to receive(:create).with(offer: offer)
@@ -700,7 +699,7 @@ RSpec.describe Offer, type: :model do
 
     it 'logs error when sending offer create to Kafka fails' do
       offer = described_class.new
-      service = double('service')
+      service = instance_double(KafkaService::Services::Offer::OfferService)
       error_message = 'Kafka connection error'
 
       allow(offer).to receive(:offer_service).and_return(service)
@@ -713,7 +712,7 @@ RSpec.describe Offer, type: :model do
 
     it 'sends offer update to Kafka' do
       offer = described_class.new
-      service = double('service')
+      service = instance_double(KafkaService::Services::Offer::OfferService)
 
       allow(offer).to receive(:offer_service).and_return(service)
       allow(service).to receive(:update).with(offer: offer)
@@ -724,7 +723,7 @@ RSpec.describe Offer, type: :model do
 
     it 'logs error when sending offer update to Kafka fails' do
       offer = described_class.new
-      service = double('service')
+      service = instance_double(KafkaService::Services::Offer::OfferService)
       error_message = 'Kafka connection error'
 
       allow(offer).to receive(:offer_service).and_return(service)
@@ -737,7 +736,7 @@ RSpec.describe Offer, type: :model do
 
     it 'sends offer disable to Kafka' do
       offer = described_class.new
-      service = double('service')
+      service = instance_double(KafkaService::Services::Offer::OfferService)
 
       allow(offer).to receive(:offer_service).and_return(service)
       allow(service).to receive(:disable).with(offer: offer)
@@ -748,7 +747,7 @@ RSpec.describe Offer, type: :model do
 
     it 'logs error when sending offer disable to Kafka fails' do
       offer = described_class.new
-      service = double('service')
+      service = instance_double(KafkaService::Services::Offer::OfferService)
       error_message = 'Kafka connection error'
 
       allow(offer).to receive(:offer_service).and_return(service)
@@ -761,7 +760,7 @@ RSpec.describe Offer, type: :model do
 
     it 'sends offer enable to Kafka' do
       offer = described_class.new
-      service = double('service')
+      service = instance_double(KafkaService::Services::Offer::OfferService)
 
       allow(offer).to receive(:offer_service).and_return(service)
       allow(service).to receive(:enable).with(offer: offer)
@@ -772,7 +771,7 @@ RSpec.describe Offer, type: :model do
 
     it 'logs error when sending offer enable to Kafka fails' do
       offer = described_class.new
-      service = double('service')
+      service = instance_double(KafkaService::Services::Offer::OfferService)
       error_message = 'Kafka connection error'
 
       allow(offer).to receive(:offer_service).and_return(service)
@@ -785,7 +784,7 @@ RSpec.describe Offer, type: :model do
 
     it 'sends offer delete to Kafka' do
       offer = described_class.new
-      service = double('service')
+      service = instance_double(KafkaService::Services::Offer::OfferService)
 
       allow(offer).to receive(:offer_service).and_return(service)
       allow(service).to receive(:delete).with(offer: offer)
@@ -796,7 +795,7 @@ RSpec.describe Offer, type: :model do
 
     it 'logs error when sending offer delete to Kafka fails' do
       offer = described_class.new
-      service = double('service')
+      service = instance_double(KafkaService::Services::Offer::OfferService)
       error_message = 'Kafka connection error'
 
       allow(offer).to receive(:offer_service).and_return(service)

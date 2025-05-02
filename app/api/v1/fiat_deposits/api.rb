@@ -78,7 +78,7 @@ module V1
                             currency: params[:currency],
                             country_code: params[:country_code],
                             balance: 0,
-                            locked_amount: 0,
+                            frozen_balance: 0,
                             status: 'active'
                           )
           end

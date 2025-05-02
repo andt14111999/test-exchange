@@ -15,7 +15,6 @@ RSpec.describe FiatDeposit, type: :model do
     end
 
     it 'validates presence of fiat_amount' do
-      # Override factory to avoid the dependency chain issues
       deposit = build(:fiat_deposit)
       deposit.fiat_amount = nil
       deposit.valid?
@@ -117,7 +116,6 @@ RSpec.describe FiatDeposit, type: :model do
 
   describe 'callbacks' do
     it 'sets deposit fee before create' do
-      # Fix: ensure fiat_account is set
       fiat_account = create(:fiat_account)
       deposit = build(:fiat_deposit, fiat_account: fiat_account, fiat_amount: 1000, deposit_fee: nil)
       deposit.save
@@ -125,7 +123,6 @@ RSpec.describe FiatDeposit, type: :model do
     end
 
     it 'generates memo before create if blank' do
-      # Fix: ensure fiat_account is set
       fiat_account = create(:fiat_account)
       deposit = build(:fiat_deposit, fiat_account: fiat_account, memo: nil)
       deposit.save
@@ -134,12 +131,10 @@ RSpec.describe FiatDeposit, type: :model do
     end
 
     it 'creates transaction on process' do
-      # Replace with a test that simply verifies the method exists
       expect(described_class.private_instance_methods).to include(:create_transaction_on_process)
     end
 
     it 'does not create transaction for trade-related deposits' do
-      # Replace with a different test that addresses the logic
       deposit = create(:fiat_deposit, :for_trade)
       expect(deposit.for_trade?).to be true
     end
@@ -155,11 +150,7 @@ RSpec.describe FiatDeposit, type: :model do
 
     it 'can transition to verifying when trade is resolved for seller' do
       deposit = create(:fiat_deposit, :ready)
-
-      # Stub the may_mark_as_verifying? method to return true
       allow(deposit).to receive(:may_mark_as_verifying?).and_return(true)
-
-      # Call the method directly
       expect { deposit.mark_as_verifying! }.to change { deposit.status }.from('ready').to('verifying')
     end
   end
@@ -192,12 +183,9 @@ RSpec.describe FiatDeposit, type: :model do
     end
 
     it 'transitions from ownership_verifying to verifying when ownership is verified' do
-      # Change to a separate test that doesn't rely on the state transition
-      # but still tests the essence of the method
       deposit = create(:fiat_deposit, :ready)
       deposit.mark_as_ownership_verifying!
 
-      # Test the update part of the method which is more reliable
       deposit.verify_ownership!('https://example.com/proof.jpg', 'John Doe', '1234567890')
 
       expect(deposit.ownership_proof_url).to eq('https://example.com/proof.jpg')
@@ -209,7 +197,6 @@ RSpec.describe FiatDeposit, type: :model do
       deposit = create(:fiat_deposit, :ready)
       deposit.mark_as_ownership_verifying!
 
-      # Ensure the ownership_verified? returns false
       allow(deposit).to receive(:ownership_verified?).and_return(false)
 
       expect {
@@ -226,7 +213,6 @@ RSpec.describe FiatDeposit, type: :model do
     it 'transitions from ready to cancelled' do
       deposit = create(:fiat_deposit, :ready)
 
-      # Setup the cancel reason
       expect {
         deposit.cancel!('Deposit cancelled by user')
       }.to change { deposit.status }.from('ready').to('cancelled')
@@ -273,11 +259,9 @@ RSpec.describe FiatDeposit, type: :model do
     it 'cancels deposit if pending for too long' do
       deposit = create(:fiat_deposit, :pending)
 
-      # Stubbing time for timeout condition
       allow(deposit).to receive(:created_at).and_return(8.days.ago)
       allow(Rails.application.config).to receive(:timeouts).and_return({ 'deposit_pending' => 7*24 })
 
-      # Mock cancel! to handle the cancel reason
       expect(deposit).to receive(:cancel!).with('Deposit timed out').and_call_original
       expect { deposit.timeout_check! }.to change { deposit.status }.from('pending').to('cancelled')
     end
@@ -294,7 +278,6 @@ RSpec.describe FiatDeposit, type: :model do
     it 'moves to ownership_verifying if ready for too long' do
       deposit = create(:fiat_deposit, :ready)
 
-      # Stubbing time for timeout condition
       allow(deposit).to receive(:updated_at).and_return(3.hours.ago)
       allow(Rails.application.config).to receive(:timeouts).and_return({ 'deposit_verification' => 2 })
 
@@ -306,7 +289,6 @@ RSpec.describe FiatDeposit, type: :model do
     it 'performs all timeout checks in sequence' do
       deposit = create(:fiat_deposit, :pending)
 
-      # Stubbing time for timeout condition
       allow(deposit).to receive(:created_at).and_return(8.days.ago)
       allow(Rails.application.config).to receive(:timeouts).and_return({
         'deposit_pending' => 7*24,
@@ -314,7 +296,6 @@ RSpec.describe FiatDeposit, type: :model do
         'ownership_verification' => 24
       })
 
-      # Mock cancel! to handle the cancel reason
       expect(deposit).to receive(:cancel!).with('Deposit timed out').and_call_original
       expect { deposit.perform_timeout_checks! }.to change { deposit.status }.from('pending').to('cancelled')
     end
@@ -322,7 +303,6 @@ RSpec.describe FiatDeposit, type: :model do
     it 'moves from ready to ownership_verifying if ready for too long' do
       deposit = create(:fiat_deposit, :ready)
 
-      # Stubbing time for timeout condition
       allow(deposit).to receive(:updated_at).and_return(3.hours.ago)
       allow(Rails.application.config).to receive(:timeouts).and_return({
         'deposit_pending' => 7*24,
@@ -337,7 +317,6 @@ RSpec.describe FiatDeposit, type: :model do
       deposit = create(:fiat_deposit, :ready)
       deposit.mark_as_ownership_verifying!
 
-      # Stubbing time for timeout condition
       allow(deposit).to receive(:updated_at).and_return(25.hours.ago)
       allow(Rails.application.config).to receive(:timeouts).and_return({
         'deposit_pending' => 7*24,
@@ -464,10 +443,6 @@ RSpec.describe FiatDeposit, type: :model do
       deposit = create(:fiat_deposit, :awaiting, payable: trade, payable_type: 'Trade')
       deposit.mark_as_ready!
 
-      # Fix: The model is calling mark_as_locked! with an argument, but the test expects no arguments
-      # We need to patch the method to accept the argument
-
-      # Set the cancel_reason manually since we're stubbing mark_as_locked!
       allow(deposit).to receive_messages(mark_as_locked!: true, may_mark_as_locked?: true, cancel_reason: 'Trade is under dispute')
 
       expect { deposit.sync_with_trade_status! }.not_to raise_error
@@ -486,35 +461,31 @@ RSpec.describe FiatDeposit, type: :model do
       trade = create(:trade, status: 'cancelled')
       deposit = create(:fiat_deposit, :ready, payable: trade, payable_type: 'Trade')
 
-      # Mock the cancel! method to set the reason
       expect(deposit).to receive(:cancel!).with('Trade was cancelled or aborted').and_call_original
 
       expect { deposit.sync_with_trade_status! }.to change { deposit.status }.from('ready').to('cancelled')
     end
 
     it 'marks as verifying when trade is resolved for seller' do
-      # Create a proper test for the behavior
-      trade = double('Trade', status: 'resolved_for_seller')
+      trade = instance_double(Trade, status: 'resolved_for_seller')
       deposit = create(:fiat_deposit, :ready)
 
-      # Set up deposit as a trade deposit
       allow(deposit).to receive_messages(payable_type: 'Trade', payable: trade, may_mark_as_verifying?: true)
 
-      # Expect mark_as_verifying! to be called
       expect(deposit).to receive(:mark_as_verifying!)
 
-      # Call the method
       deposit.sync_with_trade_status!
     end
 
     it 'cancels deposit when trade is resolved for buyer' do
-      # Test the method directly instead of mocking ActiveRecord associations
       deposit = create(:fiat_deposit, :ready)
 
-      # Override the implementation of these methods for this test
-      allow(deposit).to receive_messages(payable_type: 'Trade', payable: double('Trade', status: 'resolved_for_buyer'), may_cancel?: true)
+      allow(deposit).to receive_messages(
+        payable_type: 'Trade',
+        payable: instance_double(Trade, status: 'resolved_for_buyer'),
+        may_cancel?: true
+      )
 
-      # Check that cancel! is called with the right reason
       expect(deposit).to receive(:cancel!).with('Dispute resolved for buyer')
 
       deposit.sync_with_trade_status!
@@ -526,7 +497,6 @@ RSpec.describe FiatDeposit, type: :model do
       trade = create(:trade, fiat_token_deposit_id: nil)
       deposit = create(:fiat_deposit, payable: trade, payable_type: 'Trade')
 
-      # Manually call the private method
       deposit.send(:associate_with_trade)
 
       expect(trade.reload.fiat_token_deposit_id).to eq(deposit.id)
@@ -549,7 +519,7 @@ RSpec.describe FiatDeposit, type: :model do
     end
 
     it 'does nothing if payable is not a Trade' do
-      non_trade = create(:user) # Using user as a non-trade object
+      non_trade = create(:user)
       deposit = create(:fiat_deposit)
       deposit.payable = non_trade
       deposit.payable_type = 'User'
@@ -560,14 +530,18 @@ RSpec.describe FiatDeposit, type: :model do
 
   describe '#create_transaction_on_process' do
     it 'calls FiatTransaction.create! with correct parameters for direct deposits' do
-      # Mock the FiatTransaction class and the fiat_account
-      fiat_account = double('FiatAccount', balance: 100)
+      fiat_account = instance_double(FiatAccount, balance: 100)
       deposit = create(:fiat_deposit, :ready)
 
-      # Set up mocks
-      allow(deposit).to receive_messages(fiat_account: fiat_account, payable_type: nil, id: 123, fiat_amount: 1000, deposit_fee: 10, amount_after_fee: 990)
+      allow(deposit).to receive_messages(
+        fiat_account: fiat_account,
+        payable_type: nil,
+        id: 123,
+        fiat_amount: 1000,
+        deposit_fee: 10,
+        amount_after_fee: 990
+      )
 
-      # Mock FiatTransaction.create!
       expect(FiatTransaction).to receive(:create!).with(
         fiat_account: fiat_account,
         transaction_type: 'deposit',
@@ -580,13 +554,9 @@ RSpec.describe FiatDeposit, type: :model do
         }
       )
 
-      # Mock fiat_account.update!
       expect(fiat_account).to receive(:update!).with(balance: 1090)
-
-      # Mock with_lock
       allow(fiat_account).to receive(:with_lock).and_yield
 
-      # Call the method
       deposit.send(:create_transaction_on_process)
     end
 
@@ -594,14 +564,9 @@ RSpec.describe FiatDeposit, type: :model do
       deposit = create(:fiat_deposit, :verifying)
       fiat_account = deposit.fiat_account
 
-      # Stub the implementations to avoid actual DB calls
       allow(deposit).to receive(:payable_type).and_return(nil)
-
-      # Don't mock transaction method as it gets called multiple times by Rails
-      # Allow the FiatAccount#with_lock method to yield without actually locking
       allow(fiat_account).to receive(:with_lock).and_yield
 
-      # Define expectations for what we actually care about testing
       expect(FiatTransaction).to receive(:create!).with(
         hash_including(
           fiat_account: fiat_account,
@@ -613,33 +578,25 @@ RSpec.describe FiatDeposit, type: :model do
       expect(fiat_account).to receive(:update!)
         .with(hash_including(:balance))
 
-      # Trigger the private method
       deposit.send(:create_transaction_on_process)
     end
 
     it 'marks trade as paid for trade-related deposits' do
-      # Create mocks for trade
-      trade = double('Trade')
+      trade = instance_double(Trade)
       deposit = create(:fiat_deposit, :verifying)
 
-      # Set up deposit as a trade deposit
       allow(deposit).to receive_messages(for_trade?: true, payable: trade, payable_type: 'Trade')
-
-      # Set up trade expectations
       allow(trade).to receive(:may_mark_as_paid?).and_return(true)
       expect(trade).to receive(:mark_as_paid!)
-
-      # Allow the FiatAccount#with_lock method to yield without actually locking
       allow(deposit.fiat_account).to receive(:with_lock).and_yield
 
-      # Call the method
       deposit.send(:create_transaction_on_process)
     end
 
     context 'when deposit is not for trade' do
       it 'has logic to create a transaction and update balance' do
-        # Use a more generic test that will pass
-        expect(described_class.instance_methods + described_class.private_instance_methods).to include(:create_transaction_on_process)
+        expect(described_class.instance_methods + described_class.private_instance_methods)
+          .to include(:create_transaction_on_process)
       end
     end
 
@@ -656,10 +613,8 @@ RSpec.describe FiatDeposit, type: :model do
       user = create(:user)
       deposit = create(:fiat_deposit, user: user)
 
-      # Stub the status
       allow(deposit).to receive(:status).and_return('processed')
 
-      # Expect the notification to be created
       expect(user.notifications).to receive(:create!).with(
         hash_including(
           title: "Deposit #{deposit.id} Status Update",
@@ -668,7 +623,6 @@ RSpec.describe FiatDeposit, type: :model do
         )
       )
 
-      # Call the method
       deposit.send(:notify_user_on_status_change)
     end
   end
@@ -695,15 +649,12 @@ RSpec.describe FiatDeposit, type: :model do
   end
 
   it 'can handle trade association' do
-    # Test something simpler that works
     expect(described_class.new).to respond_to(:payable)
     expect(described_class.new).to respond_to(:payable_type)
   end
 
   it 'has callbacks for trade associations' do
-    # Look at all callbacks instead of checking instance methods
     callbacks = described_class._create_callbacks.select { |cb| cb.filter.is_a?(Symbol) }.map(&:filter)
-    # Better to check if the class has callbacks in general
     expect(callbacks).not_to be_empty
   end
 end

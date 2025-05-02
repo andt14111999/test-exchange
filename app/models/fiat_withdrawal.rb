@@ -146,38 +146,21 @@ class FiatWithdrawal < ApplicationRecord
     %w[user fiat_account withdrawable trade]
   end
 
-  # Status methods for verification
-  def verification_aasm
-    @verification_aasm ||= aasm(:verification)
-  end
-
-  # Verification status methods for state checks
-  def unverified?
-    verification_aasm.unverified?
-  end
-
-  def verification_failed?
-    verification_aasm.failed?
-  end
-
   def can_retry_verification?
     verification_failed? && verification_attempts < 3
   end
 
-  def cancel!(reason = nil)
-    self.cancel_reason_param = reason
-    cancel
-  end
-
-  def mark_as_bank_rejected!(error = nil)
-    self.error_message_param = error
-    mark_as_bank_rejected
-  end
-
   def retry!
     return false unless may_retry_processing?
-    retry_processing
-    true
+    return false unless can_be_retried?
+
+    self.error_message = nil
+    if retry_processing
+      save!
+      true
+    else
+      false
+    end
   end
 
   def for_trade?
@@ -191,10 +174,12 @@ class FiatWithdrawal < ApplicationRecord
     begin
       # Verification logic goes here
       verify
+      save!
       true
     rescue StandardError => e
       self.verification_failure_reason = e.message
       fail_verification
+      save!
       false
     end
   end
@@ -296,7 +281,7 @@ class FiatWithdrawal < ApplicationRecord
       # Lock funds
       fiat_account.update!(
         balance: fiat_account.balance - fiat_amount,
-        locked_amount: fiat_account.locked_amount + fiat_amount
+        frozen_balance: fiat_account.frozen_balance + fiat_amount
       )
     end
   end
@@ -321,7 +306,7 @@ class FiatWithdrawal < ApplicationRecord
 
       # Update the account
       fiat_account.update!(
-        locked_amount: fiat_account.locked_amount - fiat_amount
+        frozen_balance: fiat_account.frozen_balance - fiat_amount
       )
 
       # Process trade related to withdrawal
@@ -350,7 +335,7 @@ class FiatWithdrawal < ApplicationRecord
       # Update the account - return funds to balance
       fiat_account.update!(
         balance: fiat_account.balance + fiat_amount,
-        locked_amount: fiat_account.locked_amount - fiat_amount
+        frozen_balance: fiat_account.frozen_balance - fiat_amount
       )
     end
   end
