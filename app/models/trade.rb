@@ -100,13 +100,11 @@ class Trade < ApplicationRecord
 
     # Dispute resolution flow
     event :resolve_for_buyer do
-      transitions from: [ :disputed ], to: :resolved_for_buyer,
-                 after: :set_dispute_resolution_data
+      transitions from: [ :disputed ], to: :resolved_for_buyer
     end
 
     event :resolve_for_seller do
-      transitions from: [ :disputed ], to: :resolved_for_seller,
-                 after: :set_dispute_resolution_data
+      transitions from: [ :disputed ], to: :resolved_for_seller
     end
   end
 
@@ -512,11 +510,6 @@ class Trade < ApplicationRecord
   def set_dispute_data
     self.disputed_at = Time.zone.now
     self.dispute_reason = dispute_reason_param if dispute_reason_param.present?
-  end
-
-  def set_dispute_resolution_data
-    self.dispute_resolution_at = Time.zone.now
-    self.admin_notes = admin_notes_param if admin_notes_param.present?
   end
 
   def generate_ref
