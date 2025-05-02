@@ -100,7 +100,7 @@ gem 'strong_migrations'       # Safe database migrations
 
 # Version updates for security fixes
 gem 'json', '~> 2.10.2'
-gem 'net-imap', '~> 0.5.6'
+gem 'net-imap', '~> 0.5.8'
 gem 'nokogiri', '>= 1.18.8'
 gem 'rack', '>= 3.1.12'
 gem 'uri', '>= 1.0.3'
