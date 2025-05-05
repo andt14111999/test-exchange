@@ -11,7 +11,7 @@ class Trade < ApplicationRecord
   has_one :fiat_withdrawal, as: :withdrawable, dependent: :nullify
 
   TAKER_SIDES = %w[buy sell].freeze
-  STATUSES = %w[awaiting unpaid picked unpicked paid disputed resolved_for_buyer resolved_for_seller released cancelled cancelled_automatically aborted aborted_fiat].freeze
+  STATUSES = %w[awaiting unpaid paid disputed resolved_for_buyer resolved_for_seller released cancelled cancelled_automatically aborted aborted_fiat].freeze
   PAYMENT_PROOF_STATUSES = %w[legit fake spam].freeze
   DISPUTE_RESOLUTIONS = %w[pending resolved_for_buyer resolved_for_seller admin_intervention].freeze
 
@@ -79,12 +79,12 @@ class Trade < ApplicationRecord
     end
 
     event :cancel do
-      transitions from: [ :awaiting, :unpaid, :picked, :unpicked, :disputed ], to: :cancelled,
+      transitions from: [ :awaiting, :unpaid, :disputed ], to: :cancelled,
                  after: :set_cancelled_timestamp
     end
 
     event :cancel_automatically do
-      transitions from: [ :awaiting, :unpaid, :unpicked ], to: :cancelled_automatically,
+      transitions from: [ :awaiting, :unpaid ], to: :cancelled_automatically,
                  after: :set_cancelled_timestamp
     end
 

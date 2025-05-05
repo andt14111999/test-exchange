@@ -48,7 +48,7 @@ module V1
             error!({ error: 'Unauthorized access to this trade' }, 403)
           end
 
-          present trade, with: V1::Trades::TradeDetail
+          present trade, with: V1::Trades::TradeDetailWithMessages
         end
 
         desc 'Create a new trade'
@@ -152,7 +152,7 @@ module V1
           error!({ error: 'Trade not found' }, 404) unless trade
 
           # Check if the trade is in the appropriate state
-          unless trade.unpaid? || trade.picked?
+          unless trade.unpaid?
             error!({ error: 'Trade cannot be marked as paid in its current state' }, 400)
           end
 
@@ -213,6 +213,9 @@ module V1
             error!({ error: 'You are not authorized to dispute this trade' }, 403)
           end
 
+          # Set dispute reason and mark as disputed
+          trade.dispute_reason_param = params[:dispute_reason]
+
           # Create a trade service
           service = TradeService.new(trade)
 
@@ -250,81 +253,6 @@ module V1
           end
         end
 
-        desc 'Pick a trade (for banker/dealer only)'
-        params do
-          requires :id, type: String, desc: 'Trade ID'
-        end
-        put ':id/pick' do
-          trade = Trade.where('buyer_id = ? OR seller_id = ?', current_user.id, current_user.id).find_by(id: params[:id])
-
-          error!({ error: 'Trade not found' }, 404) unless trade
-
-          # Check if user is a banker
-          unless current_user.banker?
-            error!({ error: 'Only bankers can pick trades' }, 403)
-          end
-
-          # Check if trade is in unpicked state
-          unless trade.unpicked?
-            error!({ error: 'Trade cannot be picked in its current state' }, 400)
-          end
-
-          # Create a trade service
-          service = TradeService.new(trade)
-
-          # Pick the trade
-          if service.pick_trade!
-            present trade, with: V1::Trades::TradeDetail
-          else
-            error!({ error: 'Failed to pick trade' }, 422)
-          end
-        end
-
-        desc 'Unpick a trade (for banker/dealer only)'
-        params do
-          requires :id, type: String, desc: 'Trade ID'
-        end
-        put ':id/unpick' do
-          trade = Trade.where('buyer_id = ? OR seller_id = ?', current_user.id, current_user.id).find_by(id: params[:id])
-
-          error!({ error: 'Trade not found' }, 404) unless trade
-
-          # Check if user is a banker
-          unless current_user.banker?
-            error!({ error: 'Only bankers can unpick trades' }, 403)
-          end
-
-          # Check if trade is in picked state
-          unless trade.picked?
-            error!({ error: 'Trade cannot be unpicked in its current state' }, 400)
-          end
-
-          # Create a trade service
-          service = TradeService.new(trade)
-
-          # Unpick the trade
-          if service.unpick_trade!
-            present trade, with: V1::Trades::TradeDetail
-          else
-            error!({ error: 'Failed to unpick trade' }, 422)
-          end
-        end
-
-        desc 'Get details of a trade by ID'
-        params do
-          requires :id, type: String, desc: 'Trade ID'
-        end
-        get ':id' do
-          trade = Trade.where('buyer_id = ? OR seller_id = ?', current_user.id, current_user.id).find_by(id: params[:id])
-          error!({ error: 'Trade not found' }, 404) unless trade
-
-          # Check if user is authorized to view this trade
-          authorized = current_user.id == trade.buyer_id || current_user.id == trade.seller_id
-          error!({ error: 'You are not authorized to view this trade' }, 403) unless authorized
-
-          present trade, with: V1::Trades::TradeDetailWithMessages
-        end
-
         desc 'Add a message to a trade'
         params do
           requires :id, type: String, desc: 'Trade ID'
@@ -334,10 +262,6 @@ module V1
           trade = Trade.where('buyer_id = ? OR seller_id = ?', current_user.id, current_user.id).find_by(id: params[:id])
           error!({ error: 'Trade not found' }, 404) unless trade
 
-          # Check if user is authorized to message in this trade
-          authorized = current_user.id == trade.buyer_id || current_user.id == trade.seller_id
-          error!({ error: 'You are not authorized to message in this trade' }, 403) unless authorized
-
           # Create the message
           message = trade.messages.new(
             user_id: current_user.id,
@@ -346,6 +270,7 @@ module V1
           )
 
           if message.save
+            status 201  # Set status code to 201 Created for successful message creation
             present trade, with: V1::Trades::TradeDetailWithMessages
           else
             error!({ error: message.errors.full_messages.join(', ') }, 422)
@@ -363,100 +288,11 @@ module V1
 
           error!({ error: 'Trade not found' }, 404) unless trade
 
-          # Check if the user is part of this trade
-          unless [ trade.buyer_id, trade.seller_id ].include?(current_user.id)
-            error!({ error: 'You are not authorized to view messages for this trade' }, 403)
-          end
-
           # Get messages with pagination
           messages = trade.messages.order(created_at: :desc)
                           .page(params[:page]).per(params[:per_page])
 
           present messages, with: V1::Messages::Entity
-        end
-
-        desc 'Cancel a trade'
-        params do
-          requires :id, type: String, desc: 'Trade ID'
-          optional :reason, type: String, desc: 'Reason for cancellation'
-        end
-        post ':id/cancel' do
-          trade = Trade.where('buyer_id = ? OR seller_id = ?', current_user.id, current_user.id).find_by(id: params[:id])
-          error!({ error: 'Trade not found' }, 404) unless trade
-
-          # Check if user is authorized to cancel this trade
-          authorized = current_user.id == trade.buyer_id || current_user.id == trade.seller_id
-          error!({ error: 'You are not authorized to cancel this trade' }, 403) unless authorized
-
-          # Check if trade can be cancelled
-          unless trade.may_cancel?
-            error!({ error: 'This trade cannot be cancelled in its current state' }, 400)
-          end
-
-          reason = params[:reason] || "Cancelled by #{current_user.id == trade.buyer_id ? 'buyer' : 'seller'}"
-
-          if trade.cancel!(reason: reason)
-            # Create system message
-            trade.messages.create!(
-              user_id: current_user.id,
-              body: "Trade cancelled. Reason: #{reason}",
-              is_system: true
-            )
-
-            present trade, with: V1::Trades::TradeDetailWithMessages
-          else
-            error!({ error: 'Failed to cancel trade' }, 422)
-          end
-        end
-
-        desc 'Mark a trade as paid'
-        params do
-          requires :id, type: String, desc: 'Trade ID'
-          requires :payment_receipt_details, type: Hash, desc: 'Payment proof'
-        end
-        post ':id/mark_as_paid' do
-          trade = Trade.where('buyer_id = ? OR seller_id = ?', current_user.id, current_user.id).find_by(id: params[:id])
-          error!({ error: 'Trade not found' }, 404) unless trade
-
-          # Only buyer can mark as paid
-          error!({ error: 'Only the buyer can mark a trade as paid' }, 403) unless current_user.id == trade.buyer_id
-
-          # Check if trade can be marked as paid
-          unless trade.may_mark_as_paid?
-            error!({ error: 'This trade cannot be marked as paid in its current state' }, 400)
-          end
-
-          # Update payment proof if provided
-          if params[:payment_receipt_details].present?
-            # Save file to storage
-            file = params[:payment_receipt_details][:file]
-            if file.present?
-              filename = "#{trade.ref}_#{Time.zone.now.to_i}_#{file[:filename]}"
-              path = Rails.root.join('storage', 'payment_proofs', filename)
-              FileUtils.mkdir_p(File.dirname(path))
-              File.binwrite(path, file[:tempfile].read)
-
-              # Add payment proof to trade
-              trade.add_payment_proof!({
-                proof_url: "/storage/payment_proofs/#{filename}",
-                description: params[:payment_receipt_details][:description],
-                uploaded_at: Time.zone.now
-              })
-            end
-          end
-
-          if trade.mark_as_paid!
-            # Create system message
-            trade.messages.create!(
-              user_id: current_user.id,
-              body: 'Trade marked as paid by buyer',
-              is_system: true
-            )
-
-            present trade, with: V1::Trades::TradeDetailWithMessages
-          else
-            error!({ error: "Failed to mark trade as paid. Status: #{trade.status}, Errors: #{trade.errors.full_messages.join(', ')}" }, 422)
-          end
         end
 
         desc 'Complete a trade (seller release)'
@@ -488,40 +324,6 @@ module V1
             present trade, with: V1::Trades::TradeDetailWithMessages
           else
             error!({ error: 'Failed to complete trade' }, 422)
-          end
-        end
-
-        desc 'Dispute a trade'
-        params do
-          requires :id, type: String, desc: 'Trade ID'
-          requires :dispute_reason, type: String, desc: 'Reason for dispute'
-        end
-        post ':id/dispute' do
-          trade = Trade.where('buyer_id = ? OR seller_id = ?', current_user.id, current_user.id).find_by(id: params[:id])
-          error!({ error: 'Trade not found' }, 404) unless trade
-
-          # Check if user is authorized to dispute this trade
-          authorized = current_user.id == trade.buyer_id || current_user.id == trade.seller_id
-          error!({ error: 'You are not authorized to dispute this trade' }, 403) unless authorized
-
-          # Check if trade can be disputed
-          unless trade.may_dispute?
-            error!({ error: 'This trade cannot be disputed in its current state' }, 400)
-          end
-
-          # Set dispute reason and mark as disputed
-          trade.dispute_reason_param = params[:dispute_reason]
-          if trade.mark_as_disputed!
-            # Create system message
-            trade.messages.create!(
-              user_id: current_user.id,
-              body: "Trade disputed. Reason: #{params[:dispute_reason]}",
-              is_system: true
-            )
-
-            present trade, with: V1::Trades::TradeDetailWithMessages
-          else
-            error!({ error: 'Failed to dispute trade' }, 422)
           end
         end
 

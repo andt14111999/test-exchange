@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class TradeService
-  PENDING_STATUSES = %w[awaiting unpicked picked unpaid paid disputed].freeze
+  PENDING_STATUSES = %w[awaiting unpaid paid disputed].freeze
   CLOSED_STATUSES = %w[released cancelled cancelled_automatically aborted aborted_fiat].freeze
   SCORABLE_STATUSES = %w[released cancelled disputed].freeze
 
@@ -60,18 +60,6 @@ class TradeService
     def create_fiat_token_withdrawal(trade)
       # Similar implementation for withdrawal would go here
     end
-  end
-
-  def pick_trade!
-    return false unless @trade.may_mark_as_picked?
-
-    @trade.mark_as_picked!
-  end
-
-  def unpick_trade!
-    return false unless @trade.may_mark_as_unpicked?
-
-    @trade.mark_as_unpicked!
   end
 
   def pay_trade!
