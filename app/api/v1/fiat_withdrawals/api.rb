@@ -126,7 +126,7 @@ module V1
           if withdrawal.save
             # Processing will start automatically in the background
             withdrawal.mark_as_processing!
-            present withdrawal, with: V1::Entities::FiatWithdrawalDetail
+            present withdrawal, with: V1::FiatWithdrawals::FiatWithdrawalDetail
           else
             error!({ error: withdrawal.errors.full_messages.join(', ') }, 422)
           end
@@ -146,7 +146,7 @@ module V1
           end
 
           if withdrawal.cancel!(params[:cancel_reason] || 'Cancelled by user')
-            present withdrawal, with: V1::Entities::FiatWithdrawalDetail
+            present withdrawal, with: V1::FiatWithdrawals::FiatWithdrawalDetail
           else
             error!({ error: 'Failed to cancel withdrawal' }, 422)
           end
@@ -178,7 +178,7 @@ module V1
           withdrawal.update(update_params) if update_params.present?
 
           if withdrawal.retry!
-            present withdrawal, with: V1::Entities::FiatWithdrawalDetail
+            present withdrawal, with: V1::FiatWithdrawals::FiatWithdrawalDetail
           else
             error!({ error: 'Failed to retry withdrawal' }, 422)
           end
@@ -208,7 +208,7 @@ module V1
 
           error!({ error: 'No withdrawal found for this trade' }, 404) unless withdrawal
 
-          present withdrawal, with: V1::Entities::FiatWithdrawalDetail
+          present withdrawal, with: V1::FiatWithdrawals::FiatWithdrawalDetail
         end
       end
     end
