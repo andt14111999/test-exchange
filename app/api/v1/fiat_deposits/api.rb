@@ -78,8 +78,7 @@ module V1
                             currency: params[:currency],
                             country_code: params[:country_code],
                             balance: 0,
-                            frozen_balance: 0,
-                            status: 'active'
+                            frozen_balance: 0
                           )
           end
 
@@ -215,7 +214,11 @@ module V1
               error!({ error: 'Only deposits in awaiting or pending state can be cancelled' }, 400)
             end
 
-            if deposit.cancel!(params[:cancel_reason] || 'Cancelled by user')
+            # Set cancel reason before calling cancel!
+            cancel_reason = params[:cancel_reason] || 'Cancelled by user'
+            deposit.cancel_reason = cancel_reason
+
+            if deposit.cancel!
               # Cancel the associated trade
               trade.cancel! if trade.may_cancel?
               present deposit, with: V1::FiatDeposits::FiatDepositDetail
