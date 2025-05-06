@@ -325,11 +325,13 @@ class Trade < ApplicationRecord
     # In a deposit trade, admin normally marks as paid
     if is_fiat_token_deposit_trade?
       return user.admin? if defined?(user.admin?)
+      return user.id == fiat_token_deposit.user_id
     end
 
     # In a withdrawal trade, admin normally marks as paid
     if is_fiat_token_withdrawal_trade?
       return user.admin? if defined?(user.admin?)
+      return user.id == fiat_token_withdrawal.user_id
     end
 
     false
