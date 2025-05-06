@@ -272,18 +272,15 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
   end
 
   describe 'admin actions', type: :request do
+    let(:deposit) { create(:fiat_deposit) }
+    let(:admin_user) { create(:admin_user, :admin) }
+
     before do
-      # For request specs, we need to manually set up Devise mappings
-      @request.env["devise.mapping"] = Devise.mappings[:admin_user] if @request
+      sign_in admin_user, scope: :admin_user
     end
 
     describe 'POST mark_as_ready' do
       it 'marks deposit as ready' do
-        admin_user = create(:admin_user, :admin)
-        deposit = create(:fiat_deposit, :awaiting)
-
-        sign_in admin_user, scope: :admin_user
-
         expect {
           post mark_as_ready_admin_fiat_deposit_path(deposit)
         }.to change { deposit.reload.status }.from('awaiting').to('ready')
@@ -296,10 +293,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
 
     describe 'POST mark_as_informed' do
       it 'marks deposit as informed' do
-        admin_user = create(:admin_user, :admin)
         deposit = create(:fiat_deposit, :ready)
-
-        sign_in admin_user, scope: :admin_user
 
         expect {
           post mark_as_informed_admin_fiat_deposit_path(deposit)
@@ -313,10 +307,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
 
     describe 'POST mark_as_verifying' do
       it 'marks deposit as verifying' do
-        admin_user = create(:admin_user, :admin)
         deposit = create(:fiat_deposit, :ready)
-
-        sign_in admin_user, scope: :admin_user
 
         expect {
           post mark_as_verifying_admin_fiat_deposit_path(deposit)
@@ -330,11 +321,6 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
 
     describe 'POST cancel' do
       it 'cancels the deposit' do
-        admin_user = create(:admin_user, :admin)
-        deposit = create(:fiat_deposit, :awaiting)
-
-        sign_in admin_user, scope: :admin_user
-
         expect {
           post cancel_admin_fiat_deposit_path(deposit)
         }.to change { deposit.reload.status }.from('awaiting').to('cancelled')
@@ -346,10 +332,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
       end
 
       it 'does not cancel deposit in invalid state' do
-        admin_user = create(:admin_user, :admin)
         deposit = create(:fiat_deposit, :processed)
-
-        sign_in admin_user, scope: :admin_user
 
         expect {
           post cancel_admin_fiat_deposit_path(deposit)
@@ -363,10 +346,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
 
     describe 'POST mark_as_locked' do
       it 'locks the deposit' do
-        admin_user = create(:admin_user, :admin)
         deposit = create(:fiat_deposit, :ownership_verifying)
-
-        sign_in admin_user, scope: :admin_user
 
         expect {
           post mark_as_locked_admin_fiat_deposit_path(deposit)
@@ -379,10 +359,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
       end
 
       it 'does not lock deposit in invalid state' do
-        admin_user = create(:admin_user, :admin)
         deposit = create(:fiat_deposit, :processed)
-
-        sign_in admin_user, scope: :admin_user
 
         expect {
           post mark_as_locked_admin_fiat_deposit_path(deposit)
@@ -396,10 +373,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
 
     describe 'POST mark_as_illegal' do
       it 'marks deposit as illegal' do
-        admin_user = create(:admin_user, :admin)
         deposit = create(:fiat_deposit, :ready)
-
-        sign_in admin_user, scope: :admin_user
 
         expect {
           post mark_as_illegal_admin_fiat_deposit_path(deposit)
@@ -411,10 +385,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
       end
 
       it 'does not mark deposit as illegal in invalid state' do
-        admin_user = create(:admin_user, :admin)
         deposit = create(:fiat_deposit, :processed)
-
-        sign_in admin_user, scope: :admin_user
 
         expect {
           post mark_as_illegal_admin_fiat_deposit_path(deposit)
@@ -428,10 +399,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
 
     describe 'POST process_deposit' do
       it 'processes the deposit', type: :request do
-        admin_user = create(:admin_user, :admin)
         deposit = create(:fiat_deposit, :verifying)
-
-        sign_in admin_user, scope: :admin_user
 
         post process_deposit_admin_fiat_deposit_path(deposit)
 
