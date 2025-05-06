@@ -1,0 +1,53 @@
+<h3>Cancel Fiat Withdrawal</h3>
+
+<%= form_tag submit_cancel_admin_fiat_withdrawal_path(@fiat_withdrawal), method: :post do %>
+  <div class="panel">
+    <div class="panel_contents">
+      <div class="attributes_table">
+        <table>
+          <tr>
+            <th>ID</th>
+            <td><%= @fiat_withdrawal.id %></td>
+          </tr>
+          <tr>
+            <th>User</th>
+            <td><%= @fiat_withdrawal.user.email %></td>
+          </tr>
+          <tr>
+            <th>Amount</th>
+            <td><%= @fiat_withdrawal.fiat_amount %> <%= @fiat_withdrawal.currency %></td>
+          </tr>
+          <tr>
+            <th>Bank</th>
+            <td><%= @fiat_withdrawal.bank_name %></td>
+          </tr>
+          <tr>
+            <th>Account</th>
+            <td><%= @fiat_withdrawal.bank_account_number %></td>
+          </tr>
+          <tr>
+            <th>Status</th>
+            <td><%= @fiat_withdrawal.status %></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="inputs">
+    <fieldset class="inputs">
+      <legend><span>Cancellation Reason</span></legend>
+      <ol>
+        <li class="string input">
+          <label for="cancel_reason">Reason for Cancellation</label>
+          <textarea name="cancel_reason" id="cancel_reason" rows="5" cols="60" required></textarea>
+        </li>
+      </ol>
+    </fieldset>
+  </div>
+
+  <div class="actions">
+    <input type="submit" name="commit" value="Cancel Withdrawal" class="button">
+    <%= link_to "Back", admin_fiat_withdrawal_path(@fiat_withdrawal), class: "button" %>
+  </div>
+<% end %>

@@ -1,0 +1,53 @@
+<h3>Mark Trade as Disputed</h3>
+
+<%= form_tag submit_dispute_admin_trade_path(@trade), method: :post do %>
+  <div class="panel">
+    <div class="panel_contents">
+      <div class="attributes_table">
+        <table>
+          <tr>
+            <th>ID</th>
+            <td><%= @trade.id %></td>
+          </tr>
+          <tr>
+            <th>Reference</th>
+            <td><%= @trade.ref %></td>
+          </tr>
+          <tr>
+            <th>Buyer</th>
+            <td><%= @trade.buyer.email %></td>
+          </tr>
+          <tr>
+            <th>Seller</th>
+            <td><%= @trade.seller.email %></td>
+          </tr>
+          <tr>
+            <th>Amount</th>
+            <td><%= @trade.coin_amount %> <%= @trade.coin_currency %> (<%= @trade.fiat_amount %> <%= @trade.fiat_currency %>)</td>
+          </tr>
+          <tr>
+            <th>Status</th>
+            <td><%= @trade.status %></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="inputs">
+    <fieldset class="inputs">
+      <legend><span>Dispute Reason</span></legend>
+      <ol>
+        <li class="string input">
+          <label for="dispute_reason">Reason for Dispute</label>
+          <textarea name="dispute_reason" id="dispute_reason" rows="5" cols="60" required></textarea>
+        </li>
+      </ol>
+    </fieldset>
+  </div>
+
+  <div class="actions">
+    <input type="submit" name="commit" value="Mark as Disputed" class="button">
+    <%= link_to "Cancel", admin_trade_path(@trade), class: "button" %>
+  </div>
+<% end %>

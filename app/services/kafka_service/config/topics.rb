@@ -10,11 +10,15 @@ module KafkaService
       COIN_ACCOUNT_QUERY = 'EE.I.coin_account_query'
       COIN_ACCOUNT_RESET = 'EE.I.coin_account_reset'
       MERCHANT_ESCROW = 'EE.I.merchant_escrow'
+      TRADE = 'EE.I.trade'
+      OFFER = 'EE.I.offer'
 
       # Output topics
       COIN_ACCOUNT_UPDATE = 'EE.O.coin_account_update'
       TRANSACTION_RESPONSE = 'EE.O.transaction_response'
       MERCHANT_ESCROW_UPDATE = 'EE.O.merchant_escrow_update'
+      TRADE_UPDATE = 'EE.O.trade_update'
+      OFFER_UPDATE = 'EE.O.offer_update'
 
       # Aliases
       BALANCE_UPDATE = COIN_ACCOUNT_UPDATE

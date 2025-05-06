@@ -20,3 +20,9 @@ if Rails.env.development?
     )
   end
 end
+
+# Load all seed files
+Dir[Rails.root.join('db', 'seeds', '*.rb')].sort.each do |file|
+  puts "Loading seed file: #{File.basename(file)}"
+  load file
+end

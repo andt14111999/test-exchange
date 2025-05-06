@@ -25,6 +25,16 @@ module KafkaService
       def self.build_fiat_withdrawal_identifier(withdrawal_id:)
         "fiat-withdrawal-#{withdrawal_id}"
       end
+
+      # Trade identifiers
+      def self.build_trade_identifier(trade_id:)
+        "trade-#{trade_id}"
+      end
+
+      # Offer identifiers
+      def self.build_offer_identifier(offer_id:)
+        "offer-#{offer_id}"
+      end
     end
   end
 end

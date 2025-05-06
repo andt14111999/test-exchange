@@ -1,0 +1,61 @@
+<h3>Mark Withdrawal Verification as Failed</h3>
+
+<%= form_tag submit_verification_failed_admin_fiat_withdrawal_path(@fiat_withdrawal), method: :post do %>
+  <div class="panel">
+    <div class="panel_contents">
+      <div class="attributes_table">
+        <table>
+          <tr>
+            <th>ID</th>
+            <td><%= @fiat_withdrawal.id %></td>
+          </tr>
+          <tr>
+            <th>User</th>
+            <td><%= @fiat_withdrawal.user.email %></td>
+          </tr>
+          <tr>
+            <th>Amount</th>
+            <td><%= @fiat_withdrawal.fiat_amount %> <%= @fiat_withdrawal.currency %></td>
+          </tr>
+          <tr>
+            <th>Bank</th>
+            <td><%= @fiat_withdrawal.bank_name %></td>
+          </tr>
+          <tr>
+            <th>Account</th>
+            <td><%= @fiat_withdrawal.bank_account_number %></td>
+          </tr>
+          <tr>
+            <th>Status</th>
+            <td><%= @fiat_withdrawal.status %></td>
+          </tr>
+          <tr>
+            <th>Verification Status</th>
+            <td><%= @fiat_withdrawal.verification_status %></td>
+          </tr>
+          <tr>
+            <th>Verification Attempts</th>
+            <td><%= @fiat_withdrawal.verification_attempts %></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="inputs">
+    <fieldset class="inputs">
+      <legend><span>Verification Failure Reason</span></legend>
+      <ol>
+        <li class="string input">
+          <label for="error_message">Reason for Verification Failure</label>
+          <textarea name="error_message" id="error_message" rows="5" cols="60" required></textarea>
+        </li>
+      </ol>
+    </fieldset>
+  </div>
+
+  <div class="actions">
+    <input type="submit" name="commit" value="Mark Verification as Failed" class="button">
+    <%= link_to "Back", admin_fiat_withdrawal_path(@fiat_withdrawal), class: "button" %>
+  </div>
+<% end %>

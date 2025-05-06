@@ -16,5 +16,13 @@ module V1
     mount V1::AmmPools::Api
     mount V1::AmmPositions::Api
     mount V1::Coins::Api
+
+    # P2P Trading APIs
+    mount V1::Offers::Api
+    mount V1::Trades::Api
+    mount V1::FiatDeposits::Api
+    mount V1::FiatWithdrawals::Api
+    mount V1::BankAccounts::Api
+    mount V1::PaymentMethods::Api
   end
 end

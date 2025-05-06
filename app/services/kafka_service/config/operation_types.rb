@@ -27,6 +27,19 @@ module KafkaService
       MERCHANT_ESCROW_MINT = 'merchant_escrow_mint'
       MERCHANT_ESCROW_BURN = 'merchant_escrow_burn'
 
+      # Trade operations
+      TRADE_CREATE = 'trade_create'
+      TRADE_UPDATE = 'trade_update'
+      TRADE_CANCEL = 'trade_cancel'
+      TRADE_COMPLETE = 'trade_complete'
+
+      # Offer operations
+      OFFER_CREATE = 'offer_create'
+      OFFER_UPDATE = 'offer_update'
+      OFFER_DISABLE = 'offer_disable'
+      OFFER_ENABLE = 'offer_enable'
+      OFFER_DELETE = 'offer_delete'
+
       # Legacy
       BALANCE_QUERY = 'balance_query'
     end
