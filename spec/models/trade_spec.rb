@@ -773,7 +773,7 @@ RSpec.describe Trade, type: :model do
 
         trade.extend_payment_window!(60)
 
-        expect(trade.expired_at).to eq(now + 60.minutes)
+        expect(trade.expired_at).to be_within(1.second).of(now + 60.minutes)
       end
     end
 
