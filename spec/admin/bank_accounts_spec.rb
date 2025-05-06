@@ -17,9 +17,10 @@ RSpec.describe 'Admin::BankAccounts', type: :request do
       bank_account # ensure bank account is created
       get admin_bank_accounts_path
 
-      expect(response.body).to include(bank_account.bank_name)
-      expect(response.body).to include(bank_account.account_name)
-      expect(response.body).to include(bank_account.account_number)
+      # Use more specific matchers to check for the content in the bank account row or table cell
+      expect(response.body).to include(">#{bank_account.bank_name}<")
+      expect(response.body).to include(">#{bank_account.account_name}<")
+      expect(response.body).to include(">#{bank_account.account_number}<")
     end
 
     it 'filters bank accounts by verified status' do

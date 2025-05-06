@@ -100,14 +100,14 @@ ActiveAdmin.register FiatDeposit do
         end
 
         if resource.verifying? || resource.ownership_verifying?
-          span { link_to 'Process Deposit', process_admin_fiat_deposit_path(resource), method: :post, class: 'button' }
+          span { link_to 'Process Deposit', process_deposit_admin_fiat_deposit_path(resource), method: :post, class: 'button' }
         end
 
         if resource.may_cancel?
           span { link_to 'Cancel Deposit', cancel_admin_fiat_deposit_path(resource), method: :post, class: 'button' }
         end
 
-        if resource.needs_ownership_verification?
+        if resource.status == 'ownership_verifying'
           span { link_to 'Mark as Locked', mark_as_locked_admin_fiat_deposit_path(resource), method: :post, class: 'button' }
         end
 
@@ -145,9 +145,19 @@ ActiveAdmin.register FiatDeposit do
     redirect_to resource_path, notice: 'Deposit marked as verifying'
   end
 
+  member_action :process_deposit, method: :post do
+    if resource.may_process?
+      result = resource.process!
+      Rails.logger.info "Process result: #{result}, New status: #{resource.reload.status}"
+      redirect_to resource_path, notice: 'Deposit processed'
+    else
+      redirect_to resource_path, alert: 'Cannot process deposit in current state'
+    end
+  end
+
   member_action :cancel, method: :post do
     if resource.may_cancel?
-      resource.cancel_reason_param = "Cancelled by admin: #{current_admin_user.email}"
+      resource.update!(cancel_reason: "Cancelled by admin: #{current_admin_user.email}")
       resource.cancel!
       redirect_to resource_path, notice: 'Deposit cancelled'
     else

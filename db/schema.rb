@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_04_20_191232) do
+ActiveRecord::Schema[8.0].define(version: 2025_05_06_140656) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -318,11 +318,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_20_191232) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "status", default: "pending", null: false
+    t.jsonb "details", default: {}
+    t.string "reference"
     t.index ["created_at"], name: "index_fiat_transactions_on_created_at"
     t.index ["currency"], name: "index_fiat_transactions_on_currency"
     t.index ["fiat_account_id"], name: "index_fiat_transactions_on_fiat_account_id"
     t.index ["operation_type", "operation_id"], name: "index_fiat_transactions_on_operation"
     t.index ["operation_type", "operation_id"], name: "index_fiat_transactions_on_operation_type_and_operation_id"
+    t.index ["reference"], name: "index_fiat_transactions_on_reference"
     t.index ["status"], name: "index_fiat_transactions_on_status"
   end
 
@@ -486,6 +489,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_20_191232) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["var"], name: "index_settings_on_var", unique: true
+  end
+
+  create_table "site_countries", force: :cascade do |t|
+    t.string "code", null: false
+    t.string "name", null: false
+    t.boolean "enabled", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["code"], name: "index_site_countries_on_code", unique: true
   end
 
   create_table "social_accounts", force: :cascade do |t|

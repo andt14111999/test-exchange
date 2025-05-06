@@ -132,7 +132,7 @@ class FiatDeposit < ApplicationRecord
     # Illegal/refund flow
     event :mark_as_illegal do
       transitions from: [
-        :ready, :informed, :verifying,
+        :awaiting, :ready, :informed, :verifying,
         :ownership_verifying, :locked, :locked_due_to_unverified_ownership
       ], to: :illegal
     end
@@ -216,10 +216,6 @@ class FiatDeposit < ApplicationRecord
     elsif ownership_verifying? && updated_at < Rails.application.config.timeouts['ownership_verification'].hours.ago
       mark_as_locked_due_to_unverified_ownership!
     end
-  end
-
-  def process!
-    process
   end
 
   def record_bank_response!(response_data)
@@ -311,6 +307,7 @@ class FiatDeposit < ApplicationRecord
           fiat_account: fiat_account,
           transaction_type: 'deposit',
           amount: amount_after_fee,
+          currency: currency,
           reference: "DEP-#{id}",
           details: {
             deposit_id: id,

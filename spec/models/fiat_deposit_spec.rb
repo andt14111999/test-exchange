@@ -539,13 +539,15 @@ RSpec.describe FiatDeposit, type: :model do
         id: 123,
         fiat_amount: 1000,
         deposit_fee: 10,
-        amount_after_fee: 990
+        amount_after_fee: 990,
+        currency: 'VND'
       )
 
       expect(FiatTransaction).to receive(:create!).with(
         fiat_account: fiat_account,
         transaction_type: 'deposit',
         amount: 990,
+        currency: 'VND',
         reference: "DEP-123",
         details: {
           deposit_id: 123,

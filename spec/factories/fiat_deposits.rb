@@ -53,6 +53,21 @@ FactoryBot.define do
       money_sent_at { Time.current }
     end
 
+    trait :ownership_verifying do
+      status { 'ownership_verifying' }
+      money_sent_at { Time.current }
+    end
+
+    trait :locked do
+      status { 'locked' }
+      cancel_reason { 'Deposit locked by admin' }
+    end
+
+    trait :locked_due_to_unverified_ownership do
+      status { 'locked_due_to_unverified_ownership' }
+      cancel_reason { 'Ownership verification failed' }
+    end
+
     trait :processed do
       status { 'processed' }
       processed_at { Time.current }

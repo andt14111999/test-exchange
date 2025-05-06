@@ -144,16 +144,16 @@ RSpec.describe 'Admin::Offers', type: :system do
       visit admin_offers_path
 
       within 'table#index_table_offers' do
-        find('tr', text: active_scheduled.id.to_s).tap do |row|
-          expect(row).to have_content(/scheduled.*active/i)
+        within "#offer_#{active_scheduled.id}" do
+          expect(page).to have_content(/scheduled.*active/i)
         end
 
-        find('tr', text: inactive_scheduled.id.to_s).tap do |row|
-          expect(row).to have_content(/scheduled.*inactive/i)
+        within "#offer_#{inactive_scheduled.id}" do
+          expect(page).to have_content(/scheduled.*inactive/i)
         end
 
-        find('tr', text: past_scheduled.id.to_s).tap do |row|
-          expect(row).to have_content(/scheduled.*inactive/i)
+        within "#offer_#{past_scheduled.id}" do
+          expect(page).to have_content(/scheduled.*inactive/i)
         end
       end
     end

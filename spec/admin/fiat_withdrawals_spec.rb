@@ -29,8 +29,15 @@ RSpec.describe 'Admin Fiat Withdrawals', type: :feature do
 
         visit '/admin/fiat_withdrawals?scope=unprocessed'
 
-        expect(page).to have_content(pending_withdrawal.id.to_s)
-        expect(page).not_to have_content(processed_withdrawal.id.to_s)
+        # Check if the row for the pending withdrawal exists
+        within "#fiat_withdrawal_#{pending_withdrawal.id}" do
+          expect(page).to have_content(pending_withdrawal.id.to_s)
+        end
+
+        # Check if the processed withdrawal ID is not in any row in the table
+        within ".index_table" do
+          expect(page).not_to have_selector("#fiat_withdrawal_#{processed_withdrawal.id}")
+        end
       end
     end
 
