@@ -388,7 +388,13 @@ class Trade < ApplicationRecord
   # Status and flow helpers for fiat token trades
   def start_fiat_token_flow!
     return false unless fiat_token_trade?
-    mark_as_unpaid!
+    true
+  end
+
+  def try_start!
+    start_fiat_token_flow! if fiat_token_trade?
+    mark_as_unpaid! if awaiting? && may_mark_as_unpaid?
+    true
   end
 
   def process_fiat_token_deposit!
