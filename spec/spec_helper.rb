@@ -45,6 +45,14 @@ SimpleCov.start 'rails' do
 
   minimum_coverage 90
   minimum_coverage_by_file 90
+
+  # Check if custom coverage configuration is enabled
+  if ENV['COVERAGE_FILE_ONLY']
+    add_filter do |source_file|
+      # Only keep files that match the specified pattern
+      !source_file.filename.include?('app/admin/fiat_withdrawals.rb')
+    end
+  end
 end
 
 SimpleCov.at_exit do

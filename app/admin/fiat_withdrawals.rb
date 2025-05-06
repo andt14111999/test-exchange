@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register FiatWithdrawal do
+  menu priority: 6, parent: 'Fiat'
+
   permit_params :user_id, :fiat_account_id, :currency, :country_code,
                 :fiat_amount, :fee, :amount_after_transfer_fee,
                 :bank_name, :bank_account_name, :bank_account_number, :bank_branch,
@@ -106,6 +108,46 @@ ActiveAdmin.register FiatWithdrawal do
       row :created_at
       row :updated_at
     end
+
+    panel 'Admin Actions' do
+      div do
+        if resource.pending?
+          span { button_to 'Mark as Processing', mark_as_processing_admin_fiat_withdrawal_path(resource), method: :post, class: 'button' }
+        end
+
+        if resource.processing?
+          span { button_to 'Mark as Bank Pending', mark_as_bank_pending_admin_fiat_withdrawal_path(resource), method: :post, class: 'button' }
+        end
+
+        if resource.bank_pending?
+          span { button_to 'Mark as Bank Sent', mark_as_bank_sent_admin_fiat_withdrawal_path(resource), method: :post, class: 'button' }
+          span { link_to 'Mark as Bank Rejected', mark_as_bank_rejected_admin_fiat_withdrawal_path(resource), method: :get, class: 'button' }
+        end
+
+        if resource.bank_sent?
+          span { button_to 'Process Withdrawal', process_withdrawal_admin_fiat_withdrawal_path(resource), method: :post,
+                data: { confirm: 'Are you sure? This will mark the withdrawal as processed.' }, class: 'button' }
+        end
+
+        if resource.bank_rejected? && resource.can_be_retried?
+          span { button_to 'Retry Withdrawal', retry_admin_fiat_withdrawal_path(resource), method: :post, class: 'button' }
+        end
+
+        if resource.can_be_cancelled?
+          span { link_to 'Cancel Withdrawal', cancel_admin_fiat_withdrawal_path(resource), method: :get, class: 'button' }
+        end
+
+        # Verification actions
+        if resource.verification_status == 'unverified' || resource.verification_status == 'failed'
+          span { button_to 'Mark as Verifying', mark_as_verifying_admin_fiat_withdrawal_path(resource), method: :post, class: 'button' }
+        end
+
+        if resource.verification_status == 'verifying'
+          span { button_to 'Mark as Verified', mark_as_verified_admin_fiat_withdrawal_path(resource), method: :post, class: 'button' }
+          span { link_to 'Mark Verification Failed', mark_as_verification_failed_admin_fiat_withdrawal_path(resource), method: :get, class: 'button' }
+        end
+      end
+    end
   end
 
   form do |f|
@@ -135,78 +177,39 @@ ActiveAdmin.register FiatWithdrawal do
     f.actions
   end
 
-  # Custom actions for FiatWithdrawal workflow
-  action_item :mark_as_processing, only: :show, if: proc { resource.pending? } do
-    link_to 'Mark as Processing', mark_as_processing_admin_fiat_withdrawal_path(resource), method: :put
-  end
-
-  action_item :mark_as_bank_pending, only: :show, if: proc { resource.processing? } do
-    link_to 'Mark as Bank Pending', mark_as_bank_pending_admin_fiat_withdrawal_path(resource), method: :put
-  end
-
-  action_item :mark_as_bank_sent, only: :show, if: proc { resource.bank_pending? } do
-    link_to 'Mark as Bank Sent', mark_as_bank_sent_admin_fiat_withdrawal_path(resource), method: :put
-  end
-
-  action_item :process_withdrawal, only: :show, if: proc { resource.bank_sent? } do
-    link_to 'Process Withdrawal', process_withdrawal_admin_fiat_withdrawal_path(resource), method: :put, data: { confirm: 'Are you sure? This will mark the withdrawal as processed.' }
-  end
-
-  action_item :mark_as_bank_rejected, only: :show, if: proc { resource.bank_pending? } do
-    link_to 'Mark as Bank Rejected', mark_as_bank_rejected_admin_fiat_withdrawal_path(resource), method: :get
-  end
-
-  action_item :retry, only: :show, if: proc { resource.bank_rejected? && resource.can_be_retried? } do
-    link_to 'Retry Withdrawal', retry_admin_fiat_withdrawal_path(resource), method: :put
-  end
-
-  action_item :cancel, only: :show, if: proc { resource.can_be_cancelled? } do
-    link_to 'Cancel Withdrawal', cancel_admin_fiat_withdrawal_path(resource), method: :get
-  end
-
-  action_item :mark_as_verifying, only: :show, if: proc { resource.unverified? || resource.verification_failed? } do
-    link_to 'Mark as Verifying', mark_as_verifying_admin_fiat_withdrawal_path(resource), method: :put
-  end
-
-  action_item :mark_as_verified, only: :show, if: proc { resource.verifying? } do
-    link_to 'Mark as Verified', mark_as_verified_admin_fiat_withdrawal_path(resource), method: :put
-  end
-
-  action_item :mark_as_verification_failed, only: :show, if: proc { resource.verifying? } do
-    link_to 'Mark Verification Failed', mark_as_verification_failed_admin_fiat_withdrawal_path(resource), method: :get
-  end
-
   # Implement member_actions
-  member_action :mark_as_processing, method: :put do
+  member_action :mark_as_processing, method: :post do
     resource.mark_as_processing!
     redirect_to admin_fiat_withdrawal_path(resource), notice: 'Withdrawal marked as processing'
   end
 
-  member_action :mark_as_bank_pending, method: :put do
+  member_action :mark_as_bank_pending, method: :post do
     resource.mark_as_bank_pending!
     redirect_to admin_fiat_withdrawal_path(resource), notice: 'Withdrawal marked as bank pending'
   end
 
-  member_action :mark_as_bank_sent, method: :put do
+  member_action :mark_as_bank_sent, method: :post do
     resource.mark_as_bank_sent!
     redirect_to admin_fiat_withdrawal_path(resource), notice: 'Withdrawal marked as bank sent'
   end
 
-  member_action :process_withdrawal, method: :put do
+  member_action :process_withdrawal, method: :post do
     resource.process!
     redirect_to admin_fiat_withdrawal_path(resource), notice: 'Withdrawal has been processed'
   end
 
   member_action :mark_as_bank_rejected, method: :get do
+    @fiat_withdrawal = resource
     render 'admin/fiat_withdrawals/mark_as_bank_rejected'
   end
 
   member_action :submit_bank_rejected, method: :post do
-    resource.mark_as_bank_rejected!(params[:error_message])
+    resource.error_message_param = params[:error_message]
+    resource.mark_as_bank_rejected!
     redirect_to admin_fiat_withdrawal_path(resource), notice: 'Withdrawal marked as bank rejected'
   end
 
-  member_action :retry, method: :put do
+  member_action :retry, method: :post do
     if resource.retry!
       redirect_to admin_fiat_withdrawal_path(resource), notice: 'Withdrawal retry initiated'
     else
@@ -215,30 +218,37 @@ ActiveAdmin.register FiatWithdrawal do
   end
 
   member_action :cancel, method: :get do
+    @fiat_withdrawal = resource
     render 'admin/fiat_withdrawals/cancel'
   end
 
   member_action :submit_cancel, method: :post do
-    resource.cancel!(params[:cancel_reason])
+    resource.cancel_reason_param = params[:cancel_reason]
+    resource.cancel!
     redirect_to admin_fiat_withdrawal_path(resource), notice: 'Withdrawal has been cancelled'
   end
 
-  member_action :mark_as_verifying, method: :put do
-    resource.mark_as_verifying!
+  member_action :mark_as_verifying, method: :post do
+    resource.start_verification
+    resource.save!
     redirect_to admin_fiat_withdrawal_path(resource), notice: 'Withdrawal marked as verifying'
   end
 
-  member_action :mark_as_verified, method: :put do
-    resource.mark_as_verified!
+  member_action :mark_as_verified, method: :post do
+    resource.verify
+    resource.save!
     redirect_to admin_fiat_withdrawal_path(resource), notice: 'Withdrawal marked as verified'
   end
 
   member_action :mark_as_verification_failed, method: :get do
+    @fiat_withdrawal = resource
     render 'admin/fiat_withdrawals/mark_as_verification_failed'
   end
 
   member_action :submit_verification_failed, method: :post do
-    resource.mark_as_verification_failed!(params[:error_message])
+    resource.verification_failure_reason = params[:error_message]
+    resource.fail_verification
+    resource.save!
     redirect_to admin_fiat_withdrawal_path(resource), notice: 'Withdrawal verification failed'
   end
 end
