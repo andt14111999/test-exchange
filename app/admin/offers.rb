@@ -137,10 +137,10 @@ ActiveAdmin.register Offer do
       f.input :offer_type, as: :select, collection: Offer::OFFER_TYPES
       f.input :coin_currency
       f.input :currency
-      f.input :price
-      f.input :min_amount
-      f.input :max_amount
-      f.input :total_amount
+      f.input :price, input_html: { min: 0.000001 }
+      f.input :min_amount, input_html: { min: 0.000001 }
+      f.input :max_amount, input_html: { min: 0.000001 }
+      f.input :total_amount, input_html: { min: 0.000001 }
       f.input :payment_method
       f.input :payment_time
       f.input :payment_details
