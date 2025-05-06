@@ -39,7 +39,7 @@ class FiatTransactionService
       withdrawal = FiatWithdrawal.create!(
         user: @user,
         fiat_account: fiat_account,
-        bank_account: bank_account,
+        bank_account_id: bank_account_id,
         currency: currency,
         country_code: country_code,
         fiat_amount: amount,
@@ -47,7 +47,7 @@ class FiatTransactionService
       )
 
       # Lock funds in fiat account
-      fiat_account.lock_amount!(amount, "Withdrawal #{withdrawal.reference}")
+      fiat_account.lock_amount!(amount, "Withdrawal #{withdrawal.id}")
 
       # A direct withdrawal doesn't have a withdrawable
       withdrawal.mark_as_pending! if withdrawal.may_mark_as_pending?
@@ -102,14 +102,13 @@ class FiatTransactionService
 
     # Unlock the funds if cancelled
     fiat_account = withdrawal.fiat_account
-    fiat_account.unlock_amount!(withdrawal.fiat_amount, "Withdrawal #{withdrawal.reference} cancelled")
+    fiat_account.unlock_amount!(withdrawal.fiat_amount)
   end
 
   private
 
   def create_fiat_deposit_transaction(deposit)
     FiatTransaction.create!(
-      user: deposit.user,
       fiat_account: deposit.fiat_account,
       transactable: deposit,
       amount: deposit.amount_after_fee,
@@ -125,11 +124,10 @@ class FiatTransactionService
 
   def create_fiat_withdrawal_transaction(withdrawal)
     FiatTransaction.create!(
-      user: withdrawal.user,
       fiat_account: withdrawal.fiat_account,
       transactable: withdrawal,
       amount: withdrawal.fiat_amount,
-      fee: withdrawal.withdrawal_fee,
+      fee: withdrawal.fee,
       currency: withdrawal.currency,
       transaction_type: 'withdrawal',
       status: 'completed'
@@ -137,6 +135,6 @@ class FiatTransactionService
 
     # Update fiat account balance - no need to modify balance here
     # as the funds were already locked during withdrawal creation
-    withdrawal.fiat_account.withdraw_locked!(withdrawal.fiat_amount, "Withdrawal #{withdrawal.reference} processed")
+    withdrawal.fiat_account.withdraw_locked!(withdrawal.fiat_amount)
   end
 end
