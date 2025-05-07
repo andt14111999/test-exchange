@@ -303,12 +303,19 @@ module V1
           trade = Trade.where('buyer_id = ? OR seller_id = ?', current_user.id, current_user.id).find_by(id: params[:id])
           error!({ error: 'Trade not found' }, 404) unless trade
 
-          # Only seller can complete
-          error!({ error: 'Only the seller can complete a trade' }, 403) unless current_user.id == trade.seller_id
+          # Check if user is the seller
+          unless trade.seller_id == current_user.id
+            error!({ error: 'Only the seller can complete a trade' }, 403)
+          end
 
           # Check if trade can be completed
           unless trade.may_complete?
             error!({ error: 'This trade cannot be completed in its current state' }, 400)
+          end
+
+          # Check if seller can release the funds
+          unless trade.can_be_released_by?(current_user)
+            error!({ error: 'You are not authorized to complete this trade' }, 403)
           end
 
           # Use TradeService to ensure Kafka events are sent

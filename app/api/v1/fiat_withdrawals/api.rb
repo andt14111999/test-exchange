@@ -101,7 +101,7 @@ module V1
                                  .sum(:fiat_amount)
 
           if this_week_total + params[:fiat_amount] > weekly_limit
-            error!({ error: "This withdrawal would exceed your weekly limit of #{weekly_limit} #{params[:currency]}" }, 400)
+            error!({ error: "This withdrawal would exceed your weekly withdrawal limit of #{weekly_limit} #{params[:currency]}" }, 422)
           end
 
           # Check if user has sufficient balance
