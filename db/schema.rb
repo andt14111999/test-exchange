@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_05_06_140656) do
+ActiveRecord::Schema[8.0].define(version: 2025_05_06_192824) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -42,6 +42,28 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_06_140656) do
     t.string "authenticator_key"
     t.index ["email"], name: "index_admin_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_admin_users_on_reset_password_token", unique: true
+  end
+
+  create_table "amm_orders", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "amm_pool_id", null: false
+    t.string "identifier", null: false
+    t.boolean "zero_for_one", default: true, null: false
+    t.decimal "amount_specified", precision: 36, scale: 18, default: "0.0", null: false
+    t.decimal "amount_estimated", precision: 36, scale: 18, default: "0.0", null: false
+    t.decimal "amount_actual", precision: 36, scale: 18, default: "0.0", null: false
+    t.integer "before_tick_index"
+    t.integer "after_tick_index"
+    t.jsonb "fees", default: {}, null: false
+    t.string "status", default: "pending", null: false
+    t.string "error_message", default: ""
+    t.float "slippage", default: 0.01, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.decimal "amount_received", precision: 32, scale: 16, default: "0.0"
+    t.index ["amm_pool_id"], name: "index_amm_orders_on_amm_pool_id"
+    t.index ["identifier"], name: "index_amm_orders_on_identifier", unique: true
+    t.index ["user_id"], name: "index_amm_orders_on_user_id"
   end
 
   create_table "amm_pools", force: :cascade do |t|
@@ -585,6 +607,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_06_140656) do
     t.index ["item_type", "item_id"], name: "index_versions_on_item_type_and_item_id"
   end
 
+  add_foreign_key "amm_orders", "amm_pools"
+  add_foreign_key "amm_orders", "users"
   add_foreign_key "amm_positions", "amm_pools"
   add_foreign_key "amm_positions", "users"
   add_foreign_key "bank_accounts", "users"

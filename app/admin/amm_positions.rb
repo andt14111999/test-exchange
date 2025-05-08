@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register AmmPosition do
-  menu priority: 3, label: 'AMM Positions'
+  menu priority: 3, label: 'AMM Positions', parent: 'AMM'
   actions :index, :show
 
   filter :identifier
