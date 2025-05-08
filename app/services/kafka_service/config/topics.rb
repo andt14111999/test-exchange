@@ -32,6 +32,10 @@ module KafkaService
       # AMM Position related topics
       AMM_POSITION_TOPIC = 'EE.I.amm_position'.freeze
       AMM_POSITION_UPDATE_TOPIC = 'EE.O.amm_position_update'.freeze
+
+      # AMM Order related topics
+      AMM_ORDER_TOPIC = 'EE.I.amm_order'.freeze
+      AMM_ORDER_UPDATE_TOPIC = 'EE.O.amm_order_update'.freeze
     end
   end
 end

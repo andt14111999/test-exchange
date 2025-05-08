@@ -9,6 +9,7 @@ class User < ApplicationRecord
   has_many :merchant_escrow_operations, through: :merchant_escrows
   has_many :coin_withdrawals, dependent: :nullify
   has_many :amm_positions, dependent: :destroy
+  has_many :amm_orders, dependent: :destroy
 
   # P2P Trading
   has_many :offers, dependent: :destroy

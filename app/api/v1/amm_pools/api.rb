@@ -16,6 +16,12 @@ module V1
           present :meta, generate_meta(pools), with: Api::EntityMeta
         end
 
+        desc 'Get active AMM pools with basic information'
+        get :active do
+          pools = ::AmmPool.active.select(:pair, :token0, :token1)
+          present :pools, pools, with: V1::AmmPools::MiniSizeEntity
+        end
+
         desc 'Get an AMM pool by pair'
         params do
           requires :pair, type: String, desc: 'AMM Pool pair (e.g. BTC/USDT)'
