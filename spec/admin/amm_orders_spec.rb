@@ -36,8 +36,8 @@ describe 'AmmOrder Admin', type: :feature do
       end
 
       # Kiểm tra trang theo slug thay vì identifier
-      expect(page).to have_link(href: /#{processing_order.id}/)
-      expect(page).not_to have_link(href: /#{pending_order.id}/)
+      expect(page).to have_content(processing_order.identifier)
+      expect(page).not_to have_content(pending_order.identifier)
     end
   end
 
