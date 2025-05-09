@@ -31,7 +31,7 @@ describe 'AmmOrders API', type: :request do
     end
 
     it 'returns orders for the current user with status success' do
-      get "/api/v1/amm_orders", headers: headers
+      get "/api/v1/amm_orders?status=success", headers: headers
 
       expect(response).to have_http_status(:ok)
       json_response = JSON.parse(response.body)
