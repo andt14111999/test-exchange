@@ -103,6 +103,7 @@ gem 'json', '~> 2.11.3'
 gem 'net-imap', '~> 0.5.8'
 gem 'nokogiri', '>= 1.18.8'
 gem 'rack', '>= 3.1.12'
+gem 'rack-session', '>= 2.1.1'
 gem 'uri', '>= 1.0.3'
 
 # Deployment

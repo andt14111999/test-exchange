@@ -12,7 +12,7 @@ module V1
       resource :amm_orders do
         desc 'Get a list of orders for the current user'
         params do
-          optional :status, type: String, values: %w[pending processing success error all], default: 'success', desc: 'Filter by status'
+          optional :status, type: String, values: %w[pending processing success error all], default: 'all', desc: 'Filter by status'
           optional :page, type: Integer, default: 1, desc: 'Page number'
           optional :per_page, type: Integer, default: 10, desc: 'Items per page'
         end

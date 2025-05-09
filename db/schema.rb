@@ -513,15 +513,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_06_192824) do
     t.index ["var"], name: "index_settings_on_var", unique: true
   end
 
-  create_table "site_countries", force: :cascade do |t|
-    t.string "code", null: false
-    t.string "name", null: false
-    t.boolean "enabled", default: true
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["code"], name: "index_site_countries_on_code", unique: true
-  end
-
   create_table "social_accounts", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "provider", null: false
