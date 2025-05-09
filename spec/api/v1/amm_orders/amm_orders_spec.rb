@@ -30,7 +30,7 @@ describe 'AmmOrders API', type: :request do
       create(:amm_order, user: user, status: 'processing', identifier: 'processing_2', amount_specified: 100, amount_estimated: 95)
     end
 
-    it 'returns orders for the current user with default status success' do
+    it 'returns orders for the current user with status success' do
       get "/api/v1/amm_orders", headers: headers
 
       expect(response).to have_http_status(:ok)
@@ -39,8 +39,8 @@ describe 'AmmOrders API', type: :request do
       expect(json_response['amm_orders'].all? { |p| p['status'] == 'success' }).to be true
     end
 
-    it 'returns all orders when status is all' do
-      get "/api/v1/amm_orders?status=all", headers: headers
+    it 'returns all orders when status is default all' do
+      get "/api/v1/amm_orders", headers: headers
 
       expect(response).to have_http_status(:ok)
       json_response = JSON.parse(response.body)
