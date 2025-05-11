@@ -10,10 +10,18 @@ module V1
       resource :coin_withdrawals do
         desc 'Create a new coin withdrawal'
         params do
-          requires :coin_address, type: String, desc: 'Recipient address'
+          optional :coin_address, type: String, desc: 'Recipient address (required for external withdrawals)'
           requires :coin_amount, type: BigDecimal, desc: 'Amount to withdraw'
           requires :coin_currency, type: String, desc: 'Coin currency (e.g. usdt, eth)'
-          requires :coin_layer, type: String, desc: 'Network layer (e.g. erc20, bep20)'
+          optional :coin_layer, type: String, desc: 'Network layer (e.g. erc20, bep20, required for external withdrawals)'
+          optional :receiver_email, type: String, desc: 'Email of recipient for internal transfers'
+
+          mutually_exclusive :coin_address, :receiver_email
+          at_least_one_of :coin_address, :receiver_email
+
+          given :coin_address do
+            requires :coin_layer, type: String, desc: 'Network layer is required for external withdrawals'
+          end
         end
 
         post do
@@ -23,22 +31,14 @@ module V1
             coin_currency: params[:coin_currency].downcase,
             coin_amount: params[:coin_amount],
             coin_address: params[:coin_address],
-            coin_layer: params[:coin_layer]
+            coin_layer: params[:coin_layer],
+            receiver_email: params[:receiver_email]
           )
 
           if withdrawal.save
             present({
               status: 'success',
-              data: {
-                id: withdrawal.id,
-                coin_currency: withdrawal.coin_currency,
-                coin_amount: withdrawal.coin_amount,
-                coin_fee: withdrawal.coin_fee,
-                coin_address: withdrawal.coin_address,
-                coin_layer: withdrawal.coin_layer,
-                status: withdrawal.status,
-                created_at: withdrawal.created_at
-              }
+              data: present(withdrawal, with: Entity)
             })
           else
             error!({
@@ -66,18 +66,7 @@ module V1
 
             present({
               status: 'success',
-              data: {
-                id: withdrawal.id,
-                coin_currency: withdrawal.coin_currency,
-                coin_amount: withdrawal.coin_amount,
-                coin_fee: withdrawal.coin_fee,
-                coin_address: withdrawal.coin_address,
-                coin_layer: withdrawal.coin_layer,
-                status: withdrawal.status,
-                tx_hash: withdrawal.tx_hash,
-                created_at: withdrawal.created_at,
-                updated_at: withdrawal.updated_at
-              }
+              data: present(withdrawal, with: Entity)
             })
           end
         end

@@ -49,6 +49,13 @@ You are an expert in Ruby on Rails, PostgreSQL, Hotwire (Turbo and Stimulus).
 - Implement responsive design with Tailwind CSS.
 - Use Rails view helpers and partials to keep views DRY.
 
+## API Development
+- Use Grape Entity instead of manually building response objects
+- Create Entity classes for all API resources in their respective modules
+- Use conditional exposures with the `if` option for optional fields
+- Format numbers using `format_with` helpers in the Entity
+- Extract complex logic to methods within the Entity
+
 ## Performance Optimization
 - Use database indexing effectively.
 - Implement caching strategies (fragment caching, Russian Doll caching).

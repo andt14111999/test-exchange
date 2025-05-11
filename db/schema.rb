@@ -200,6 +200,24 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_12_103553) do
     t.index ["verified_at"], name: "index_coin_deposits_on_verified_at"
   end
 
+  create_table "coin_internal_transfer_operations", force: :cascade do |t|
+    t.bigint "coin_withdrawal_id", null: false
+    t.bigint "sender_id", null: false
+    t.bigint "receiver_id", null: false
+    t.string "coin_currency", null: false
+    t.decimal "coin_amount", precision: 36, scale: 18, null: false
+    t.string "status", default: "pending", null: false
+    t.string "status_explanation"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.decimal "coin_fee", precision: 36, scale: 18, default: "0.0"
+    t.index ["coin_currency"], name: "index_coin_internal_transfer_operations_on_coin_currency"
+    t.index ["coin_withdrawal_id"], name: "index_coin_internal_transfer_operations_on_coin_withdrawal_id"
+    t.index ["receiver_id"], name: "index_coin_internal_transfer_operations_on_receiver_id"
+    t.index ["sender_id"], name: "index_coin_internal_transfer_operations_on_sender_id"
+    t.index ["status"], name: "index_coin_internal_transfer_operations_on_status"
+  end
+
   create_table "coin_transactions", force: :cascade do |t|
     t.decimal "amount", precision: 24, scale: 8
     t.bigint "coin_account_id"
@@ -632,6 +650,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_12_103553) do
   add_foreign_key "coin_deposit_operations", "coin_deposits"
   add_foreign_key "coin_deposits", "coin_accounts"
   add_foreign_key "coin_deposits", "users"
+  add_foreign_key "coin_internal_transfer_operations", "coin_withdrawals"
+  add_foreign_key "coin_internal_transfer_operations", "users", column: "receiver_id"
+  add_foreign_key "coin_internal_transfer_operations", "users", column: "sender_id"
   add_foreign_key "coin_transactions", "coin_accounts"
   add_foreign_key "fiat_accounts", "users"
   add_foreign_key "fiat_deposits", "fiat_accounts"
