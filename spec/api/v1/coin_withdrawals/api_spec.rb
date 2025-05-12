@@ -54,6 +54,38 @@ RSpec.describe V1::CoinWithdrawals::Api, type: :request do
           expect(json_response['data']['coin_layer']).to eq(coin_layer)
           expect(json_response['data']['status']).to eq('pending')
         end
+
+        it 'creates a new withdrawal with API key authentication' do
+          api_key = create(:api_key, user: user)
+          timestamp = Time.current.to_i.to_s
+          path = '/api/v1/coin_withdrawals'
+          method = 'POST'
+          message = "#{method}#{path}#{timestamp}"
+
+          # Generate HMAC signature
+          digest = OpenSSL::Digest.new('sha256')
+          signature = OpenSSL::HMAC.hexdigest(digest, api_key.secret_key, message)
+
+          headers = {
+            'X-Access-Key' => api_key.access_key,
+            'X-Signature' => signature,
+            'X-Timestamp' => timestamp
+          }
+
+          expect {
+            post '/api/v1/coin_withdrawals', params: valid_params, headers: headers
+          }.to change(CoinWithdrawal, :count).by(1)
+
+          expect(response).to have_http_status(:success)
+
+          json_response = JSON.parse(response.body)
+          expect(json_response['status']).to eq('success')
+          expect(json_response['data']['coin_currency']).to eq(coin_currency)
+          expect(json_response['data']['coin_amount'].to_f).to eq(coin_amount)
+          expect(json_response['data']['coin_address']).to eq(coin_address)
+          expect(json_response['data']['coin_layer']).to eq(coin_layer)
+          expect(json_response['data']['status']).to eq('pending')
+        end
       end
 
       context 'with insufficient balance' do
@@ -173,6 +205,37 @@ RSpec.describe V1::CoinWithdrawals::Api, type: :request do
       context 'when withdrawal exists and belongs to user' do
         it 'returns the withdrawal details' do
           get "/api/v1/coin_withdrawals/#{withdrawal.id}", headers: auth_header
+
+          expect(response).to have_http_status(:success)
+          json_response = JSON.parse(response.body)
+          expect(json_response['status']).to eq('success')
+          expect(json_response['data']['id']).to eq(withdrawal.id)
+          expect(json_response['data']['coin_currency']).to eq(withdrawal.coin_currency)
+          expect(json_response['data']['coin_amount']).to eq(withdrawal.coin_amount.to_s)
+          expect(json_response['data']['coin_fee']).to eq(withdrawal.coin_fee.to_s)
+          expect(json_response['data']['coin_address']).to eq(withdrawal.coin_address)
+          expect(json_response['data']['coin_layer']).to eq(withdrawal.coin_layer)
+          expect(json_response['data']['status']).to eq(withdrawal.status)
+        end
+
+        it 'returns the withdrawal details using API key authentication' do
+          api_key = create(:api_key, user: user)
+          timestamp = Time.current.to_i.to_s
+          path = "/api/v1/coin_withdrawals/#{withdrawal.id}"
+          method = 'GET'
+          message = "#{method}#{path}#{timestamp}"
+
+          # Generate HMAC signature
+          digest = OpenSSL::Digest.new('sha256')
+          signature = OpenSSL::HMAC.hexdigest(digest, api_key.secret_key, message)
+
+          headers = {
+            'X-Access-Key' => api_key.access_key,
+            'X-Signature' => signature,
+            'X-Timestamp' => timestamp
+          }
+
+          get "/api/v1/coin_withdrawals/#{withdrawal.id}", headers: headers
 
           expect(response).to have_http_status(:success)
           json_response = JSON.parse(response.body)

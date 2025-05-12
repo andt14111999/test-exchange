@@ -68,6 +68,7 @@ You are an expert in Ruby on Rails, PostgreSQL, Hotwire (Turbo and Stimulus).
 - Implement service objects for complex business logic.
 - Use background jobs (e.g., Sidekiq) for time-consuming tasks.
 - When create new migration file, please set the timestamp in the filename to the current date follow format `YYYYMMDDHHMMSS_xxx_migration_action.rb`
+- Always use `rails g migration` to generate migration files to ensure correct timestamp format
 
 ## Testing
 - Don't need to write test for initialize method

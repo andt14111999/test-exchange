@@ -125,6 +125,22 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_12_103553) do
     t.index ["user_id"], name: "index_amm_positions_on_user_id"
   end
 
+  create_table "api_keys", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "name", null: false
+    t.string "access_key", null: false
+    t.string "encrypted_secret_key"
+    t.string "encrypted_secret_key_iv"
+    t.string "encrypted_secret_key_salt"
+    t.datetime "last_used_at"
+    t.datetime "revoked_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["access_key"], name: "index_api_keys_on_access_key", unique: true
+    t.index ["encrypted_secret_key_iv"], name: "index_api_keys_on_encrypted_secret_key_iv", unique: true
+    t.index ["user_id"], name: "index_api_keys_on_user_id"
+  end
+
   create_table "bank_accounts", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "bank_name", null: false
@@ -644,6 +660,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_12_103553) do
   add_foreign_key "amm_orders", "users"
   add_foreign_key "amm_positions", "amm_pools"
   add_foreign_key "amm_positions", "users"
+  add_foreign_key "api_keys", "users"
   add_foreign_key "bank_accounts", "users"
   add_foreign_key "coin_accounts", "users"
   add_foreign_key "coin_deposit_operations", "coin_accounts"

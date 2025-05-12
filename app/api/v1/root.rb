@@ -18,6 +18,7 @@ module V1
     mount V1::AmmOrders::Api
     mount V1::Ticks::Api
     mount V1::Coins::Api
+    mount V1::ApiKeys
 
     # P2P Trading APIs
     mount V1::Offers::Api
