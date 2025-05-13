@@ -34,8 +34,10 @@ describe 'Tick Admin', type: :feature do
       end
 
       # Kiểm tra xem chỉ hiển thị tick inactive
-      expect(page).to have_content(inactive_tick.id.to_s)
-      expect(page).not_to have_content(tick.id.to_s)
+      within 'table.index_table' do
+        expect(page).to have_content(inactive_tick.tick_key)
+        expect(page).not_to have_content(tick.tick_key)
+      end
     end
 
     it 'filters ticks by amm_pool' do
@@ -54,8 +56,10 @@ describe 'Tick Admin', type: :feature do
       end
 
       # Chỉ hiển thị tick của amm_pool đã chọn
-      expect(page).to have_content(tick.id.to_s)
-      expect(page).not_to have_content(another_tick.id.to_s)
+      within 'table.index_table' do
+        expect(page).to have_content(tick.tick_key)
+        expect(page).not_to have_content(another_tick.tick_key)
+      end
     end
   end
 
