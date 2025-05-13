@@ -100,7 +100,42 @@ ActiveAdmin.register AmmPool do
           row :protocol_fees1
         end
       end
+
+      panel 'Ticks' do
+        table_for resource.ticks.order(tick_index: :asc).limit(10) do
+          column :tick_index
+          column :liquidity_gross
+          column :liquidity_net
+          column :status do |tick|
+            status_tag tick.status, class: tick.status == 'active' ? 'ok' : 'error'
+          end
+          column :actions do |tick|
+            link_to 'View', admin_tick_path(tick)
+          end
+        end
+        div do
+          link_to 'View All Ticks', admin_ticks_path(q: { amm_pool_id_eq: resource.id })
+        end
+      end
     end
+  end
+
+  # Custom actions
+  action_item :fetch_ticks, only: :show do
+    link_to 'Fetch Latest Ticks', fetch_ticks_admin_amm_pool_path(resource), method: :post
+  end
+
+  member_action :fetch_ticks, method: :post do
+    amm_pool = AmmPool.find(params[:id])
+
+    begin
+      amm_pool.send_tick_query
+      flash[:notice] = 'Tick query sent successfully. Ticks will be updated shortly.'
+    rescue => e
+      flash[:error] = "Failed to query ticks: #{e.message}"
+    end
+
+    redirect_to admin_amm_pool_path(amm_pool)
   end
 
   form do |f|

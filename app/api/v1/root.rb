@@ -16,6 +16,7 @@ module V1
     mount V1::AmmPools::Api
     mount V1::AmmPositions::Api
     mount V1::AmmOrders::Api
+    mount V1::Ticks::Api
     mount V1::Coins::Api
 
     # P2P Trading APIs

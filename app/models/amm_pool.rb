@@ -5,6 +5,7 @@ class AmmPool < ApplicationRecord
   include Ransackable
 
   has_many :amm_positions, dependent: :restrict_with_error
+  has_many :ticks, dependent: :destroy
 
   validates :pair, presence: true, uniqueness: true
   validates :token0, presence: true
@@ -44,6 +45,18 @@ class AmmPool < ApplicationRecord
 
   def title
     "#{pair} - #{status}"
+  end
+
+  def send_tick_query
+    payload = {
+      eventId: "tick-query-#{SecureRandom.uuid}",
+      operationType: KafkaService::Config::OperationTypes::TICK_QUERY,
+      actionType: self.class.name,
+      actionId: id,
+      poolPair: pair
+    }
+
+    KafkaService::Services::Tick::TickService.new.query(pool_pair: pair, payload: payload)
   end
 
   # Tính toán APR (Annual Percentage Rate) của pool

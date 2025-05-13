@@ -40,6 +40,9 @@ module KafkaService
       OFFER_ENABLE = 'offer_enable'
       OFFER_DELETE = 'offer_delete'
 
+      # Tick operations
+      TICK_QUERY = 'tick_query'
+
       # Legacy
       BALANCE_QUERY = 'balance_query'
     end

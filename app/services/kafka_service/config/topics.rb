@@ -36,6 +36,10 @@ module KafkaService
       # AMM Order related topics
       AMM_ORDER_TOPIC = 'EE.I.amm_order'.freeze
       AMM_ORDER_UPDATE_TOPIC = 'EE.O.amm_order_update'.freeze
+
+      # AMM Tick related topics
+      TICK_QUERY_TOPIC = 'EE.I.tick_query'.freeze
+      TICK_UPDATE_TOPIC = 'EE.O.tick_update'.freeze
     end
   end
 end

@@ -343,6 +343,28 @@ describe AmmPool, type: :model do
     end
   end
 
+  describe '#send_tick_query' do
+    let(:amm_pool) { create(:amm_pool, pair: 'USDT/VND') }
+    let(:tick_service) { instance_double(KafkaService::Services::Tick::TickService) }
+
+    before do
+      allow(KafkaService::Services::Tick::TickService).to receive(:new).and_return(tick_service)
+      allow(tick_service).to receive(:query)
+    end
+
+    it 'sends a query to the tick service' do
+      expect(tick_service).to receive(:query).with(
+        pool_pair: amm_pool.pair,
+        payload: hash_including(
+          operationType: KafkaService::Config::OperationTypes::TICK_QUERY,
+          poolPair: amm_pool.pair
+        )
+      )
+
+      amm_pool.send_tick_query
+    end
+  end
+
   describe 'callbacks' do
     describe 'after_commit' do
       it 'broadcasts update after create' do
