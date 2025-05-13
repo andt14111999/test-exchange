@@ -11,7 +11,8 @@ module KafkaService
         KafkaService::Config::Topics::AMM_POSITION_UPDATE_TOPIC => KafkaService::Handlers::AmmPositionHandler.new,
         KafkaService::Config::Topics::OFFER_UPDATE => KafkaService::Handlers::OfferHandler.new,
         KafkaService::Config::Topics::TRADE_UPDATE => KafkaService::Handlers::TradeHandler.new,
-        KafkaService::Config::Topics::AMM_ORDER_UPDATE_TOPIC => KafkaService::Handlers::AmmOrderHandler.new
+        KafkaService::Config::Topics::AMM_ORDER_UPDATE_TOPIC => KafkaService::Handlers::AmmOrderHandler.new,
+        KafkaService::Config::Topics::TICK_UPDATE_TOPIC => KafkaService::Handlers::TickHandler.new
       }
       @consumers = []
       @monitor = Monitor.new

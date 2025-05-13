@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_05_06_220000) do
+ActiveRecord::Schema[8.0].define(version: 2025_05_12_103553) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -530,6 +530,30 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_06_220000) do
     t.index ["user_id"], name: "index_social_accounts_on_user_id"
   end
 
+  create_table "ticks", force: :cascade do |t|
+    t.string "pool_pair", null: false
+    t.integer "tick_index", null: false
+    t.decimal "liquidity_gross", precision: 36, scale: 18, default: "0.0"
+    t.decimal "liquidity_net", precision: 36, scale: 18, default: "0.0"
+    t.decimal "fee_growth_outside0", precision: 36, scale: 18, default: "0.0"
+    t.decimal "fee_growth_outside1", precision: 36, scale: 18, default: "0.0"
+    t.bigint "tick_initialized_timestamp"
+    t.boolean "initialized", default: false
+    t.string "status", default: "inactive"
+    t.string "tick_key", null: false
+    t.bigint "amm_pool_id"
+    t.bigint "created_at_timestamp"
+    t.bigint "updated_at_timestamp"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["amm_pool_id"], name: "index_ticks_on_amm_pool_id"
+    t.index ["pool_pair", "tick_index"], name: "index_ticks_on_pool_pair_and_tick_index", unique: true
+    t.index ["pool_pair"], name: "index_ticks_on_pool_pair"
+    t.index ["status"], name: "index_ticks_on_status"
+    t.index ["tick_index"], name: "index_ticks_on_tick_index"
+    t.index ["tick_key"], name: "index_ticks_on_tick_key", unique: true
+  end
+
   create_table "trades", force: :cascade do |t|
     t.string "ref", null: false
     t.bigint "buyer_id", null: false
@@ -627,6 +651,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_06_220000) do
   add_foreign_key "offers", "payment_methods"
   add_foreign_key "offers", "users"
   add_foreign_key "social_accounts", "users"
+  add_foreign_key "ticks", "amm_pools"
   add_foreign_key "trades", "fiat_deposits", column: "fiat_token_deposit_id"
   add_foreign_key "trades", "fiat_withdrawals", column: "fiat_token_withdrawal_id"
   add_foreign_key "trades", "offers"
