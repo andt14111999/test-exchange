@@ -117,7 +117,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
       create(:coin_account, :btc_main, user:, balance: 100.0)
 
       withdrawal = nil
-      CoinWithdrawal.skip_callback(:create, :after, :create_withdrawal_operation)
+      CoinWithdrawal.skip_callback(:create, :after, :create_operations)
       withdrawal = create(:coin_withdrawal,
         user:,
         coin_currency: 'btc',
@@ -126,7 +126,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
         coin_address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
         coin_layer: 'btc',
         status: 'pending')
-      CoinWithdrawal.set_callback(:create, :after, :create_withdrawal_operation)
+      CoinWithdrawal.set_callback(:create, :after, :create_operations)
 
       login_as(admin_user, scope: :admin_user)
       visit admin_coin_withdrawal_path(withdrawal)

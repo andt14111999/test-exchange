@@ -21,8 +21,9 @@ class CoinWithdrawal < ApplicationRecord
 
   before_validation :assign_coin_layer
   before_validation :calculate_coin_fee, on: :create
-  after_create :create_operation
   after_create :send_event_withdrawal_to_kafka
+  # create_operations need to be called after send_event_withdrawal_to_kafka
+  after_create :create_operations
 
   scope :sorted, -> { order(created_at: :desc) }
 
@@ -131,7 +132,7 @@ class CoinWithdrawal < ApplicationRecord
     end
   end
 
-  def create_operation
+  def create_operations
     if internal_transfer?
       receiver = User.find_by(email: receiver_email)
       return unless receiver
@@ -158,7 +159,7 @@ class CoinWithdrawal < ApplicationRecord
       account_id: main_coin_account.id
     )
 
-    KafkaService::Services::Coin::CoinWithdrawalService.new.create(
+    params = {
       identifier: id,
       status: pending? || processing? ? 'verified' : status,
       user_id: user_id,
@@ -166,7 +167,22 @@ class CoinWithdrawal < ApplicationRecord
       account_key: account_key,
       amount: coin_amount,
       fee: coin_fee
-    )
+    }
+
+    # Add recipient_account_key for internal transfers
+    recipient = User.find_by(email: receiver_email)
+    if internal_transfer? && recipient.present?
+      recipient_account = recipient.coin_accounts.of_coin(coin_currency).main
+      if recipient_account.present?
+        recipient_account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
+          user_id: recipient.id,
+          account_id: recipient_account.id
+        )
+        params[:recipient_account_key] = recipient_account_key
+      end
+    end
+
+    KafkaService::Services::Coin::CoinWithdrawalService.new.create(**params)
   rescue StandardError => e
     Rails.logger.error("Failed to send withdrawal event to Kafka: #{e.message}")
   end

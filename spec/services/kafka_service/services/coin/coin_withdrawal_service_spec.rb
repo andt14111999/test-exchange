@@ -48,6 +48,54 @@ RSpec.describe KafkaService::Services::Coin::CoinWithdrawalService, type: :servi
         fee: fee
       )
     end
+
+    it 'includes recipient_account_key for internal transfers' do
+      service = described_class.new
+      identifier = SecureRandom.uuid
+      user_id = 1
+      recipient_account_key = 'recipient-account-123'
+      coin = 'BTC'
+      account_key = 'account-123'
+      amount = '100.0'
+      status = 'pending'
+      fee = 0.1
+
+      allow(SecureRandom).to receive_messages(uuid: 'mocked-action-id', hex: 'mocked-hex')
+
+      expected_data = {
+        identifier: identifier,
+        operationType: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_CREATE,
+        actionType: KafkaService::Config::ActionTypes::COIN_TRANSACTION,
+        actionId: 'mocked-action-id',
+        userId: user_id,
+        status: status,
+        accountKey: account_key,
+        amount: amount,
+        coin: coin,
+        txHash: 'tx-mocked-hex',
+        layer: 'L1',
+        destinationAddress: 'address-mocked-hex',
+        fee: fee,
+        recipientAccountKey: recipient_account_key
+      }
+
+      expect(service).to receive(:send_event).with(
+        topic: KafkaService::Config::Topics::COIN_WITHDRAW,
+        key: identifier,
+        data: expected_data
+      )
+
+      service.create(
+        identifier: identifier,
+        status: status,
+        user_id: user_id,
+        coin: coin,
+        account_key: account_key,
+        amount: amount,
+        fee: fee,
+        recipient_account_key: recipient_account_key
+      )
+    end
   end
 
   describe '#update_status' do

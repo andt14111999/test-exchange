@@ -97,14 +97,4 @@ ActiveAdmin.register ApiKey do
   action_item :regenerate, only: :show do
     link_to 'Regenerate API Key', regenerate_admin_api_key_path(resource), method: :post if resource.revoked_at.nil?
   end
-
-  # controller do
-  #   def create
-  #     # Override create to handle the case when a user creates a new API key
-  #     # We don't need to provide secret_key as it will be auto-generated
-  #     super do |success, failure|
-  #       success.html { redirect_to admin_api_key_path(resource) }
-  #     end
-  #   end
-  # end
 end
