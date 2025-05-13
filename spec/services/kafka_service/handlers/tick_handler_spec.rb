@@ -13,16 +13,14 @@ describe KafkaService::Handlers::TickHandler do
       end
     end
 
-    context 'when payload object poolPair is present' do
+    context 'when payload poolPair is present' do
       it 'processes the tick update' do
         payload = {
-          'object' => {
-            'poolPair' => amm_pool.pair,
-            'tickIndex' => 100,
-            'liquidityGross' => '100',
-            'liquidityNet' => '50',
-            'updatedAt' => (Time.current.to_f * 1000).to_i
-          },
+          'poolPair' => amm_pool.pair,
+          'tickIndex' => 100,
+          'liquidityGross' => '100',
+          'liquidityNet' => '50',
+          'updatedAt' => (Time.current.to_f * 1000).to_i,
           'isSuccess' => 'true'
         }
 
@@ -31,9 +29,9 @@ describe KafkaService::Handlers::TickHandler do
       end
     end
 
-    context 'when payload object poolPair is missing' do
+    context 'when payload poolPair is missing' do
       it 'returns nil' do
-        payload = { 'object' => {} }
+        payload = { 'someOtherField' => 'value' }
         expect(handler.handle(payload)).to be_nil
       end
     end
@@ -44,18 +42,16 @@ describe KafkaService::Handlers::TickHandler do
     let(:amm_pool) { create(:amm_pool, pair: 'USDT/VND') }
     let(:payload) do
       {
-        'object' => {
-          'poolPair' => amm_pool.pair,
-          'tickIndex' => 100,
-          'liquidityGross' => '100',
-          'liquidityNet' => '50',
-          'feeGrowthOutside0' => '0',
-          'feeGrowthOutside1' => '0',
-          'initialized' => true,
-          'tickInitializedTimestamp' => (Time.current.to_f * 1000).to_i,
-          'createdAt' => (Time.current.to_f * 1000).to_i,
-          'updatedAt' => (Time.current.to_f * 1000).to_i
-        }
+        'poolPair' => amm_pool.pair,
+        'tickIndex' => 100,
+        'liquidityGross' => '100',
+        'liquidityNet' => '50',
+        'feeGrowthOutside0' => '0',
+        'feeGrowthOutside1' => '0',
+        'initialized' => true,
+        'tickInitializedTimestamp' => (Time.current.to_f * 1000).to_i,
+        'createdAt' => (Time.current.to_f * 1000).to_i,
+        'updatedAt' => (Time.current.to_f * 1000).to_i
       }
     end
 
@@ -159,7 +155,7 @@ describe KafkaService::Handlers::TickHandler do
 
         # Modify the payload to have an older timestamp
         older_payload = payload.deep_dup
-        older_payload['object']['updatedAt'] = ((Time.current - 1.day).to_f * 1000).to_i
+        older_payload['updatedAt'] = ((Time.current - 1.day).to_f * 1000).to_i
 
         # Stub the find_or_create_tick method to return our tick
         allow(handler).to receive(:find_or_create_tick).and_return(old_tick)
