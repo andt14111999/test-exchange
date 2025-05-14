@@ -181,6 +181,50 @@ RSpec.describe CoinWithdrawal, type: :model do
         expect(withdrawal).to be_completed
       end
 
+      it 'sends an event to Kafka with recipient_account_key for internal transfers' do
+        withdrawal_service = instance_double(KafkaService::Services::Coin::CoinWithdrawalService)
+        account_key = "#{user.id}-coin-#{coin_account.id}"
+        receiver = create(:user)
+
+        # Create receiver's coin account
+        receiver_coin_account = create(:coin_account, :usdt_main, user: receiver)
+        receiver_account_key = "#{receiver.id}-coin-#{receiver_coin_account.id}"
+
+        allow(KafkaService::Services::Coin::CoinWithdrawalService).to receive(:new).and_return(withdrawal_service)
+        allow(KafkaService::Services::AccountKeyBuilderService).to receive(:build_coin_account_key)
+          .with(user_id: user.id, account_id: coin_account.id)
+          .and_return(account_key)
+        allow(KafkaService::Services::AccountKeyBuilderService).to receive(:build_coin_account_key)
+          .with(user_id: receiver.id, account_id: receiver_coin_account.id)
+          .and_return(receiver_account_key)
+
+        # Create an internal transfer withdrawal
+        withdrawal = build(:coin_withdrawal,
+                          id: 10001,
+                          user:,
+                          coin_currency: 'usdt',
+                          coin_amount: 10,
+                          coin_fee: 0,
+                          receiver_email: receiver.email)
+
+        # Stub create_operations to prevent after_create callbacks from executing auto_process!
+        allow(withdrawal).to receive(:create_operations)
+
+        # Setup expectation for the create method with recipient_account_key
+        expect(withdrawal_service).to receive(:create).with(
+          identifier: 10001,
+          status: 'verified',
+          user_id: user.id,
+          coin: 'usdt',
+          account_key: account_key,
+          amount: 10,
+          fee: 0,
+          recipient_account_key: receiver_account_key
+        )
+
+        withdrawal.save!
+      end
+
       it 'handles errors gracefully' do
         withdrawal_service = instance_double(KafkaService::Services::Coin::CoinWithdrawalService)
 
@@ -257,7 +301,7 @@ RSpec.describe CoinWithdrawal, type: :model do
   describe '.ransackable_associations' do
     it 'returns allowed associations for ransack' do
       expect(described_class.ransackable_associations).to match_array(
-        %w[user coin_withdrawal_operation coin_transaction]
+        %w[user coin_withdrawal_operation coin_transaction coin_internal_transfer_operation]
       )
     end
   end

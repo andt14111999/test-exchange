@@ -15,6 +15,8 @@ en:
     not_found: "%{model} not found"
     not_image: "is not an image"
     too_large: "is too large"
+    messages:
+      cannot_transfer_to_self: "cannot transfer to self"
   activerecord:
     errors:
       models:
@@ -37,3 +39,7 @@ en:
           attributes:
             base:
               already_used: "already_used"
+  errors:
+    attributes:
+      receiver_email:
+        cannot_transfer_to_self: "cannot transfer to self"

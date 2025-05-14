@@ -23,5 +23,19 @@ FactoryBot.define do
         )
       end
     end
+
+    trait :internal do
+      coin_address { nil }
+      coin_layer { nil }
+      coin_fee { 0.0 }
+
+      transient do
+        receiver_email { create(:user).email }
+      end
+
+      after(:build) do |withdrawal, evaluator|
+        withdrawal.receiver_email = evaluator.receiver_email
+      end
+    end
   end
 end

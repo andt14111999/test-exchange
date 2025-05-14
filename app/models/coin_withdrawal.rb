@@ -6,21 +6,24 @@ class CoinWithdrawal < ApplicationRecord
   belongs_to :user
   has_one :coin_withdrawal_operation, dependent: :destroy
   has_one :coin_transaction, as: :reference, dependent: :nullify
+  has_one :coin_internal_transfer_operation, dependent: :destroy
 
   validates :coin_currency, presence: true
   validates :coin_amount, presence: true, numericality: { greater_than: 0 }
   validates :coin_fee, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :coin_address, presence: true
-  validates :coin_layer, presence: true
+  validates :coin_address, presence: true, unless: :internal_transfer?
+  validates :coin_layer, presence: true, unless: :internal_transfer?
   validates :status, presence: true
 
   validate :validate_coin_amount
   validate :validate_coin_address_and_layer
+  validate :validate_receiver_email, if: :internal_transfer?
 
   before_validation :assign_coin_layer
   before_validation :calculate_coin_fee, on: :create
-  after_create :create_withdrawal_operation
   after_create :send_event_withdrawal_to_kafka
+  # create_operations need to be called after send_event_withdrawal_to_kafka
+  after_create :create_operations
 
   scope :sorted, -> { order(created_at: :desc) }
 
@@ -65,11 +68,15 @@ class CoinWithdrawal < ApplicationRecord
   end
 
   def self.ransackable_associations(_auth_object = nil)
-    %w[user coin_withdrawal_operation coin_transaction]
+    %w[user coin_withdrawal_operation coin_transaction coin_internal_transfer_operation]
   end
 
   def portal_coin
     CoinAccount.coin_and_layer_to_portal_coin(coin_currency, coin_layer)
+  end
+
+  def internal_transfer?
+    receiver_email.present?
   end
 
   private
@@ -83,16 +90,28 @@ class CoinWithdrawal < ApplicationRecord
   end
 
   def validate_coin_address_and_layer
+    return if internal_transfer?
     return errors.add(:coin_address, :blank) if coin_address.blank?
 
     errors.add(:coin_layer, :blank) if coin_layer.blank?
   end
 
+  def validate_receiver_email
+    receiver = User.find_by(email: receiver_email)
+    if receiver.nil?
+      errors.add(:receiver_email, :not_found)
+    elsif receiver.id == user.id
+      errors.add(:receiver_email, :cannot_transfer_to_self)
+    end
+  end
+
   def assign_coin_layer
-    self.coin_layer ||= coin_account&.layer
+    self.coin_layer ||= coin_account&.layer unless internal_transfer?
   end
 
   def calculate_coin_fee
+    return self.coin_fee = 0.0 if internal_transfer?
+
     fee = Setting.send("#{coin_currency}_#{coin_layer}_withdrawal_fee") if Setting.respond_to?("#{coin_currency}_#{coin_layer}_withdrawal_fee")
     self.coin_fee = fee || 0.0
   end
@@ -113,12 +132,25 @@ class CoinWithdrawal < ApplicationRecord
     end
   end
 
-  def create_withdrawal_operation
-    create_coin_withdrawal_operation!(
-      coin_amount: coin_amount,
-      coin_fee: coin_fee,
-      coin_currency: coin_currency
-    )
+  def create_operations
+    if internal_transfer?
+      receiver = User.find_by(email: receiver_email)
+      return unless receiver
+
+      create_coin_internal_transfer_operation!(
+        sender: user,
+        receiver: receiver,
+        coin_currency: coin_currency,
+        coin_amount: coin_amount,
+        status: 'pending'
+      )
+    else
+      create_coin_withdrawal_operation!(
+        coin_amount: coin_amount,
+        coin_fee: coin_fee,
+        coin_currency: coin_currency
+      )
+    end
   end
 
   def send_event_withdrawal_to_kafka
@@ -127,7 +159,7 @@ class CoinWithdrawal < ApplicationRecord
       account_id: main_coin_account.id
     )
 
-    KafkaService::Services::Coin::CoinWithdrawalService.new.create(
+    params = {
       identifier: id,
       status: pending? || processing? ? 'verified' : status,
       user_id: user_id,
@@ -135,7 +167,22 @@ class CoinWithdrawal < ApplicationRecord
       account_key: account_key,
       amount: coin_amount,
       fee: coin_fee
-    )
+    }
+
+    # Add recipient_account_key for internal transfers
+    recipient = User.find_by(email: receiver_email)
+    if internal_transfer? && recipient.present?
+      recipient_account = recipient.coin_accounts.of_coin(coin_currency).main
+      if recipient_account.present?
+        recipient_account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
+          user_id: recipient.id,
+          account_id: recipient_account.id
+        )
+        params[:recipient_account_key] = recipient_account_key
+      end
+    end
+
+    KafkaService::Services::Coin::CoinWithdrawalService.new.create(**params)
   rescue StandardError => e
     Rails.logger.error("Failed to send withdrawal event to Kafka: #{e.message}")
   end

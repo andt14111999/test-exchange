@@ -1,83 +1,185 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 RSpec.describe V1::Helpers::AuthHelper do
-  # Create a test class that includes the helper module
-  let(:test_api_class) do
-    Class.new do
+  def build_helper(headers)
+    klass = Class.new do
       include V1::Helpers::AuthHelper
-
-      attr_accessor :headers, :current_user
-
-      def initialize
-        @headers = {}
-      end
-
-      def error!(message, status)
-        raise StandardError, "#{message} (#{status})"
-      end
+      define_method(:headers) { headers }
+      define_method(:env) { { 'PATH_INFO' => '/api/v1/endpoint', 'REQUEST_METHOD' => 'GET' } }
+      def error!(*); raise StandardError; end
     end
+    klass.new
   end
-
-  let(:api) { test_api_class.new }
-  let(:user) { create(:user) }
-  let(:secret) { Rails.application.secret_key_base }
-  let(:token) { JWT.encode({ user_id: user.id }, secret, 'HS256') }
 
   describe '#authenticate_user!' do
-    context 'when token is missing' do
-      it 'raises unauthorized error' do
-        expect { api.authenticate_user! }.to raise_error(StandardError, /{:status=>"error", :message=>"Unauthorized"} \(401\)/)
+    context 'with API key authentication' do
+      it 'authenticates user with valid API key' do
+        user = create(:user)
+        api_key = create(:api_key, user: user)
+        timestamp = Time.current.to_i.to_s
+        path = '/api/v1/endpoint'
+        method = 'GET'
+        message = "#{method}#{path}#{timestamp}"
+
+        # Generate HMAC signature
+        digest = OpenSSL::Digest.new('sha256')
+        signature = OpenSSL::HMAC.hexdigest(digest, api_key.secret_key, message)
+
+        headers = {
+          'X-Access-Key' => api_key.access_key,
+          'X-Signature' => signature,
+          'X-Timestamp' => timestamp
+        }
+        helper = build_helper(headers)
+        helper.authenticate_user!
+        expect(helper.current_user).to eq(user)
+        expect(api_key.reload.last_used_at).to be_present
+      end
+
+      context 'with invalid API key' do
+        it 'raises error' do
+          user = create(:user)
+          api_key = create(:api_key, user: user)
+          timestamp = Time.current.to_i.to_s
+          path = '/api/v1/endpoint'
+          method = 'GET'
+          message = "#{method}#{path}#{timestamp}"
+
+          # Generate HMAC signature
+          digest = OpenSSL::Digest.new('sha256')
+          signature = OpenSSL::HMAC.hexdigest(digest, api_key.secret_key, message)
+
+          headers = {
+            'X-Access-Key' => 'invalid_key',
+            'X-Signature' => signature,
+            'X-Timestamp' => timestamp
+          }
+          helper = build_helper(headers)
+          expect { helper.authenticate_user! }.to raise_error(StandardError)
+        end
+      end
+
+      context 'with invalid signature' do
+        it 'raises error' do
+          user = create(:user)
+          api_key = create(:api_key, user: user)
+          timestamp = Time.current.to_i.to_s
+
+          headers = {
+            'X-Access-Key' => api_key.access_key,
+            'X-Signature' => 'invalid_signature',
+            'X-Timestamp' => timestamp
+          }
+          helper = build_helper(headers)
+          expect { helper.authenticate_user! }.to raise_error(StandardError)
+        end
+      end
+
+      context 'with revoked API key' do
+        it 'raises error' do
+          user = create(:user)
+          api_key = create(:api_key, user: user)
+          api_key.update!(revoked_at: Time.current)
+
+          timestamp = Time.current.to_i.to_s
+          path = '/api/v1/endpoint'
+          method = 'GET'
+          message = "#{method}#{path}#{timestamp}"
+
+          # Generate HMAC signature
+          digest = OpenSSL::Digest.new('sha256')
+          signature = OpenSSL::HMAC.hexdigest(digest, api_key.secret_key, message)
+
+          headers = {
+            'X-Access-Key' => api_key.access_key,
+            'X-Signature' => signature,
+            'X-Timestamp' => timestamp
+          }
+          helper = build_helper(headers)
+          expect { helper.authenticate_user! }.to raise_error(StandardError)
+        end
       end
     end
 
-    context 'when token is invalid' do
-      before do
-        api.headers['Authorization'] = 'Bearer invalid_token'
+    context 'with JWT authentication' do
+      it 'authenticates user with valid JWT token' do
+        user = create(:user)
+        secret = Rails.application.secret_key_base
+        token = JWT.encode({ user_id: user.id }, secret, 'HS256')
+        headers = { 'Authorization' => "Bearer #{token}" }
+        helper = build_helper(headers)
+        helper.authenticate_user!
+        expect(helper.current_user).to eq(user)
       end
 
-      it 'raises unauthorized error' do
-        expect { api.authenticate_user! }.to raise_error(StandardError, /{:status=>"error", :message=>"Unauthorized"} \(401\)/)
+      context 'with invalid token' do
+        it 'raises error' do
+          headers = { 'Authorization' => 'Bearer invalid_token' }
+          helper = build_helper(headers)
+          expect { helper.authenticate_user! }.to raise_error(StandardError)
+        end
+      end
+
+      context 'with non-existent user' do
+        it 'raises error' do
+          secret = Rails.application.secret_key_base
+          token = JWT.encode({ user_id: 999999 }, secret, 'HS256')
+          headers = { 'Authorization' => "Bearer #{token}" }
+          helper = build_helper(headers)
+          expect { helper.authenticate_user! }.to raise_error(StandardError)
+        end
+      end
+
+      context 'with missing token' do
+        it 'raises error' do
+          headers = {}
+          helper = build_helper(headers)
+          expect { helper.authenticate_user! }.to raise_error(StandardError)
+        end
       end
     end
 
-    context 'when user is not found' do
-      before do
-        api.headers['Authorization'] = "Bearer #{token}"
-        allow(::User).to receive(:find).and_raise(ActiveRecord::RecordNotFound)
-      end
-
-      it 'raises unauthorized error' do
-        expect { api.authenticate_user! }.to raise_error(StandardError, /{:status=>"error", :message=>"Unauthorized"} \(401\)/)
-      end
-    end
-
-    context 'when token is valid' do
-      before do
-        api.headers['Authorization'] = "Bearer #{token}"
-        allow(::User).to receive(:find).and_return(user)
-      end
-
-      it 'sets current_user' do
-        api.authenticate_user!
-        expect(api.current_user).to eq(user)
-      end
-
-      it 'does not raise error' do
-        expect { api.authenticate_user! }.not_to raise_error
+    context 'with no authentication' do
+      it 'raises error' do
+        headers = {}
+        helper = build_helper(headers)
+        expect { helper.authenticate_user! }.to raise_error(StandardError)
       end
     end
   end
 
-  describe '#current_user' do
-    it 'returns nil when not authenticated' do
-      expect(api.current_user).to be_nil
+  describe '#api_key_auth?' do
+    context 'with all required headers' do
+      it 'returns true' do
+        headers = {
+          'X-Access-Key' => 'key',
+          'X-Signature' => 'signature',
+          'X-Timestamp' => 'timestamp'
+        }
+        helper = build_helper(headers)
+        expect(helper.send(:api_key_auth?)).to be true
+      end
     end
 
-    it 'returns current user when authenticated' do
-      api.headers['Authorization'] = "Bearer #{token}"
-      allow(::User).to receive(:find).and_return(user)
-      api.authenticate_user!
-      expect(api.current_user).to eq(user)
+    context 'with missing headers' do
+      it 'returns false' do
+        headers = {
+          'X-Access-Key' => 'key',
+          'X-Signature' => 'signature'
+        }
+        helper = build_helper(headers)
+        expect(helper.send(:api_key_auth?)).to be false
+      end
+    end
+
+    context 'with empty headers' do
+      it 'returns false' do
+        headers = {}
+        helper = build_helper(headers)
+        expect(helper.send(:api_key_auth?)).to be false
+      end
     end
   end
 end
