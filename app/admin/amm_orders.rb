@@ -61,16 +61,7 @@ ActiveAdmin.register AmmOrder do
       row :before_tick_index
       row :after_tick_index
       row :error_message
-      row :fees do |order|
-        if order.fees.present?
-          table_for order.fees do
-            column :token
-            column :amount
-          end
-        else
-          'No fees'
-        end
-      end
+      row :fees
       row :slippage do |order|
         "#{(order.slippage.to_f * 100).round(2)}%"
       end
