@@ -100,7 +100,7 @@ gem 'rails-settings-cached'   # Settings management
 gem 'strong_migrations'       # Safe database migrations
 
 # Version updates for security fixes
-gem 'json', '~> 2.11.3'
+gem 'json', '~> 2.12.0'
 gem 'net-imap', '~> 0.5.8'
 gem 'nokogiri', '>= 1.18.8'
 gem 'rack', '>= 3.1.12'
