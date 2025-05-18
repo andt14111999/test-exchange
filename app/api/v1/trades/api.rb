@@ -114,7 +114,12 @@ module V1
               fee_ratio: fee_ratio,
               coin_trading_fee: coin_trading_fee,
               payment_method: offer.payment_method&.name || 'Bank Transfer',
-              payment_details: offer.payment_details,
+              payment_details: offer.buy? ? {
+                bank_name: params[:bank_name],
+                bank_account_name: params[:bank_account_name],
+                bank_account_number: params[:bank_account_number],
+                bank_branch: params[:bank_branch]
+              } : offer.payment_details,
               taker_side: taker_side,
               status: 'unpaid', # Set initial status directly
               expired_at: offer.payment_time.minutes.from_now
