@@ -204,8 +204,8 @@ module KafkaService
 
         # Calculate fees
         fee_ratio = calculate_fee_ratio(buyer_id, seller_id)
-        coin_amount = trade_data['coinAmount']
-        price = trade_data['price']
+        coin_amount = BigDecimal.safe_convert(trade_data['coinAmount'])
+        price = BigDecimal.safe_convert(trade_data['price'])
         fiat_amount = calculate_fiat_amount(coin_amount, price)
         coin_trading_fee = calculate_trading_fee(coin_amount, fee_ratio)
 
@@ -240,7 +240,7 @@ module KafkaService
       end
 
       def calculate_trading_fee(coin_amount, fee_ratio)
-        (coin_amount * fee_ratio).round(8)
+        (coin_amount * BigDecimal.safe_convert(fee_ratio)).round(8)
       end
     end
   end

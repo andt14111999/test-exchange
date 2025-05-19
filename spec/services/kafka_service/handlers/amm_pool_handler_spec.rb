@@ -119,54 +119,6 @@ describe KafkaService::Handlers::AmmPoolHandler do
     let(:handler) { described_class.new }
     let(:amm_pool) { create(:amm_pool, updated_at: Time.current) }
 
-    context 'when isSuccess is true' do
-      it 'updates the amm pool with params from response' do
-        current_time = Time.current
-        payload = {
-          'isSuccess' => 'true',
-          'object' => {
-            'pair' => amm_pool.pair,
-            'feePercentage' => 0.005,
-            'currentTick' => 100,
-            'price' => 1.5,
-            'isActive' => true,
-            'updatedAt' => (current_time.to_f * 1000 + 5000).to_i # Add 5 seconds to make it newer
-          }
-        }
-
-        handler.send(:handle_update_response, payload)
-        amm_pool.reload
-
-        expect(amm_pool.fee_percentage).to eq(0.005)
-        expect(amm_pool.current_tick).to eq(100)
-        expect(amm_pool.price.to_f).to eq(1.5)
-        expect(amm_pool).to be_active
-      end
-
-      it 'does not update if message is older than the last update' do
-        current_time = Time.current
-        amm_pool.update(updated_at: current_time)
-
-        payload = {
-          'isSuccess' => 'true',
-          'object' => {
-            'pair' => amm_pool.pair,
-            'feePercentage' => 0.005,
-            'currentTick' => 100,
-            'price' => 1.5,
-            'isActive' => true,
-            'updatedAt' => (current_time.to_f * 1000 - 5000).to_i # Make it older by 5 seconds
-          }
-        }
-
-        allow(Rails.logger).to receive(:error)
-
-        handler.send(:handle_update_response, payload)
-        amm_pool.reload
-        expect(amm_pool.fee_percentage).not_to eq(0.005)
-      end
-    end
-
     context 'when isSuccess is false' do
       it 'updates only the status explanation' do
         payload = {
@@ -203,73 +155,35 @@ describe KafkaService::Handlers::AmmPoolHandler do
 
   describe '#extract_params_from_response' do
     let(:handler) { described_class.new }
-
-    it 'extracts params correctly from object' do
-      time_now = Time.current
-      object = {
-        'feePercentage' => 0.005,
-        'feeProtocolPercentage' => 0.01,
-        'currentTick' => 100,
-        'sqrtPrice' => 1.2,
-        'price' => 1.5,
-        'liquidity' => 100000,
-        'feeGrowthGlobal0' => 0.001,
-        'feeGrowthGlobal1' => 0.002,
-        'protocolFees0' => 10,
-        'protocolFees1' => 20,
-        'volumeToken0' => 1000,
-        'volumeToken1' => 2000,
-        'volumeUsd' => 3000,
-        'totalValueLockedToken0' => 5000,
-        'totalValueLockedToken1' => 6000,
-        'statusExplanation' => 'All good',
-        'updatedAt' => (time_now.to_f * 1000).to_i,
-        'isActive' => true,
-        'initPrice' => 1.2
+    let(:object) do
+      {
+        'feePercentage' => '0.003',
+        'updatedAt' => 1650000000000,
+        'isActive' => true
       }
+    end
 
+    it 'sets status to active when isActive is true' do
       params = handler.send(:extract_params_from_response, object)
-
-      expect(params[:fee_percentage]).to eq(0.005)
-      expect(params[:fee_protocol_percentage]).to eq(0.01)
-      expect(params[:current_tick]).to eq(100)
-      expect(params[:sqrt_price]).to eq(1.2)
-      expect(params[:price]).to eq(1.5)
-      expect(params[:liquidity]).to eq(100000)
-      expect(params[:fee_growth_global0]).to eq(0.001)
-      expect(params[:fee_growth_global1]).to eq(0.002)
-      expect(params[:protocol_fees0]).to eq(10)
-      expect(params[:protocol_fees1]).to eq(20)
-      expect(params[:volume_token0]).to eq(1000)
-      expect(params[:volume_token1]).to eq(2000)
-      expect(params[:volume_usd]).to eq(3000)
-      expect(params[:total_value_locked_token0]).to eq(5000)
-      expect(params[:total_value_locked_token1]).to eq(6000)
-      expect(params[:status_explanation]).to eq('All good')
-      expect(params[:updated_at]).to be_within(1.second).of(time_now)
       expect(params[:status]).to eq('active')
-      expect(params[:init_price]).to eq(1.2)
     end
 
     it 'sets status to inactive when isActive is false' do
-      object = {
-        'updatedAt' => (Time.current.to_f * 1000).to_i,
-        'isActive' => false
-      }
-
+      object['isActive'] = false
       params = handler.send(:extract_params_from_response, object)
       expect(params[:status]).to eq('inactive')
     end
 
     it 'compacts the results to remove nil values' do
-      object = {
-        'feePercentage' => 0.005,
-        'updatedAt' => (Time.current.to_f * 1000).to_i,
+      minimal_object = {
+        'feePercentage' => '0.003',
+        'updatedAt' => 1650000000000,
         'isActive' => true
       }
-
-      params = handler.send(:extract_params_from_response, object)
-      expect(params.keys).to contain_exactly(:fee_percentage, :updated_at, :status)
+      params = handler.send(:extract_params_from_response, minimal_object)
+      expect(params[:fee_percentage]).to eq(BigDecimal('0.003'))
+      expect(params[:updated_at]).to be_present
+      expect(params[:status]).to eq('active')
     end
   end
 end

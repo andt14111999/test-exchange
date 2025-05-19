@@ -118,8 +118,8 @@ module KafkaService
           coin_currency: coin_currency,
           currency: currency,
           offer_type: offer_data['type'].downcase,
-          price: offer_data['price'],
-          total_amount: offer_data['totalAmount'],
+          price: BigDecimal.safe_convert(offer_data['price']),
+          total_amount: BigDecimal.safe_convert(offer_data['totalAmount']),
           disabled: offer_data['disabled'],
           deleted: offer_data['deleted'],
           automatic: offer_data['automatic'],
@@ -128,8 +128,8 @@ module KafkaService
           payment_method_id: offer_data['paymentMethodId'],
           payment_time: offer_data['paymentTime'],
           country_code: offer_data['countryCode'],
-          min_amount: offer_data['minAmount'],
-          max_amount: offer_data['maxAmount'],
+          min_amount: BigDecimal.safe_convert(offer_data['minAmount']),
+          max_amount: BigDecimal.safe_convert(offer_data['maxAmount']),
           terms_of_trade: offer_data['statusExplanation']
         )
       end

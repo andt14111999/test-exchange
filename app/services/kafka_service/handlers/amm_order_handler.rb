@@ -48,9 +48,9 @@ module KafkaService
 
       def extract_params_from_response(object)
         {
-          amount_actual: object['amountActual'],
-          amount_estimated: object['amountEstimated'],
-          amount_received: object['amountReceived'],
+          amount_actual: BigDecimal.safe_convert(object['amountActual']),
+          amount_estimated: BigDecimal.safe_convert(object['amountEstimated']),
+          amount_received: BigDecimal.safe_convert(object['amountReceived']),
           before_tick_index: object['beforeTickIndex'],
           after_tick_index: object['afterTickIndex'],
           fees: object['fees'] || {},

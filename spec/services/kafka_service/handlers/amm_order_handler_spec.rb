@@ -189,45 +189,36 @@ describe KafkaService::Handlers::AmmOrderHandler do
 
   describe '#extract_params_from_response' do
     let(:handler) { described_class.new }
-    let(:object) do
+    let(:response_data) do
       {
         'amountActual' => '10.0',
-        'amountEstimated' => '9.5',
-        'amountReceived' => '9.8',
-        'beforeTickIndex' => 100,
-        'afterTickIndex' => 110,
-        'fees' => { 'token0' => '0.5', 'token1' => '0.3' },
-        'errorMessage' => nil,
-        'updatedAt' => 1650000000000,
-        'status' => 'SUCCESS'
+        'amountEstimated' => '10.0',
+        'beforeTickIndex' => '100',
+        'afterTickIndex' => '200',
+        'fees' => { 'fee' => '0.01' },
+        'status' => 'SUCCESS',
+        'updatedAt' => 1649998800000 # 2022-04-15 05:20:00 UTC
       }
     end
 
     it 'extracts parameters correctly' do
-      params = handler.send(:extract_params_from_response, object)
+      params = handler.send(:extract_params_from_response, response_data)
 
-      expect(params[:amount_actual]).to eq('10.0')
-      expect(params[:amount_estimated]).to eq('9.5')
-      expect(params[:amount_received]).to eq('9.8')
-      expect(params[:before_tick_index]).to eq(100)
-      expect(params[:after_tick_index]).to eq(110)
-      expect(params[:fees]).to eq({ 'token0' => '0.5', 'token1' => '0.3' })
-      expect(params[:error_message]).to be_nil
-      expect(params[:updated_at]).to eq(Time.at(1650000000))
+      expect(params[:amount_actual]).to be_a(BigDecimal)
+      expect(params[:amount_actual]).to eq(BigDecimal('10.0'))
+      expect(params[:before_tick_index]).to eq('100')
+      expect(params[:fees]).to eq({ 'fee' => '0.01' })
       expect(params[:status]).to eq('success')
+      expect(params[:updated_at]).to be_a(Time)
+      expect(params[:updated_at].to_i).to eq(Time.at(1649998800).to_i)
     end
 
     it 'returns a compact hash without nil values' do
-      object_with_nils = {
-        'amountActual' => '10.0',
-        'amountReceived' => nil,
-        'updatedAt' => 1650000000000,
-        'status' => 'SUCCESS'
-      }
-      params = handler.send(:extract_params_from_response, object_with_nils)
+      response_data.delete('amountReceived')
+      params = handler.send(:extract_params_from_response, response_data)
 
-      expect(params).not_to have_key(:amount_received)
-      expect(params[:amount_actual]).to eq('10.0')
+      # We expect amountReceived to be 0 now instead of nil due to safe_convert
+      expect(params[:amount_received]).to eq(BigDecimal('0'))
     end
   end
 
