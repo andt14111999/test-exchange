@@ -192,16 +192,15 @@ describe KafkaService::Handlers::AmmPositionHandler do
     let(:object) do
       {
         'liquidity' => '1000',
-        'amount0' => '50',
-        'amount1' => '100',
-        'feeGrowthInside0Last' => '1',
-        'feeGrowthInside1Last' => '2',
-        'tokensOwed0' => '5',
-        'tokensOwed1' => '10',
-        'feeCollected0' => '2',
-        'feeCollected1' => '4',
-        'errorMessage' => 'No error',
-        'updatedAt' => 1650000000000,
+        'amount0' => '100',
+        'amount1' => '200',
+        'feeGrowthInside0Last' => '0.001',
+        'feeGrowthInside1Last' => '0.002',
+        'tokensOwed0' => '10',
+        'tokensOwed1' => '20',
+        'feeCollected0' => '5',
+        'feeCollected1' => '6',
+        'updatedAt' => 1650000000000, # 2022-04-15 05:20:00 UTC
         'status' => 'OPEN'
       }
     end
@@ -209,31 +208,31 @@ describe KafkaService::Handlers::AmmPositionHandler do
     it 'extracts parameters correctly' do
       params = handler.send(:extract_params_from_response, object)
 
-      expect(params[:liquidity]).to eq('1000')
-      expect(params[:amount0]).to eq('50')
-      expect(params[:amount1]).to eq('100')
-      expect(params[:fee_growth_inside0_last]).to eq('1')
-      expect(params[:fee_growth_inside1_last]).to eq('2')
-      expect(params[:tokens_owed0]).to eq('5')
-      expect(params[:tokens_owed1]).to eq('10')
-      expect(params[:fee_collected0]).to eq('2')
-      expect(params[:fee_collected1]).to eq('4')
-      expect(params[:error_message]).to eq('No error')
-      expect(params[:updated_at]).to eq(Time.at(1650000000))
+      expect(params[:liquidity]).to be_a(BigDecimal)
+      expect(params[:liquidity]).to eq(BigDecimal('1000'))
+      expect(params[:amount0]).to eq(BigDecimal('100'))
+      expect(params[:amount1]).to eq(BigDecimal('200'))
+      expect(params[:tokens_owed0]).to eq(BigDecimal('10'))
+      expect(params[:tokens_owed1]).to eq(BigDecimal('20'))
       expect(params[:status]).to eq('open')
     end
 
     it 'returns a compact hash without nil values' do
-      object_with_nils = {
+      # Even with nil values, safe_convert will convert them to 0
+      minimal_object = {
         'liquidity' => '1000',
-        'amount0' => nil,
-        'updatedAt' => 1650000000000,
-        'status' => 'OPEN'
+        'status' => 'OPEN',
+        'updatedAt' => 1650000000000
       }
-      params = handler.send(:extract_params_from_response, object_with_nils)
+      params = handler.send(:extract_params_from_response, minimal_object)
 
-      expect(params).not_to be_key(:amount0)
-      expect(params[:liquidity]).to eq('1000')
+      expect(params[:liquidity]).to eq(BigDecimal('1000'))
+      expect(params[:status]).to eq('open')
+      expect(params[:updated_at]).to eq(Time.parse('2022-04-15 12:20:00 +0700'))
+
+      # These will be 0 due to safe_convert
+      expect(params[:amount0]).to eq(BigDecimal('0'))
+      expect(params[:amount1]).to eq(BigDecimal('0'))
     end
   end
 

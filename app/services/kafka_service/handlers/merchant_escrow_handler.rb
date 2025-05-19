@@ -74,8 +74,8 @@ module KafkaService
           usdt_account_id: usdt_account_id,
           fiat_account_id: fiat_account_id,
           operation_type: operation_type,
-          usdt_amount: usdt_amount,
-          fiat_amount: fiat_amount,
+          usdt_amount: BigDecimal.safe_convert(usdt_amount),
+          fiat_amount: BigDecimal.safe_convert(fiat_amount),
           fiat_currency: fiat_currency,
           status: 'completed',
         )

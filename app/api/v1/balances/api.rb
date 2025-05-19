@@ -13,19 +13,22 @@ module V1
           balances = {
             coin_accounts: ::CoinAccount::SUPPORTED_NETWORKS.keys.map do |coin_currency|
               main_account = current_user.coin_accounts.of_coin(coin_currency).main
+              decimal = CoinConfig.get_decimal(coin_currency)
 
               {
                 coin_currency: coin_currency,
-                balance: main_account&.balance || 0,
-                frozen_balance: main_account&.frozen_balance || 0
+                balance: (main_account&.balance || 0).round(decimal),
+                frozen_balance: (main_account&.frozen_balance || 0).round(decimal)
               }
             end,
             fiat_accounts: ::FiatAccount::SUPPORTED_CURRENCIES.keys.map do |currency|
               account = current_user.fiat_accounts.find_by(currency: currency)
+              decimal = CoinConfig.get_decimal(currency)
+
               {
                 currency: currency,
-                balance: account&.balance || 0,
-                frozen_balance: account&.frozen_balance || 0
+                balance: (account&.balance || 0).round(decimal),
+                frozen_balance: (account&.frozen_balance || 0).round(decimal)
               }
             end
           }

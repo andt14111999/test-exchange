@@ -64,8 +64,8 @@ RSpec.describe 'Admin::AmmPools', type: :feature do
       expect(page).to have_field('Token1')
       expect(page).to have_field('Tick spacing')
       expect(page).to have_field('Init price')
-      expect(page).to have_field('Fee percentage')
-      expect(page).to have_field('Fee protocol percentage')
+      expect(page).to have_field('Fee Ratio')
+      expect(page).to have_field('Fee Protocol Ratio')
     end
 
     it 'creates new pool with valid params' do
@@ -77,8 +77,8 @@ RSpec.describe 'Admin::AmmPools', type: :feature do
         fill_in 'Token1', with: 'VND'
         fill_in 'Tick spacing', with: '60'
         fill_in 'Init price', with: '24000'
-        fill_in 'Fee percentage', with: '0.003'
-        fill_in 'Fee protocol percentage', with: '0.05'
+        fill_in 'Fee Ratio', with: '0.003'
+        fill_in 'Fee Protocol Ratio', with: '0.05'
         find('input[type="submit"]').click
       end
 
@@ -116,8 +116,8 @@ RSpec.describe 'Admin::AmmPools', type: :feature do
 
       within 'form.amm_pool' do
         select 'active', from: 'Status'
-        fill_in 'Fee percentage', with: '0.002'
-        fill_in 'Fee protocol percentage', with: '0.03'
+        fill_in 'Fee Ratio', with: '0.002'
+        fill_in 'Fee Protocol Ratio', with: '0.03'
         find('input[type="submit"]').click
       end
 

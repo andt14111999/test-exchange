@@ -48,15 +48,15 @@ module KafkaService
 
       def extract_params_from_response(object)
         {
-          liquidity: object['liquidity'],
-          amount0: object['amount0'],
-          amount1: object['amount1'],
-          fee_growth_inside0_last: object['feeGrowthInside0Last'],
-          fee_growth_inside1_last: object['feeGrowthInside1Last'],
-          tokens_owed0: object['tokensOwed0'],
-          tokens_owed1: object['tokensOwed1'],
-          fee_collected0: object['feeCollected0'],
-          fee_collected1: object['feeCollected1'],
+          liquidity: BigDecimal.safe_convert(object['liquidity']),
+          amount0: BigDecimal.safe_convert(object['amount0']),
+          amount1: BigDecimal.safe_convert(object['amount1']),
+          fee_growth_inside0_last: BigDecimal.safe_convert(object['feeGrowthInside0Last']),
+          fee_growth_inside1_last: BigDecimal.safe_convert(object['feeGrowthInside1Last']),
+          tokens_owed0: BigDecimal.safe_convert(object['tokensOwed0']),
+          tokens_owed1: BigDecimal.safe_convert(object['tokensOwed1']),
+          fee_collected0: BigDecimal.safe_convert(object['feeCollected0']),
+          fee_collected1: BigDecimal.safe_convert(object['feeCollected1']),
           error_message: object['errorMessage'],
           updated_at: Time.at(object['updatedAt'] / 1000.0),
           status: object['status'].downcase

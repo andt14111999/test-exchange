@@ -34,7 +34,7 @@ module KafkaService
       def create_deposit_operation(deposit, coin_account, object)
         CoinDepositOperation.create!(
           coin_account: coin_account,
-          coin_amount: object['amount'],
+          coin_amount: BigDecimal.safe_convert(object['amount']),
           coin_currency: object['coin'].downcase,
           coin_deposit: deposit,
           coin_fee: 0,
