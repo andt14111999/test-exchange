@@ -119,6 +119,54 @@ describe KafkaService::Handlers::AmmPoolHandler do
     let(:handler) { described_class.new }
     let(:amm_pool) { create(:amm_pool, updated_at: Time.current) }
 
+    context 'when isSuccess is true' do
+      it 'logs error when message is older than the current updated_at' do
+        # Tạo thời gian cũ hơn so với updated_at của pool
+        old_timestamp = (amm_pool.updated_at.to_f * 1000).to_i - 10000
+
+        payload = {
+          'isSuccess' => 'true',
+          'object' => {
+            'pair' => amm_pool.pair,
+            'updatedAt' => old_timestamp,
+            'feePercentage' => '0.005'
+          }
+        }
+
+        # Lưu trạng thái ban đầu để so sánh
+        original_fee_percentage = amm_pool.fee_percentage
+
+        # Chỉ kiểm tra log thay vì kiểm tra raise lỗi vì lỗi được bắt và log trong phương thức
+        expect(Rails.logger).to receive(:error).with(/Error handling update response: amm pool message is older than the last update/)
+
+        handler.send(:handle_update_response, payload)
+
+        # Kiểm tra rằng amm_pool không bị cập nhật
+        amm_pool.reload
+        expect(amm_pool.fee_percentage).to eq(original_fee_percentage)
+      end
+
+      it 'calls update! with extracted params when message is newer' do
+        # Tạo thời gian mới hơn so với updated_at của pool
+        new_timestamp = (amm_pool.updated_at.to_f * 1000).to_i + 10000
+
+        # Tạo một payload đơn giản chỉ với các trường cần thiết tối thiểu
+        payload = {
+          'isSuccess' => 'true',
+          'object' => {
+            'pair' => amm_pool.pair,
+            'updatedAt' => new_timestamp
+          }
+        }
+
+        # Sử dụng allow_any_instance_of để áp dụng mock cho tất cả instance của AmmPool
+        # và kỳ vọng rằng phương thức update! sẽ được gọi
+        expect_any_instance_of(AmmPool).to receive(:update!)
+
+        handler.send(:handle_update_response, payload)
+      end
+    end
+
     context 'when isSuccess is false' do
       it 'updates only the status explanation' do
         payload = {
