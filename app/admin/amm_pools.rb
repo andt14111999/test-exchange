@@ -38,10 +38,10 @@ ActiveAdmin.register AmmPool do
     column :token0
     column :token1
     column :tick_spacing
-    column :fee_percentage do |pool|
+    column :fee_percentage, label: 'Fee Ratio' do |pool|
       number_to_percentage(pool.fee_percentage * 100, precision: 3)
     end
-    column :fee_protocol_percentage do |pool|
+    column :fee_protocol_percentage, label: 'Fee Protocol Ratio' do |pool|
       number_to_percentage(pool.fee_protocol_percentage * 100, precision: 3)
     end
     column :price
@@ -60,10 +60,10 @@ ActiveAdmin.register AmmPool do
       row :token0
       row :token1
       row :tick_spacing
-      row :fee_percentage do |pool|
+      row(:fee_percentage, label: 'Fee Ratio') do |pool|
         number_to_percentage(pool.fee_percentage * 100, precision: 3)
       end
-      row :fee_protocol_percentage do |pool|
+      row(:fee_protocol_percentage, label: 'Fee Protocol Ratio') do |pool|
         number_to_percentage(pool.fee_protocol_percentage * 100, precision: 3)
       end
       row :current_tick
@@ -157,9 +157,9 @@ ActiveAdmin.register AmmPool do
         f.input :init_price, as: :number, input_html: { min: 0.000001, step: 0.000001 },
           hint: 'Giá ban đầu của token0 tính theo token1, ví dụ: 24000 (1 USDT = 24000 VND). Để trống nếu chưa biết giá ban đầu.'
       end
-      f.input :fee_percentage, as: :number, input_html: { min: 0, max: 1, step: 0.0001 },
+      f.input :fee_percentage, label: 'Fee Ratio', as: :number, input_html: { min: 0, max: 1, step: 0.0001 },
         hint: 'Nhập dưới dạng số thập phân, ví dụ: 0.003 (0.3%), 0.0001 (0.01%), 0.01 (1%)'
-      f.input :fee_protocol_percentage, as: :number, input_html: { min: 0, max: 1, step: 0.01 },
+      f.input :fee_protocol_percentage, label: 'Fee Protocol Ratio', as: :number, input_html: { min: 0, max: 1, step: 0.01 },
         hint: 'Nhập dưới dạng số thập phân, ví dụ: 0.05 (5%)'
       f.actions
     end
