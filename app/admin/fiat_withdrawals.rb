@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register FiatWithdrawal do
-  menu priority: 6, parent: 'Fiat'
+  menu priority: 6, parent: 'Fiat Management'
 
   permit_params :user_id, :fiat_account_id, :currency, :country_code,
                 :fiat_amount, :fee, :amount_after_transfer_fee,

@@ -20,7 +20,6 @@ class FiatWithdrawal < ApplicationRecord
   validates :status, presence: true, inclusion: { in: STATUSES }
   validates :verification_status, inclusion: { in: VERIFICATION_STATUSES }, allow_nil: true
   validates :retry_count, numericality: { greater_than_or_equal_to: 0 }
-  validate :sufficient_funds, on: :create
   validate :withdrawal_limits, on: :create
   validate :bank_account_verification, on: :create
 
@@ -52,10 +51,8 @@ class FiatWithdrawal < ApplicationRecord
 
   before_create :set_withdrawal_fee
   before_create :set_amount_after_transfer_fee
-  before_create :lock_funds
-  after_update :create_transaction_and_release_funds, if: -> { saved_change_to_status? && status == 'processed' }
-  after_update :refund_funds_on_cancel, if: -> { saved_change_to_status? && status == 'cancelled' }
   after_update :notify_user_on_status_change, if: :saved_change_to_status?
+  after_update :create_transaction_on_process, if: -> { saved_change_to_status? && status == 'processed' }
 
   attr_accessor :cancel_reason_param, :error_message_param, :verification_failure_reason
 
@@ -192,6 +189,27 @@ class FiatWithdrawal < ApplicationRecord
     bank_rejected? && retry_count < 3
   end
 
+  # Sync withdrawal status with trade status
+  def sync_with_trade_status!
+    return unless withdrawable_type == 'Trade' && withdrawable.present?
+
+    trade = withdrawable
+    case trade.status
+    when 'paid'
+      update!(status: 'processing')
+    when 'released'
+      update!(status: 'processed')
+    when 'cancelled', 'cancelled_automatically', 'aborted', 'aborted_fiat'
+      cancel!('Trade was cancelled or aborted')
+    when 'disputed'
+      cancel!('Trade is under dispute')
+    when 'resolved_for_buyer'
+      process!
+    when 'resolved_for_seller'
+      cancel!('Dispute resolved for seller')
+    end
+  end
+
   def exceeds_daily_limit?
     daily_limit = Rails.application.config.withdrawal_daily_limits[currency] || Float::INFINITY
 
@@ -270,84 +288,6 @@ class FiatWithdrawal < ApplicationRecord
     self.amount_after_transfer_fee = fiat_amount - fee if fiat_amount && fee
   end
 
-  def lock_funds
-    fiat_account.with_lock do
-      # Check for sufficient funds
-      if fiat_account.balance < fiat_amount
-        errors.add(:fiat_amount, "exceeds available balance of #{fiat_account.balance} #{currency}")
-        throw :abort
-      end
-
-      # Lock funds
-      fiat_account.update!(
-        balance: fiat_account.balance - fiat_amount,
-        frozen_balance: fiat_account.frozen_balance + fiat_amount
-      )
-    end
-  end
-
-  def create_transaction_and_release_funds
-    fiat_account.with_lock do
-      # Create a withdrawal transaction
-      FiatTransaction.create!(
-        fiat_account: fiat_account,
-        transaction_type: 'withdrawal',
-        amount: -fiat_amount,
-        reference: "WD-#{id}",
-        details: {
-          withdrawal_id: id,
-          fee: fee,
-          amount_after_fee: amount_after_transfer_fee,
-          bank_name: bank_name,
-          bank_account_name: bank_account_name,
-          bank_account_number: bank_account_number
-        }
-      )
-
-      # Update the account
-      fiat_account.update!(
-        frozen_balance: fiat_account.frozen_balance - fiat_amount
-      )
-
-      # Process trade related to withdrawal
-      if for_trade? && withdrawable.present?
-        trade = withdrawable
-        trade.mark_as_released! if trade.may_mark_as_released?
-      end
-    end
-  end
-
-  def refund_funds_on_cancel
-    fiat_account.with_lock do
-      # Create a refund transaction
-      FiatTransaction.create!(
-        fiat_account: fiat_account,
-        transaction_type: 'withdrawal_refund',
-        amount: fiat_amount,
-        reference: "WD-REFUND-#{id}",
-        details: {
-          withdrawal_id: id,
-          reason: cancel_reason,
-          original_amount: fiat_amount
-        }
-      )
-
-      # Update the account - return funds to balance
-      fiat_account.update!(
-        balance: fiat_account.balance + fiat_amount,
-        frozen_balance: fiat_account.frozen_balance - fiat_amount
-      )
-    end
-  end
-
-  def sufficient_funds
-    return if fiat_amount.nil?
-
-    if fiat_account && fiat_account.balance < fiat_amount
-      errors.add(:fiat_amount, "exceeds available balance of #{fiat_account.balance} #{currency}")
-    end
-  end
-
   def withdrawal_limits
     if exceeds_daily_limit?
       daily_limit = Rails.application.config.withdrawal_daily_limits[currency]
@@ -366,6 +306,24 @@ class FiatWithdrawal < ApplicationRecord
     return if bank_account_number.present? && bank_name.present? && bank_account_name.present?
 
     errors.add(:bank_account_number, 'invalid or incomplete bank account information')
+  end
+
+  def create_transaction_on_process
+    fiat_account.with_lock do
+      FiatTransaction.create!(
+        fiat_account: fiat_account,
+        transaction_type: 'withdrawal',
+        amount: fiat_amount,
+        currency: currency,
+        reference: "WDR-#{id}",
+        operation: self,
+        details: {
+          withdrawal_id: id,
+          fee: fee,
+          amount_after_fee: amount_after_transfer_fee
+        }
+      )
+    end
   end
 
   def notify_user_on_status_change

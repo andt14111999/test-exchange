@@ -15,6 +15,9 @@ module V1
       expose :status
       expose :created_at
       expose :updated_at
+      expose :trade_id, if: ->(deposit, _) { deposit.payable.present? } do |deposit|
+        deposit.payable.id
+      end
 
       # Add bank details if associated
       expose :bank_name, if: lambda { |deposit, _| deposit.respond_to?(:bank_name) && deposit.bank_name.present? }

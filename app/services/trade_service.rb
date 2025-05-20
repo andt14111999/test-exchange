@@ -58,7 +58,21 @@ class TradeService
     end
 
     def create_fiat_token_withdrawal(trade)
-      # Similar implementation for withdrawal would go here
+      withdrawal = FiatWithdrawal.create!(
+        user: trade.seller,
+        fiat_account: trade.seller.fiat_accounts.find_by(currency: trade.fiat_currency.upcase),
+        currency: trade.fiat_currency,
+        country_code: trade.offer.country_code,
+        fiat_amount: trade.fiat_amount,
+        bank_name: trade.payment_details&.dig('bank_name'),
+        bank_account_name: trade.payment_details&.dig('bank_account_name'),
+        bank_account_number: trade.payment_details&.dig('bank_account_number'),
+        bank_branch: trade.payment_details&.dig('bank_branch'),
+        withdrawable: trade,
+        status: 'awaiting'
+      )
+
+      trade.update!(fiat_token_withdrawal: withdrawal)
     end
   end
 
@@ -120,8 +134,6 @@ class TradeService
     elsif @trade.fiat_token_withdrawal.present?
       mark_fiat_token_withdrawal_as_processed
     end
-
-    # Additional logic for handling released trade could go here
   end
 
   def handle_trade_cancelled(reason = nil)
@@ -148,10 +160,15 @@ class TradeService
   end
 
   def mark_fiat_token_withdrawal_as_processed
-    # Implementation for processing withdrawal
+    return unless @trade.fiat_token_withdrawal&.may_process?
+
+    @trade.fiat_token_withdrawal.process!
   end
 
   def mark_fiat_token_withdrawal_as_cancelled(reason = nil)
-    # Implementation for cancelling withdrawal
+    return unless @trade.fiat_token_withdrawal&.may_cancel?
+
+    @trade.fiat_token_withdrawal.cancel_reason_param = reason if reason.present?
+    @trade.fiat_token_withdrawal.cancel!
   end
 end

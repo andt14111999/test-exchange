@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register FiatDeposit do
-  menu priority: 5, parent: 'Fiat'
+  menu priority: 5, parent: 'Fiat Management'
 
   permit_params :status, :explorer_ref, :sender_name, :sender_account_number, :ownership_proof_url
 

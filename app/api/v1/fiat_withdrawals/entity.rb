@@ -17,6 +17,9 @@ module V1
       expose :processed_at
       expose :cancelled_at
       expose :created_at
+      expose :trade_id, if: ->(withdrawal, _) { withdrawal.withdrawable.present? } do |withdrawal|
+        withdrawal.withdrawable.id
+      end
     end
 
     class FiatWithdrawalDetail < Entity

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register PaymentMethod do
+  menu priority: 6, parent: 'Fiat Management'
+
   permit_params :name, :display_name, :description, :country_code,
                 :enabled, :icon_url, :fields_required
 
