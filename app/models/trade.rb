@@ -38,6 +38,7 @@ class Trade < ApplicationRecord
   after_create :send_trade_create_to_kafka
   after_save :create_system_message_on_status_change, if: :saved_change_to_status?
   after_save :update_associated_fiat_deposit, if: :saved_change_to_status?
+  after_save :update_associated_fiat_withdrawal, if: :saved_change_to_status?
 
   attr_accessor :dispute_reason_param, :admin_notes_param, :is_automatic, :dispute_resolution
 
@@ -325,13 +326,13 @@ class Trade < ApplicationRecord
     # In a deposit trade, admin normally marks as paid
     if is_fiat_token_deposit_trade?
       return user.admin? if defined?(user.admin?)
-      return user.id == fiat_token_deposit.user_id
+      return user.id == buyer_id
     end
 
     # In a withdrawal trade, admin normally marks as paid
     if is_fiat_token_withdrawal_trade?
       return user.admin? if defined?(user.admin?)
-      return user.id == fiat_token_withdrawal.user_id
+      return user.id == buyer_id
     end
 
     false
@@ -418,13 +419,6 @@ class Trade < ApplicationRecord
   def create_fiat_withdrawal!
     return [ false, 'Not a sell trade' ] unless seller.present?
 
-    # Get bank details from offer's payment_details
-    payment_details = offer&.payment_details || {}
-
-    unless payment_details['bank_name'].present? && payment_details['bank_account_name'].present? && payment_details['bank_account_number'].present?
-      return [ false, 'Bank details are required for sell trades' ]
-    end
-
     fiat_account = seller.fiat_accounts.find_by(currency: fiat_currency.upcase)
     unless fiat_account
       return [ false, 'You do not have a fiat account for this currency' ]
@@ -436,10 +430,10 @@ class Trade < ApplicationRecord
       currency: fiat_currency,
       country_code: offer&.country_code,
       fiat_amount: fiat_amount,
-      bank_name: payment_details['bank_name'],
-      bank_account_name: payment_details['bank_account_name'],
-      bank_account_number: payment_details['bank_account_number'],
-      bank_branch: payment_details['bank_branch'],
+      bank_name: payment_details&.dig('bank_name') || offer&.payment_details&.dig('bank_name'),
+      bank_account_name: payment_details&.dig('bank_account_name') || offer&.payment_details&.dig('bank_account_name'),
+      bank_account_number: payment_details&.dig('bank_account_number') || offer&.payment_details&.dig('bank_account_number'),
+      bank_branch: payment_details&.dig('bank_branch') || offer&.payment_details&.dig('bank_branch'),
       withdrawable: self
     )
 
@@ -575,13 +569,19 @@ class Trade < ApplicationRecord
     end
   end
 
-  # Update the associated fiat deposit when trade status changes
   def update_associated_fiat_deposit
-    # Handle both direct association and polymorphic association
     deposit = fiat_deposit || FiatDeposit.find_by(id: fiat_token_deposit_id)
 
     if deposit.present?
       deposit.sync_with_trade_status!
+    end
+  end
+
+  def update_associated_fiat_withdrawal
+    withdrawal = fiat_withdrawal || FiatWithdrawal.find_by(id: fiat_token_withdrawal_id)
+
+    if withdrawal.present?
+      withdrawal.sync_with_trade_status!
     end
   end
 end

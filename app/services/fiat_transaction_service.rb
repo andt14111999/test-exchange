@@ -29,7 +29,6 @@ class FiatTransactionService
   def create_withdrawal(currency, country_code, amount, bank_account_id)
     FiatWithdrawal.transaction do
       fiat_account = @user.fiat_accounts.find_by(currency: currency.upcase)
-      bank_account = @user.bank_accounts.find(bank_account_id)
 
       # Check if user has sufficient balance
       if fiat_account.available_balance < amount

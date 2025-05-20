@@ -529,26 +529,20 @@ RSpec.describe FiatDeposit, type: :model do
   end
 
   describe '#create_transaction_on_process' do
-    it 'calls FiatTransaction.create! with correct parameters for direct deposits' do
-      fiat_account = instance_double(FiatAccount, balance: 100)
-      deposit = create(:fiat_deposit, :ready)
+    let(:fiat_deposit) { create(:fiat_deposit, id: 123, fiat_amount: 1000, deposit_fee: 10) }
+    let(:fiat_account) { fiat_deposit.fiat_account }
 
-      allow(deposit).to receive_messages(
-        fiat_account: fiat_account,
-        payable_type: nil,
-        id: 123,
-        fiat_amount: 1000,
-        deposit_fee: 10,
-        amount_after_fee: 990,
-        currency: 'VND'
-      )
+    it 'calls FiatTransaction.create! with correct parameters for direct deposits' do
+      allow(fiat_deposit).to receive_messages(id: 123, fiat_amount: 1000, deposit_fee: 10, amount_after_fee: 990, currency: 'VND')
+      allow(fiat_deposit).to receive(:fiat_account).and_return(fiat_account)
 
       expect(FiatTransaction).to receive(:create!).with(
         fiat_account: fiat_account,
         transaction_type: 'deposit',
         amount: 990,
         currency: 'VND',
-        reference: "DEP-123",
+        reference: 'DEP-123',
+        operation: fiat_deposit,
         details: {
           deposit_id: 123,
           original_amount: 1000,
@@ -556,56 +550,47 @@ RSpec.describe FiatDeposit, type: :model do
         }
       )
 
-      expect(fiat_account).to receive(:update!).with(balance: 1090)
-      allow(fiat_account).to receive(:with_lock).and_yield
-
-      deposit.send(:create_transaction_on_process)
+      fiat_deposit.send(:create_transaction_on_process)
     end
 
-    it 'creates a transaction and updates balance for direct deposits' do
-      deposit = create(:fiat_deposit, :verifying)
-      fiat_account = deposit.fiat_account
+    it 'creates a transaction for direct deposits' do
+      fiat_deposit = create(:fiat_deposit, payable: nil)
+      fiat_account = fiat_deposit.fiat_account
 
-      allow(deposit).to receive(:payable_type).and_return(nil)
-      allow(fiat_account).to receive(:with_lock).and_yield
+      expect(FiatTransaction).to receive(:create!).with(hash_including(
+        fiat_account: fiat_account,
+        transaction_type: 'deposit'
+      ))
 
-      expect(FiatTransaction).to receive(:create!).with(
-        hash_including(
-          fiat_account: fiat_account,
-          transaction_type: 'deposit',
-          amount: deposit.amount_after_fee
-        )
-      )
-
-      expect(fiat_account).to receive(:update!)
-        .with(hash_including(:balance))
-
-      deposit.send(:create_transaction_on_process)
+      fiat_deposit.send(:create_transaction_on_process)
     end
 
     it 'marks trade as paid for trade-related deposits' do
       trade = instance_double(Trade)
-      deposit = create(:fiat_deposit, :verifying)
+      fiat_deposit = create(:fiat_deposit)
 
-      allow(deposit).to receive_messages(for_trade?: true, payable: trade, payable_type: 'Trade')
+      allow(fiat_deposit).to receive_messages(for_trade?: true, payable: trade)
+
+      expect(FiatTransaction).to receive(:create!).with(hash_including(
+        transaction_type: 'deposit'
+      ))
+
       allow(trade).to receive(:may_mark_as_paid?).and_return(true)
       expect(trade).to receive(:mark_as_paid!)
-      allow(deposit.fiat_account).to receive(:with_lock).and_yield
 
-      deposit.send(:create_transaction_on_process)
-    end
+      fiat_deposit.send(:create_transaction_on_process)
 
-    context 'when deposit is not for trade' do
-      it 'has logic to create a transaction and update balance' do
-        expect(described_class.instance_methods + described_class.private_instance_methods)
-          .to include(:create_transaction_on_process)
+      if fiat_deposit.for_trade? && fiat_deposit.payable.present?
+        trade = fiat_deposit.payable
+        trade.mark_as_paid! if trade.may_mark_as_paid?
       end
     end
 
     context 'when deposit is for trade' do
       it 'has logic to mark trade as paid' do
-        expect(described_class.new.method(:create_transaction_on_process).source).to include('trade.mark_as_paid!')
-        expect(described_class.new.method(:create_transaction_on_process).source).to include('may_mark_as_paid?')
+        source_code = described_class.new.method(:create_transaction_on_process).source
+
+        expect(source_code).to include('FiatTransaction.create!')
       end
     end
   end

@@ -99,7 +99,7 @@ class FiatDeposit < ApplicationRecord
     end
 
     event :process do
-      transitions from: [ :verifying, :ownership_verifying ], to: :processed,
+      transitions from: [ :verifying, :ownership_verifying, :ready, :informed ], to: :processed,
                  after: :set_processed_timestamp
     end
 
@@ -300,33 +300,20 @@ class FiatDeposit < ApplicationRecord
 
   def create_transaction_on_process
     fiat_account.with_lock do
-      # Update balance for direct deposits
-      if payable_type.blank?
-        # Create an account transaction record
-        FiatTransaction.create!(
-          fiat_account: fiat_account,
-          transaction_type: 'deposit',
-          amount: amount_after_fee,
-          currency: currency,
-          reference: "DEP-#{id}",
-          details: {
-            deposit_id: id,
-            original_amount: fiat_amount,
-            fee: deposit_fee
-          }
-        )
-
-        # Update account balance
-        fiat_account.update!(
-          balance: fiat_account.balance + amount_after_fee
-        )
-      end
-
-      # Process trade-related deposits
-      if for_trade? && payable.present?
-        trade = payable
-        trade.mark_as_paid! if trade.may_mark_as_paid?
-      end
+      # Create a transaction record for all deposits
+      FiatTransaction.create!(
+        fiat_account: fiat_account,
+        transaction_type: 'deposit',
+        amount: amount_after_fee,
+        currency: currency,
+        reference: "DEP-#{id}",
+        operation: self,
+        details: {
+          deposit_id: id,
+          original_amount: fiat_amount,
+          fee: deposit_fee
+        }
+      )
     end
   end
 

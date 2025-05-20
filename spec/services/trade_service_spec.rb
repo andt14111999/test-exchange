@@ -172,13 +172,25 @@ RSpec.describe TradeService, type: :model do
 
   describe '.create_fiat_token_withdrawal' do
     it 'has an implementation placeholder' do
-      trade = build_stubbed(:trade)
+      trade = build_stubbed(:trade, fiat_currency: 'VND')
+      seller = build_stubbed(:user)
+      fiat_account = build_stubbed(:fiat_account)
+      offer = build_stubbed(:offer, payment_details: { 'bank_name' => 'Test Bank' })
+      withdrawal = build_stubbed(:fiat_withdrawal)
+
+      allow(trade).to receive_messages(
+        seller: seller,
+        offer: offer
+      )
+      allow(seller.fiat_accounts).to receive(:find_by).and_return(fiat_account)
+      allow(FiatWithdrawal).to receive(:create!).and_return(withdrawal)
+      allow(trade).to receive(:update!).and_return(true)
 
       # This is testing the stub implementation only
       result = described_class.create_fiat_token_withdrawal(trade)
 
-      # No expectations as this is a placeholder method
-      expect(result).to be_nil
+      # Expect the method to return true (the result of trade.update!)
+      expect(result).to be(true)
     end
   end
 

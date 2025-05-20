@@ -224,7 +224,6 @@ module KafkaService
           status: trade_data['status'].downcase,
           taker_side: trade_data['takerSide'],
           payment_method: offer.payment_method&.name || 'bank_transfer',
-          payment_details: offer.payment_details || {},
           fee_ratio: fee_ratio,
           coin_trading_fee: coin_trading_fee
         )
