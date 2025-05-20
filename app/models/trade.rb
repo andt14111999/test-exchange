@@ -14,6 +14,7 @@ class Trade < ApplicationRecord
   STATUSES = %w[awaiting unpaid paid disputed resolved_for_buyer resolved_for_seller released cancelled cancelled_automatically aborted aborted_fiat].freeze
   PAYMENT_PROOF_STATUSES = %w[legit fake spam].freeze
   DISPUTE_RESOLUTIONS = %w[pending resolved_for_buyer resolved_for_seller admin_intervention].freeze
+  TIMEOUT_MINUTES = 15
 
   validates :ref, presence: true, uniqueness: true
   validates :buyer_id, presence: true
@@ -314,6 +315,10 @@ class Trade < ApplicationRecord
     paid? && !released? && !cancelled? && !disputed?
   end
 
+  def may_mark_as_unpaid?
+    awaiting? && may_mark_as_unpaid
+  end
+
   def can_be_marked_paid_by?(user)
     return false if user.nil?
     return false unless unpaid?
@@ -489,6 +494,40 @@ class Trade < ApplicationRecord
     trade_service.cancel(trade: self)
   rescue StandardError => e
     Rails.logger.error("Error sending trade cancel to Kafka: #{e.message}")
+  end
+
+  def unpaid_timeout?
+    return false unless unpaid?
+    return false unless paid_at.nil? && Time.zone.now > (created_at + TIMEOUT_MINUTES.minutes)
+
+    true
+  end
+
+  def paid_timeout?
+    return false unless paid?
+    return false unless paid_at && Time.zone.now > (paid_at + TIMEOUT_MINUTES.minutes)
+
+    true
+  end
+
+  def perform_timeout_checks!
+    # Check for unpaid timeout
+    if unpaid_timeout?
+      self.status = 'cancelled_automatically'
+      save!
+      send_trade_cancel_to_kafka
+      return true
+    end
+
+    # Check for paid timeout
+    if paid_timeout?
+      self.dispute_reason_param = "System automatic dispute: Trade remained in paid status for over #{TIMEOUT_MINUTES} minutes"
+      self.status = 'disputed'
+      save!
+      return true
+    end
+
+    false
   end
 
   private

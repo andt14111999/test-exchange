@@ -45,6 +45,31 @@ module V1
           trade.fiat_token_withdrawal_id
         end
       end
+      expose :timeout_minutes do |_trade|
+        Trade::TIMEOUT_MINUTES
+      end
+      expose :countdown_seconds do |trade|
+        if trade.unpaid?
+          # Time left before unpaid timeout
+          remaining = (trade.created_at + Trade::TIMEOUT_MINUTES.minutes) - Time.zone.now
+          [ remaining.to_i, 0 ].max
+        elsif trade.paid?
+          # Time left before paid timeout
+          remaining = (trade.paid_at + Trade::TIMEOUT_MINUTES.minutes) - Time.zone.now
+          [ remaining.to_i, 0 ].max
+        else
+          0
+        end
+      end
+      expose :countdown_status do |trade|
+        if trade.unpaid?
+          'unpaid_countdown'
+        elsif trade.paid?
+          'paid_countdown'
+        else
+          'no_countdown'
+        end
+      end
     end
 
     class TradeDetail < Entity
@@ -65,6 +90,13 @@ module V1
       end
       expose :time_left_seconds do |trade|
         trade.payment_time_left
+      end
+      # Additional detailed countdown info
+      expose :unpaid_timeout_at do |trade|
+        trade.unpaid? ? (trade.created_at + Trade::TIMEOUT_MINUTES.minutes).iso8601 : nil
+      end
+      expose :paid_timeout_at do |trade|
+        trade.paid? && trade.paid_at ? (trade.paid_at + Trade::TIMEOUT_MINUTES.minutes).iso8601 : nil
       end
       expose :buyer, using: V1::Users::Entity
       expose :seller, using: V1::Users::Entity
