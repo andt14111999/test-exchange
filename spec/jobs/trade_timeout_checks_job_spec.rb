@@ -12,15 +12,17 @@ RSpec.describe TradeTimeoutChecksJob do
         # Create another unpaid trade that has not timed out
         not_timed_out_trade = create(:trade, status: 'unpaid', created_at: 10.minutes.ago)
 
+        # Mock the trade service to check for cancel call
+        trade_service = instance_double(KafkaService::Services::Trade::TradeService)
+        allow(KafkaService::Services::Trade::TradeService).to receive(:new).and_return(trade_service)
+        expect(trade_service).to receive(:cancel).with(trade: timed_out_trade)
+
         # Run the job
         described_class.new.perform
 
         # Reload the trades to get updated statuses
         timed_out_trade.reload
         not_timed_out_trade.reload
-
-        # The timed out trade should be cancelled automatically
-        expect(timed_out_trade).to be_cancelled_automatically
 
         # The not timed out trade should still be unpaid
         expect(not_timed_out_trade).to be_unpaid

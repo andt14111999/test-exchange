@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_05_12_103553) do
+ActiveRecord::Schema[8.0].define(version: 2025_05_20_172052) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -622,6 +622,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_12_103553) do
     t.datetime "updated_at", null: false
     t.decimal "amount"
     t.decimal "token_amount"
+    t.string "dispute_resolution"
+    t.string "trade_memo"
     t.index ["buyer_id", "status"], name: "index_trades_on_buyer_id_and_status"
     t.index ["buyer_id"], name: "index_trades_on_buyer_id"
     t.index ["fiat_token_deposit_id"], name: "index_trades_on_fiat_token_deposit_id"

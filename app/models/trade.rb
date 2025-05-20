@@ -32,8 +32,10 @@ class Trade < ApplicationRecord
   validates :status, presence: true, inclusion: { in: STATUSES }
   validates :payment_proof_status, inclusion: { in: PAYMENT_PROOF_STATUSES }, allow_nil: true
   validates :dispute_resolution, inclusion: { in: DISPUTE_RESOLUTIONS }, allow_nil: true
+  validates :trade_memo, length: { maximum: 255 }, allow_nil: true
 
   before_validation :generate_ref, on: :create
+  before_validation :generate_trade_memo, on: :create
   before_create :set_initial_timestamps
   before_save :update_status_timestamps
   after_create :send_trade_create_to_kafka
@@ -41,7 +43,7 @@ class Trade < ApplicationRecord
   after_save :update_associated_fiat_deposit, if: :saved_change_to_status?
   after_save :update_associated_fiat_withdrawal, if: :saved_change_to_status?
 
-  attr_accessor :dispute_reason_param, :admin_notes_param, :is_automatic, :dispute_resolution
+  attr_accessor :dispute_reason_param, :admin_notes_param, :is_automatic
 
   # AASM State Machine
   aasm column: 'status', whiny_transitions: false do
@@ -511,18 +513,16 @@ class Trade < ApplicationRecord
   end
 
   def perform_timeout_checks!
-    # Check for unpaid timeout
     if unpaid_timeout?
-      self.status = 'cancelled_automatically'
-      save!
       send_trade_cancel_to_kafka
       return true
     end
 
-    # Check for paid timeout
     if paid_timeout?
       self.dispute_reason_param = "System automatic dispute: Trade remained in paid status for over #{TIMEOUT_MINUTES} minutes"
       self.status = 'disputed'
+      self.disputed_at = Time.zone.now
+      self.dispute_resolution = 'admin_intervention'
       save!
       return true
     end
@@ -555,6 +555,20 @@ class Trade < ApplicationRecord
 
   def generate_ref
     self.ref ||= "T#{Time.zone.now.strftime('%Y%m%d')}#{SecureRandom.hex(4).upcase}"
+  end
+
+  def generate_trade_memo
+    return if trade_memo.present?
+
+    # Shorter format: REF part + IDs part + random
+    ref_part = ref.last(4).upcase
+    buyer_part = buyer_id.to_s.last(2)
+    seller_part = seller_id.to_s.last(2)
+    random_part = SecureRandom.random_number(100).to_s.rjust(2, '0')
+
+    # Final format: REF-BUYERSELLER-RND
+    # Example: ABC1-2345-67
+    self.trade_memo = "#{ref_part}-#{buyer_part}#{seller_part}-#{random_part}"
   end
 
   def set_initial_timestamps

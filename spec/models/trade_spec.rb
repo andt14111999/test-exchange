@@ -1276,5 +1276,58 @@ RSpec.describe Trade, type: :model do
         expect(trade.process_fiat_token_withdrawal!).to be true
       end
     end
+
+    describe 'trade_memo generation' do
+      it 'automatically generates a trade_memo with the correct format' do
+        buyer = create(:user, id: 12345)
+        seller = create(:user, id: 67890)
+        offer = create(:offer)
+
+        trade = described_class.new(
+          buyer: buyer,
+          seller: seller,
+          offer: offer,
+          coin_currency: 'btc',
+          fiat_currency: 'usd',
+          coin_amount: 1.0,
+          fiat_amount: 10000.0,
+          price: 10000.0,
+          fee_ratio: 0.01,
+          coin_trading_fee: 0.01,
+          payment_method: 'bank_transfer',
+          taker_side: 'buy',
+          status: 'awaiting'
+        )
+
+        trade.save
+
+        # Check if trade_memo is present
+        expect(trade.trade_memo).to be_present
+
+        # Check trade_memo format: REF-BUYERSELLER-RND
+        # Format parts
+        parts = trade.trade_memo.split('-')
+
+        # Should have 3 parts
+        expect(parts.length).to eq(3)
+
+        # First part should be the last 4 chars of the ref
+        expect(parts[0]).to eq(trade.ref.last(4).upcase)
+
+        # Second part should be last 2 digits of buyer ID + last 2 digits of seller ID
+        expect(parts[1]).to eq('4590')
+
+        # Third part should be a 2-digit number
+        expect(parts[2]).to match(/^\d{2}$/)
+      end
+
+      it 'does not override an existing trade_memo' do
+        existing_memo = 'CUSTOM-MEMO-123'
+
+        trade = create(:trade, trade_memo: existing_memo)
+
+        expect(trade.trade_memo).to eq(existing_memo)
+      end
+    end
   end
 end
