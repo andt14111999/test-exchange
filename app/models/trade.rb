@@ -305,7 +305,7 @@ class Trade < ApplicationRecord
 
   def can_be_released_by?(user)
     return false if user.nil?
-    return false unless paid? || (disputed? && dispute_resolution.present?)
+    return false unless paid? || disputed?
     user.id == seller_id
   end
 
