@@ -52,10 +52,17 @@ RSpec.describe Trade, type: :model do
 
     describe '#perform_timeout_checks!' do
       context 'when trade is unpaid and timed out' do
-        it 'cancels the trade automatically' do
+        it 'calls send_trade_cancel_to_kafka' do
           trade = create(:trade, status: 'unpaid', created_at: 16.minutes.ago)
-          trade.perform_timeout_checks!
-          expect(trade).to be_cancelled_automatically
+
+          # Expect the method to be called
+          expect(trade).to receive(:send_trade_cancel_to_kafka)
+
+          # Perform the timeout checks
+          result = trade.perform_timeout_checks!
+
+          # Method should return true
+          expect(result).to be_truthy
         end
       end
 

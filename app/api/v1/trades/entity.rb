@@ -26,6 +26,7 @@ module V1
       expose :buyer_id
       expose :seller_id
       expose :offer_id
+      expose :trade_memo
       expose :is_fiat_token_trade do |trade|
         trade.fiat_token_trade?
       end
