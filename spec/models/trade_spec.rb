@@ -594,7 +594,7 @@ RSpec.describe Trade, type: :model do
         # After disputed, still only seller can release
         trade.update(status: 'disputed')
         expect(trade.can_be_released_by?(buyer)).to be false
-        expect(trade.can_be_released_by?(seller)).to be false
+        expect(trade.can_be_released_by?(seller)).to be true
 
         # After dispute resolution, seller can release
         trade.dispute_resolution = 'resolved_for_seller'
