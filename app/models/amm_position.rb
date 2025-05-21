@@ -100,7 +100,7 @@ class AmmPosition < ApplicationRecord
 
     payload = {
       eventId: "amm-position-#{SecureRandom.uuid}",
-      operationType: 'amm_position_collect_fee',
+      operationType: OperationTypes::AMM_POSITION_COLLECT_FEE,
       actionType: self.class.name,
       actionId: id,
       identifier: identifier
@@ -113,7 +113,7 @@ class AmmPosition < ApplicationRecord
 
     payload = {
       eventId: "amm-position-#{SecureRandom.uuid}",
-      operationType: 'amm_position_close',
+      operationType: OperationTypes::AMM_POSITION_CLOSE,
       actionType: self.class.name,
       actionId: id,
       identifier: identifier
@@ -229,7 +229,7 @@ class AmmPosition < ApplicationRecord
     begin
       payload = {
         eventId: "amm-position-#{SecureRandom.uuid}",
-        operationType: 'amm_position_create',
+        operationType: OperationTypes::AMM_POSITION_CREATE,
         actionType: self.class.name,
         actionId: id,
         identifier: identifier,
