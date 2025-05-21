@@ -100,7 +100,7 @@ class AmmPosition < ApplicationRecord
 
     payload = {
       eventId: "amm-position-#{SecureRandom.uuid}",
-      operationType: OperationTypes::AMM_POSITION_COLLECT_FEE,
+      operationType: KafkaService::Config::OperationTypes::AMM_POSITION_COLLECT_FEE,
       actionType: self.class.name,
       actionId: id,
       identifier: identifier
@@ -113,7 +113,7 @@ class AmmPosition < ApplicationRecord
 
     payload = {
       eventId: "amm-position-#{SecureRandom.uuid}",
-      operationType: OperationTypes::AMM_POSITION_CLOSE,
+      operationType: KafkaService::Config::OperationTypes::AMM_POSITION_CLOSE,
       actionType: self.class.name,
       actionId: id,
       identifier: identifier
@@ -229,7 +229,7 @@ class AmmPosition < ApplicationRecord
     begin
       payload = {
         eventId: "amm-position-#{SecureRandom.uuid}",
-        operationType: OperationTypes::AMM_POSITION_CREATE,
+        operationType: KafkaService::Config::OperationTypes::AMM_POSITION_CREATE,
         actionType: self.class.name,
         actionId: id,
         identifier: identifier,

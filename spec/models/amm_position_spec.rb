@@ -425,18 +425,17 @@ describe AmmPosition, type: :model do
         )
       end
 
-      it 'returns 0 when a value is missing' do
-        # Test by stubbing the method to simulate missing values
+      it 'returns 0 when estimate_fee_token0 is missing' do
         allow(position).to receive(:estimate_fee_token0).and_return(nil)
         expect(position.total_estimate_fee_in_token0).to eq(0)
+      end
 
-        # Reset and test another condition
-        allow(position).to receive(:estimate_fee_token0).and_call_original
+      it 'returns 0 when estimate_fee_token1 is missing' do
         allow(position).to receive(:estimate_fee_token1).and_return(nil)
         expect(position.total_estimate_fee_in_token0).to eq(0)
+      end
 
-        # Reset and test another condition
-        allow(position).to receive(:estimate_fee_token1).and_call_original
+      it 'returns 0 when amm_pool is missing' do
         allow(position).to receive(:amm_pool).and_return(nil)
         expect(position.total_estimate_fee_in_token0).to eq(0)
       end
