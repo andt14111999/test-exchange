@@ -100,7 +100,7 @@ class AmmPosition < ApplicationRecord
 
     payload = {
       eventId: "amm-position-#{SecureRandom.uuid}",
-      operationType: 'amm_position_collect_fee',
+      operationType: KafkaService::Config::OperationTypes::AMM_POSITION_COLLECT_FEE,
       actionType: self.class.name,
       actionId: id,
       identifier: identifier
@@ -113,7 +113,7 @@ class AmmPosition < ApplicationRecord
 
     payload = {
       eventId: "amm-position-#{SecureRandom.uuid}",
-      operationType: 'amm_position_close',
+      operationType: KafkaService::Config::OperationTypes::AMM_POSITION_CLOSE,
       actionType: self.class.name,
       actionId: id,
       identifier: identifier
@@ -181,6 +181,17 @@ class AmmPosition < ApplicationRecord
     nil
   end
 
+  # Calculate total estimated fee in token0 for easier frontend display
+  def total_estimate_fee_in_token0
+    return 0 unless estimate_fee_token0.present? && estimate_fee_token1.present? && amm_pool&.price.present?
+
+    # Convert token1 fees to token0 equivalent using the pool price
+    token1_in_token0 = estimate_fee_token1 / amm_pool.price
+
+    # Sum up total fees in token0
+    estimate_fee_token0 + token1_in_token0
+  end
+
   private
 
   def tick_indices_must_be_multiples_of_tick_spacing
@@ -218,7 +229,7 @@ class AmmPosition < ApplicationRecord
     begin
       payload = {
         eventId: "amm-position-#{SecureRandom.uuid}",
-        operationType: 'amm_position_create',
+        operationType: KafkaService::Config::OperationTypes::AMM_POSITION_CREATE,
         actionType: self.class.name,
         actionId: id,
         identifier: identifier,

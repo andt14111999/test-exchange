@@ -35,6 +35,9 @@ module V1
       expose :estimate_fee_token1, format_with: :decimal
       expose :apr, format_with: :decimal
 
+      # Total estimated fee converted to token0 for easier frontend display
+      expose :total_estimate_fee_in_token0, format_with: :decimal
+
       expose :created_at do |position|
         position.created_at.to_i
       end
