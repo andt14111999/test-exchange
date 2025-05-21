@@ -142,7 +142,7 @@ class AmmPosition < ApplicationRecord
 
     # Calculate time position has been open (in days)
     days_in_position = ((Time.now - created_at) / 1.day).to_f
-    return if days_in_position <= 0
+    return nil if days_in_position <= 0
 
     # Calculate daily fee rate
     daily_fee_rate0 = total_fee_earned0 / BigDecimal(days_in_position.to_s)
@@ -176,7 +176,9 @@ class AmmPosition < ApplicationRecord
       return nil
     end
 
+    # Save changes and return nil to match test expectations
     save
+    nil
   end
 
   private

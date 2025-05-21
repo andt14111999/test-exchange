@@ -311,8 +311,10 @@ describe AmmPosition, type: :model do
         allow(Time).to receive(:now).and_return(created_time + 7.days)
 
         # Mock the pool fee growth values
-        allow(amm_pool).to receive(:fee_growth_global0).and_return(0.3)
-        allow(amm_pool).to receive(:fee_growth_global1).and_return(0.5)
+        allow(amm_pool).to receive_messages(
+          fee_growth_global0: 0.3,
+          fee_growth_global1: 0.5
+        )
       end
 
       it 'calculates estimated fees and APR' do
