@@ -194,6 +194,8 @@ describe KafkaService::Handlers::AmmPositionHandler do
         'liquidity' => '1000',
         'amount0' => '100',
         'amount1' => '200',
+        'amount0Withdrawal' => '10',
+        'amount1Withdrawal' => '20',
         'feeGrowthInside0Last' => '0.001',
         'feeGrowthInside1Last' => '0.002',
         'tokensOwed0' => '10',
@@ -212,6 +214,8 @@ describe KafkaService::Handlers::AmmPositionHandler do
       expect(params[:liquidity]).to eq(BigDecimal('1000'))
       expect(params[:amount0]).to eq(BigDecimal('100'))
       expect(params[:amount1]).to eq(BigDecimal('200'))
+      expect(params[:amount0_withdrawal]).to eq(BigDecimal('10'))
+      expect(params[:amount1_withdrawal]).to eq(BigDecimal('20'))
       expect(params[:tokens_owed0]).to eq(BigDecimal('10'))
       expect(params[:tokens_owed1]).to eq(BigDecimal('20'))
       expect(params[:status]).to eq('open')

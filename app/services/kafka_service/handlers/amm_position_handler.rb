@@ -51,6 +51,8 @@ module KafkaService
           liquidity: BigDecimal.safe_convert(object['liquidity']),
           amount0: BigDecimal.safe_convert(object['amount0']),
           amount1: BigDecimal.safe_convert(object['amount1']),
+          amount0_withdrawal: BigDecimal.safe_convert(object['amount0Withdrawal']),
+          amount1_withdrawal: BigDecimal.safe_convert(object['amount1Withdrawal']),
           fee_growth_inside0_last: BigDecimal.safe_convert(object['feeGrowthInside0Last']),
           fee_growth_inside1_last: BigDecimal.safe_convert(object['feeGrowthInside1Last']),
           tokens_owed0: BigDecimal.safe_convert(object['tokensOwed0']),

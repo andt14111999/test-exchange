@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_05_20_172052) do
+ActiveRecord::Schema[8.0].define(version: 2025_05_21_013536) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -119,6 +119,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_20_172052) do
     t.string "error_message"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.decimal "amount0_withdrawal", precision: 36, scale: 18, default: "0.0", null: false
+    t.decimal "amount1_withdrawal", precision: 36, scale: 18, default: "0.0", null: false
+    t.decimal "estimate_fee_token0", precision: 36, scale: 18, default: "0.0", null: false
+    t.decimal "estimate_fee_token1", precision: 36, scale: 18, default: "0.0", null: false
+    t.decimal "apr", precision: 10, scale: 6, default: "0.0", null: false
     t.index ["amm_pool_id"], name: "index_amm_positions_on_amm_pool_id"
     t.index ["identifier"], name: "index_amm_positions_on_identifier", unique: true
     t.index ["status"], name: "index_amm_positions_on_status"

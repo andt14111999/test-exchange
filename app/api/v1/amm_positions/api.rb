@@ -66,7 +66,10 @@ module V1
           position = current_user.amm_positions.find_by(id: params[:id])
           error!({ error: 'Position not found' }, 404) unless position
 
-          present position, with: V1::AmmPositions::Entity
+          # Calculate estimated fees and APR for the position
+          position.calculate_est_fee if position.open?
+
+          present position, with: V1::AmmPositions::DetailEntity
         end
 
         desc 'Collect fee for a position'

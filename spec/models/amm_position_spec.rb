@@ -271,6 +271,122 @@ describe AmmPosition, type: :model do
     end
   end
 
+  describe '#calculate_est_fee' do
+    let(:user) { create(:user) }
+    let(:amm_pool) { create(:amm_pool, price: 25000, fee_percentage: 0.003) }
+
+    context 'when position is not open' do
+      let(:position) { create(:amm_position, user: user, amm_pool: amm_pool, status: 'pending') }
+
+      it 'returns nil without updating fields' do
+        expect(position.calculate_est_fee).to be_nil
+        expect(position.estimate_fee_token0).to eq(0)
+        expect(position.estimate_fee_token1).to eq(0)
+        expect(position.apr).to eq(0)
+      end
+    end
+
+    context 'when position is open' do
+      let(:created_time) { 7.days.ago }
+      let(:position) do
+        create(:amm_position,
+          user: user,
+          amm_pool: amm_pool,
+          status: 'open',
+          liquidity: 1000,
+          amount0: 100,
+          amount1: 2500000,
+          tokens_owed0: 0.5,
+          tokens_owed1: 12500,
+          fee_collected0: 0.3,
+          fee_collected1: 7500,
+          fee_growth_inside0_last: 0.1,
+          fee_growth_inside1_last: 0.2,
+          created_at: created_time
+        )
+      end
+
+      before do
+        # Freeze time to make calculations predictable
+        allow(Time).to receive(:now).and_return(created_time + 7.days)
+
+        # Mock the pool fee growth values
+        allow(amm_pool).to receive_messages(
+          fee_growth_global0: 0.3,
+          fee_growth_global1: 0.5
+        )
+      end
+
+      it 'calculates estimated fees and APR' do
+        position.calculate_est_fee
+
+        # Verify the calculations
+        expect(position.estimate_fee_token0).to be > 0
+        expect(position.estimate_fee_token1).to be > 0
+        expect(position.apr).to be > 0
+
+        # Verify the fee calculation based on Uniswap V3 formula
+        # fee_earned0 = liquidity * (fee_growth_inside0 - fee_growth_inside0_last)
+        # = 1000 * (0.3 - 0.1) = 200
+        # Plus tokens_owed0 (0.5) and fee_collected0 (0.3) = 200.8
+        # Daily rate = 200.8 / 7 ≈ 28.69
+        expect(position.estimate_fee_token0).to be_within(0.1).of(28.69)
+
+        # fee_earned1 = liquidity * (fee_growth_inside1 - fee_growth_inside1_last)
+        # = 1000 * (0.5 - 0.2) = 300
+        # Plus tokens_owed1 (12500) and fee_collected1 (7500) = 20300
+        # Daily rate = 20300 / 7 ≈ 2900
+        expect(position.estimate_fee_token1).to be_within(1).of(2900)
+
+        # Verify APR calculation is reasonable
+        # We expect it to be based on the fees earned and TVL
+        # With our test data, APR will be capped at 1000%
+        expect(position.apr).to be > 0
+        expect(position.apr).to be <= 1000 # APR should be capped at 1000%
+      end
+
+      context 'when position has zero TVL' do
+        let(:position) do
+          create(:amm_position,
+            user: user,
+            amm_pool: amm_pool,
+            status: 'open',
+            amount0: 0,
+            amount1: 0,
+            created_at: created_time
+          )
+        end
+
+        it 'returns nil without updating fields' do
+          expect(position.calculate_est_fee).to be_nil
+          expect(position.estimate_fee_token0).to eq(0)
+          expect(position.estimate_fee_token1).to eq(0)
+          expect(position.apr).to eq(0)
+        end
+      end
+
+      context 'when position was just created' do
+        let(:position) do
+          create(:amm_position,
+            user: user,
+            amm_pool: amm_pool,
+            status: 'open',
+            amount0: 100,
+            amount1: 2500000,
+            created_at: Time.now
+          )
+        end
+
+        it 'returns nil without updating fields' do
+          expect(position.calculate_est_fee).to be_nil
+          expect(position.estimate_fee_token0).to eq(0)
+          expect(position.estimate_fee_token1).to eq(0)
+          expect(position.apr).to eq(0)
+        end
+      end
+    end
+  end
+
   describe '.generate_account_keys' do
     let(:user) { create(:user) }
     let(:pool) { create(:amm_pool, token0: 'USDT', token1: 'VND') }
