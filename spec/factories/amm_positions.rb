@@ -20,5 +20,10 @@ FactoryBot.define do
     tokens_owed1 { 0 }
     fee_collected0 { 0 }
     fee_collected1 { 0 }
+    amount0_withdrawal { 0 }
+    amount1_withdrawal { 0 }
+    estimate_fee_token0 { 0 }
+    estimate_fee_token1 { 0 }
+    apr { 0 }
   end
 end

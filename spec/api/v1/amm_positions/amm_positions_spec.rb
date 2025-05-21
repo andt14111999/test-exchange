@@ -142,10 +142,12 @@ describe 'AmmPositions API', type: :request do
 
   describe 'GET /api/v1/amm_positions/:id' do
     let!(:position) { create(:amm_position, user: user, identifier: 'test_position_123') }
+    let!(:open_position) { create(:amm_position, user: user, identifier: 'open_position_123', status: 'open') }
     let!(:other_position) { create(:amm_position, identifier: 'other_position_123') }
 
     before do
       allow_any_instance_of(AmmPosition).to receive(:send_event_create_amm_position)
+      allow_any_instance_of(AmmPosition).to receive(:calculate_est_fee)
     end
 
     it 'returns the position with the specified id' do
@@ -154,6 +156,29 @@ describe 'AmmPositions API', type: :request do
       expect(response).to have_http_status(:ok)
       json_response = JSON.parse(response.body)
       expect(json_response['id']).to eq(position.id)
+
+      # Check that the detail fields are included
+      expect(json_response).to have_key('amount0_withdrawal')
+      expect(json_response).to have_key('amount1_withdrawal')
+      expect(json_response).to have_key('estimate_fee_token0')
+      expect(json_response).to have_key('estimate_fee_token1')
+      expect(json_response).to have_key('apr')
+    end
+
+    it 'calculates estimated fees for open positions' do
+      expect_any_instance_of(AmmPosition).to receive(:calculate_est_fee)
+
+      get "/api/v1/amm_positions/#{open_position.id}", headers: headers
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it 'does not calculate fees for non-open positions' do
+      expect(position).not_to receive(:calculate_est_fee)
+
+      get "/api/v1/amm_positions/#{position.id}", headers: headers
+
+      expect(response).to have_http_status(:ok)
     end
 
     it 'returns 404 if position is not found for the current user' do

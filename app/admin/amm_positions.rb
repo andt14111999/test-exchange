@@ -84,6 +84,21 @@ ActiveAdmin.register AmmPosition do
       row :fee_collected1 do |position|
         number_with_delimiter(position.fee_collected1.to_f.round(6))
       end
+      row :amount0_withdrawal do |position|
+        number_with_delimiter(position.amount0_withdrawal.to_f.round(6))
+      end
+      row :amount1_withdrawal do |position|
+        number_with_delimiter(position.amount1_withdrawal.to_f.round(6))
+      end
+      row :estimate_fee_token0 do |position|
+        number_with_delimiter(position.estimate_fee_token0.to_f.round(6))
+      end
+      row :estimate_fee_token1 do |position|
+        number_with_delimiter(position.estimate_fee_token1.to_f.round(6))
+      end
+      row :apr do |position|
+        "#{position.apr.to_f.round(2)}%"
+      end
       row :created_at
       row :updated_at
     end
