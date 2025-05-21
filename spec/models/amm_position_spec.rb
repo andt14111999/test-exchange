@@ -387,6 +387,86 @@ describe AmmPosition, type: :model do
     end
   end
 
+  describe '#total_estimate_fee_in_token0' do
+    let(:user) { create(:user) }
+    let(:amm_pool) do
+      create(:amm_pool,
+        token0: 'USDT',
+        token1: 'VND',
+        price: 25000
+      )
+    end
+
+    context 'when all required values are present' do
+      let(:position) do
+        create(:amm_position,
+          user: user,
+          amm_pool: amm_pool,
+          status: 'open',
+          estimate_fee_token0: 10,
+          estimate_fee_token1: 250000
+        )
+      end
+
+      it 'calculates total estimated fee in token0' do
+        # Expected calculation: 10 + (250000 / 25000) = 10 + 10 = 20
+        expect(position.total_estimate_fee_in_token0).to eq(20)
+      end
+    end
+
+    context 'when any required value is missing' do
+      let(:position) do
+        create(:amm_position,
+          user: user,
+          amm_pool: amm_pool,
+          status: 'open',
+          estimate_fee_token0: 10,
+          estimate_fee_token1: 250000
+        )
+      end
+
+      it 'returns 0 when a value is missing' do
+        # Test by stubbing the method to simulate missing values
+        allow(position).to receive(:estimate_fee_token0).and_return(nil)
+        expect(position.total_estimate_fee_in_token0).to eq(0)
+
+        # Reset and test another condition
+        allow(position).to receive(:estimate_fee_token0).and_call_original
+        allow(position).to receive(:estimate_fee_token1).and_return(nil)
+        expect(position.total_estimate_fee_in_token0).to eq(0)
+
+        # Reset and test another condition
+        allow(position).to receive(:estimate_fee_token1).and_call_original
+        allow(position).to receive(:amm_pool).and_return(nil)
+        expect(position.total_estimate_fee_in_token0).to eq(0)
+      end
+    end
+
+    context 'when amm_pool.price is missing' do
+      let(:amm_pool_without_price) do
+        create(:amm_pool,
+          token0: 'USDT',
+          token1: 'VND',
+          price: nil
+        )
+      end
+
+      let(:position) do
+        create(:amm_position,
+          user: user,
+          amm_pool: amm_pool_without_price,
+          status: 'open',
+          estimate_fee_token0: 10,
+          estimate_fee_token1: 250000
+        )
+      end
+
+      it 'returns 0' do
+        expect(position.total_estimate_fee_in_token0).to eq(0)
+      end
+    end
+  end
+
   describe '.generate_account_keys' do
     let(:user) { create(:user) }
     let(:pool) { create(:amm_pool, token0: 'USDT', token1: 'VND') }

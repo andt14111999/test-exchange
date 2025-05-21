@@ -181,6 +181,17 @@ class AmmPosition < ApplicationRecord
     nil
   end
 
+  # Calculate total estimated fee in token0 for easier frontend display
+  def total_estimate_fee_in_token0
+    return 0 unless estimate_fee_token0.present? && estimate_fee_token1.present? && amm_pool&.price.present?
+
+    # Convert token1 fees to token0 equivalent using the pool price
+    token1_in_token0 = estimate_fee_token1 / amm_pool.price
+
+    # Sum up total fees in token0
+    estimate_fee_token0 + token1_in_token0
+  end
+
   private
 
   def tick_indices_must_be_multiples_of_tick_spacing
