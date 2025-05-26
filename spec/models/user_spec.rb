@@ -87,6 +87,57 @@ RSpec.describe User, type: :model do
       expect(user).to be_invalid
       expect(user.errors[:kyc_level]).to include('is not included in the list')
     end
+
+    it 'validates uniqueness of username' do
+      create(:user, username: 'testuser')
+      user = build(:user, username: 'testuser')
+      expect(user).to be_invalid
+      expect(user.errors[:username]).to include('has already been taken')
+    end
+
+    it 'allows blank username' do
+      user = build(:user, username: nil)
+      expect(user).to be_valid
+    end
+
+    it 'prevents changing username when already set' do
+      user = create(:user, username: 'testuser')
+      user.username = 'newusername'
+      expect(user).to be_invalid
+      expect(user.errors[:username]).to include('cannot be changed once set')
+    end
+
+    it 'allows setting username when it was nil' do
+      user = create(:user, username: nil)
+      user.username = 'newusername'
+      expect(user).to be_valid
+    end
+
+    it 'validates minimum length of username' do
+      user = build(:user, username: 'ab')
+      expect(user).to be_invalid
+      expect(user.errors[:username]).to include('is too short (minimum is 3 characters)')
+    end
+
+    it 'validates maximum length of username' do
+      user = build(:user, username: 'a' * 21)
+      expect(user).to be_invalid
+      expect(user.errors[:username]).to include('is too long (maximum is 20 characters)')
+    end
+
+    it 'validates format of username' do
+      user = build(:user, username: 'invalid-username!')
+      expect(user).to be_invalid
+      expect(user.errors[:username]).to include('only allows letters, numbers, and underscores')
+    end
+
+    it 'allows valid usernames' do
+      valid_usernames = [ 'user123', 'user_name', 'USERNAME', '123user', 'u_123_name' ]
+      valid_usernames.each do |username|
+        user = build(:user, username: username)
+        expect(user).to be_valid
+      end
+    end
   end
 
   describe 'scopes' do
@@ -154,6 +205,7 @@ RSpec.describe User, type: :model do
         role
         status
         updated_at
+        username
       ]
 
       expect(described_class.ransackable_attributes).to match_array(expected_attributes)

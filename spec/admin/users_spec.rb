@@ -86,6 +86,7 @@ RSpec.describe 'Admin::Users', type: :request do
       user_params = {
         user: {
           email: 'new@example.com',
+          username: 'newuser123',
           display_name: 'New User',
           role: 'user',
           status: 'active',
@@ -102,6 +103,7 @@ RSpec.describe 'Admin::Users', type: :request do
       expect(response).to redirect_to(admin_user_path(User.last))
       follow_redirect!
       expect(response.body).to include('User was successfully created')
+      expect(User.last.username).to eq('newuser123')
     end
   end
 
@@ -127,6 +129,25 @@ RSpec.describe 'Admin::Users', type: :request do
       follow_redirect!
       expect(response.body).to include('User was successfully updated')
       expect(user.reload.email).to eq(new_email)
+    end
+
+    it 'sets username when it was not set' do
+      user = create(:user, username: nil)
+
+      put admin_user_path(user), params: { user: { username: 'newusername' } }
+
+      expect(response).to redirect_to(admin_user_path(user))
+      follow_redirect!
+      expect(response.body).to include('User was successfully updated')
+      expect(user.reload.username).to eq('newusername')
+    end
+
+    it 'cannot change username when it is already set' do
+      user = create(:user, username: 'existingusername')
+
+      put admin_user_path(user), params: { user: { username: 'newusername' } }
+
+      expect(user.reload.username).to eq('existingusername')
     end
   end
 

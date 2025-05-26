@@ -5,6 +5,7 @@ module V1
     class Entity < Grape::Entity
       expose :id
       expose :email
+      expose :username
       expose :display_name
       expose :avatar_url
       expose :role
