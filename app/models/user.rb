@@ -27,6 +27,10 @@ class User < ApplicationRecord
   validates :role, inclusion: { in: %w[merchant user] }
   validates :status, inclusion: { in: %w[active suspended banned] }
   validates :kyc_level, inclusion: { in: 0..2 }
+  validates :username, uniqueness: true, allow_blank: true,
+                       length: { in: 3..20, allow_blank: true },
+                       format: { with: /\A[a-zA-Z0-9_]+\z/, message: 'only allows letters, numbers, and underscores', allow_blank: true }
+  validate :username_not_changed, if: -> { username_was.present? && username_changed? }
 
   # Define scopes for ActiveAdmin
   scope :merchants, -> { where(role: 'merchant') }
@@ -51,6 +55,7 @@ class User < ApplicationRecord
       role
       status
       updated_at
+      username
     ]
   end
 
@@ -132,5 +137,9 @@ class User < ApplicationRecord
 
   def create_default_accounts
     AccountCreationService.new(self).create_all_accounts
+  end
+
+  def username_not_changed
+    errors.add(:username, 'cannot be changed once set')
   end
 end

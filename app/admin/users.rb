@@ -4,12 +4,13 @@ ActiveAdmin.register User do
   menu priority: 2, label: 'Users'
 
   permit_params :email, :display_name, :avatar_url, :role,
-    :phone_verified, :document_verified, :kyc_level, :status
+    :phone_verified, :document_verified, :kyc_level, :status, :username
 
   actions :all
 
   filter :id
   filter :email
+  filter :username
   filter :display_name
   filter :role, as: :select, collection: %w[merchant user]
   filter :status, as: :select, collection: %w[active suspended banned]
@@ -32,6 +33,7 @@ ActiveAdmin.register User do
     selectable_column
     id_column
     column :email
+    column :username
     column :display_name
     column :avatar_url do |user|
       image_tag user.avatar_url, style: 'width: 50px; height: 50px; border-radius: 50%;' if user.avatar_url.present?
@@ -66,6 +68,7 @@ ActiveAdmin.register User do
         attributes_table do
           row :id
           row :email
+          row :username
           row :display_name
           row :avatar_url do |user|
             if user.avatar_url.present?
@@ -132,6 +135,9 @@ ActiveAdmin.register User do
       tab 'Basic Info' do
         f.inputs do
           f.input :email
+          f.input :username,
+                  hint: 'Can only be set once. 3-20 characters, letters, numbers, and underscores only.',
+                  input_html: { disabled: f.object.username.present? }
           f.input :display_name
           f.input :avatar_url, as: :string
           if f.object.avatar_url.present?
