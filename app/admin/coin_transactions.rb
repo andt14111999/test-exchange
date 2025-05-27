@@ -20,8 +20,8 @@ ActiveAdmin.register CoinTransaction do
     column :user do |tx|
       link_to tx.coin_account.user.email, admin_user_path(tx.coin_account.user)
     end
-    column :coin_currency
-    column :transaction_type
+    tag_column :coin_currency
+    tag_column :transaction_type
     column :amount do |tx|
       number_with_precision(tx.amount, precision: 8)
     end
@@ -44,8 +44,8 @@ ActiveAdmin.register CoinTransaction do
       row :user do |tx|
         link_to tx.coin_account.user.email, admin_user_path(tx.coin_account.user)
       end
-      row :coin_currency
-      row :transaction_type
+      tag_row :coin_currency
+      tag_row :transaction_type
       row :amount do |tx|
         number_with_precision(tx.amount, precision: 8)
       end

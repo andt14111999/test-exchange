@@ -11,6 +11,7 @@ class User < ApplicationRecord
   has_many :amm_positions, dependent: :destroy
   has_many :amm_orders, dependent: :destroy
   has_many :api_keys, dependent: :destroy
+  has_many :balance_locks, dependent: :destroy
 
   # P2P Trading
   has_many :offers, dependent: :destroy

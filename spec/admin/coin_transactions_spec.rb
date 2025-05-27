@@ -73,7 +73,7 @@ RSpec.describe 'Admin::CoinTransactions', type: :feature do
       within 'table' do
         expect(page).to have_selector('tr', text: transaction_btc.id.to_s)
         expect(page).to have_selector('tr', text: '0.00100000')
-        expect(page).to have_selector('tr', text: 'btc')
+        expect(page).to have_selector('tr', text: /Btc/i)
         expect(page).not_to have_selector("tr[data-id='#{transaction_eth.id}']")
         expect(page).not_to have_selector('tr', text: '0.10000000')
       end
@@ -142,8 +142,8 @@ RSpec.describe 'Admin::CoinTransactions', type: :feature do
       expect(page).to have_content(transaction.id)
       expect(page).to have_link("Coin account ##{coin_account.id}")
       expect(page).to have_link(user.email)
-      expect(page).to have_content('btc')
-      expect(page).to have_content('transfer')
+      expect(page).to have_content(/Btc/i)
+      expect(page).to have_content(/Transfer/i)
       expect(page).to have_content('0.00100000')
       expect(page).to have_content('0.01000000')
       expect(page).to have_content('0.00500000')

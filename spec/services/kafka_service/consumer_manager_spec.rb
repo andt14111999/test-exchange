@@ -12,6 +12,7 @@ RSpec.describe KafkaService::ConsumerManager, type: :service do
   let(:trade_handler) { instance_double(KafkaService::Handlers::TradeHandler) }
   let(:amm_order_handler) { instance_double(KafkaService::Handlers::AmmOrderHandler) }
   let(:tick_handler) { instance_double(KafkaService::Handlers::TickHandler) }
+  let(:balance_lock_handler) { instance_double(KafkaService::Handlers::BalanceLockHandler) }
   let(:consumer) { instance_double(KafkaService::Base::Consumer) }
   let(:payload) { { 'data' => 'test' } }
 
@@ -25,6 +26,7 @@ RSpec.describe KafkaService::ConsumerManager, type: :service do
     allow(KafkaService::Handlers::TradeHandler).to receive(:new).and_return(trade_handler)
     allow(KafkaService::Handlers::AmmOrderHandler).to receive(:new).and_return(amm_order_handler)
     allow(KafkaService::Handlers::TickHandler).to receive(:new).and_return(tick_handler)
+    allow(KafkaService::Handlers::BalanceLockHandler).to receive(:new).and_return(balance_lock_handler)
     allow(KafkaService::Base::Consumer).to receive(:new).and_return(consumer)
     allow(consumer).to receive(:start)
     allow(consumer).to receive(:stop)
@@ -44,7 +46,8 @@ RSpec.describe KafkaService::ConsumerManager, type: :service do
         KafkaService::Config::Topics::OFFER_UPDATE => offer_handler,
         KafkaService::Config::Topics::TRADE_UPDATE => trade_handler,
         KafkaService::Config::Topics::AMM_ORDER_UPDATE_TOPIC => amm_order_handler,
-        KafkaService::Config::Topics::TICK_UPDATE_TOPIC => tick_handler
+        KafkaService::Config::Topics::TICK_UPDATE_TOPIC => tick_handler,
+        KafkaService::Config::Topics::BALANCES_LOCK_UPDATE => balance_lock_handler
       }
 
       # Use a custom matcher instead of eq to verify the keys and values independently
@@ -107,7 +110,7 @@ RSpec.describe KafkaService::ConsumerManager, type: :service do
       manager.start
 
       # Adjust the count to match the actual number of handlers
-      expect(consumer).to receive(:stop).exactly(9).times
+      expect(consumer).to receive(:stop).exactly(10).times
       manager.stop
     end
   end
@@ -147,6 +150,8 @@ RSpec.describe KafkaService::ConsumerManager, type: :service do
       allow(manager).to receive(:start_consumer_with_monitor).with(KafkaService::Config::Topics::TRADE_UPDATE, trade_handler)
       allow(manager).to receive(:start_consumer_with_monitor).with(KafkaService::Config::Topics::AMM_ORDER_UPDATE_TOPIC, amm_order_handler)
       allow(manager).to receive(:start_consumer_with_monitor).with(KafkaService::Config::Topics::TICK_UPDATE_TOPIC, tick_handler)
+      allow(manager).to receive(:start_consumer_with_monitor).with(KafkaService::Config::Topics::BALANCES_LOCK_UPDATE, balance_lock_handler)
+
       expect(Rails.logger).to receive(:error).with('Failed to start consumer for topic EE.O.coin_account_update: test error')
       expect(manager).to receive(:restart_consumer).with(KafkaService::Config::Topics::BALANCE_UPDATE, coin_account_handler)
 
