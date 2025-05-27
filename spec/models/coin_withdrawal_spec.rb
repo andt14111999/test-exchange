@@ -127,7 +127,36 @@ RSpec.describe CoinWithdrawal, type: :model do
           user.update!(username: 'myusername')
           withdrawal = build(:coin_withdrawal, user: user, coin_currency: 'usdt', receiver_username: user.username)
           expect(withdrawal).to be_invalid
-          expect(withdrawal.errors[:receiver_username].first).to match(/cannot_transfer_to_self/)
+          expect(withdrawal.errors[:receiver_username].first).to include('cannot_transfer_to_self')
+        end
+      end
+
+      context 'with receiver_phone_number' do
+        let(:user_with_phone) { create(:user) }
+        let(:receiver_with_phone) { create(:user) }
+
+        before do
+          # Mock the phone_number field on User
+          allow(User).to receive(:find_by).with(phone_number: '1234567890').and_return(user_with_phone)
+          allow(User).to receive(:find_by).with(phone_number: '0987654321').and_return(receiver_with_phone)
+          allow(User).to receive(:find_by).with(phone_number: '5555555555').and_return(nil)
+        end
+
+        it 'is valid with an existing phone number' do
+          withdrawal = build(:coin_withdrawal, user: user_with_phone, coin_currency: 'usdt', receiver_phone_number: '0987654321')
+          expect(withdrawal).to be_valid
+        end
+
+        it 'is invalid with a non-existent phone number' do
+          withdrawal = build(:coin_withdrawal, user: user_with_phone, coin_currency: 'usdt', receiver_phone_number: '5555555555')
+          expect(withdrawal).to be_invalid
+          expect(withdrawal.errors[:receiver_phone_number]).to include('not found')
+        end
+
+        it 'prevents transferring to self via phone number' do
+          withdrawal = build(:coin_withdrawal, user: user_with_phone, coin_currency: 'usdt', receiver_phone_number: '1234567890')
+          expect(withdrawal).to be_invalid
+          expect(withdrawal.errors[:receiver_phone_number].first).to include('cannot_transfer_to_self')
         end
       end
     end
@@ -320,6 +349,53 @@ RSpec.describe CoinWithdrawal, type: :model do
         withdrawal.save!
       end
 
+      it 'sends an event to Kafka with recipient_account_key for phone-based internal transfers' do
+        withdrawal_service = instance_double(KafkaService::Services::Coin::CoinWithdrawalService)
+        account_key = "#{user.id}-coin-#{coin_account.id}"
+        receiver = create(:user)
+
+        # Create receiver's coin account
+        receiver_coin_account = create(:coin_account, :usdt_main, user: receiver)
+        receiver_account_key = "#{receiver.id}-coin-#{receiver_coin_account.id}"
+
+        # Mock phone_number lookup
+        allow(User).to receive(:find_by).with(phone_number: '0987654321').and_return(receiver)
+
+        allow(KafkaService::Services::Coin::CoinWithdrawalService).to receive(:new).and_return(withdrawal_service)
+        allow(KafkaService::Services::AccountKeyBuilderService).to receive(:build_coin_account_key)
+          .with(user_id: user.id, account_id: coin_account.id)
+          .and_return(account_key)
+        allow(KafkaService::Services::AccountKeyBuilderService).to receive(:build_coin_account_key)
+          .with(user_id: receiver.id, account_id: receiver_coin_account.id)
+          .and_return(receiver_account_key)
+
+        # Create an internal transfer withdrawal using phone number
+        withdrawal = build(:coin_withdrawal,
+                          id: 10003,
+                          user:,
+                          coin_currency: 'usdt',
+                          coin_amount: 10,
+                          coin_fee: 0,
+                          receiver_phone_number: '0987654321')
+
+        # Stub create_operations to prevent after_create callbacks from executing auto_process!
+        allow(withdrawal).to receive(:create_operations)
+
+        # Setup expectation for the create method with recipient_account_key
+        expect(withdrawal_service).to receive(:create).with(
+          identifier: 10003,
+          status: 'verified',
+          user_id: user.id,
+          coin: 'usdt',
+          account_key: account_key,
+          amount: 10,
+          fee: 0,
+          recipient_account_key: receiver_account_key
+        )
+
+        withdrawal.save!
+      end
+
       it 'handles errors gracefully' do
         withdrawal_service = instance_double(KafkaService::Services::Coin::CoinWithdrawalService)
 
@@ -421,9 +497,73 @@ RSpec.describe CoinWithdrawal, type: :model do
       expect(withdrawal.internal_transfer?).to be true
     end
 
+    it 'returns true when receiver_phone_number is present' do
+      withdrawal = build(:coin_withdrawal, user: user, coin_currency: 'usdt', receiver_phone_number: '1234567890')
+      expect(withdrawal.internal_transfer?).to be true
+    end
+
     it 'returns false when none of the receiver identifiers are present' do
       withdrawal = build(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_layer: 'erc20', coin_address: '0x123')
       expect(withdrawal.internal_transfer?).to be false
+    end
+  end
+
+  describe '#create_operations' do
+    let(:user) { create(:user) }
+    let(:receiver) { create(:user) }
+    let(:coin_account) { create(:coin_account, :usdt_main, user: user, balance: 100.0) }
+
+    before do
+      coin_account
+    end
+
+    context 'with internal transfer' do
+      it 'creates a coin_internal_transfer_operation when receiver is found by email' do
+        withdrawal = create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_amount: 10, receiver_email: receiver.email)
+        expect(withdrawal.coin_internal_transfer_operation).to be_present
+        expect(withdrawal.coin_internal_transfer_operation.sender).to eq(user)
+        expect(withdrawal.coin_internal_transfer_operation.receiver).to eq(receiver)
+        expect(withdrawal.coin_internal_transfer_operation.coin_currency).to eq('usdt')
+        expect(withdrawal.coin_internal_transfer_operation.coin_amount).to eq(10)
+        expect(withdrawal.coin_internal_transfer_operation.status).to eq('completed')
+      end
+
+      it 'creates a coin_internal_transfer_operation when receiver is found by username' do
+        receiver.update!(username: 'testuser')
+        withdrawal = create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_amount: 10, receiver_username: 'testuser')
+        expect(withdrawal.coin_internal_transfer_operation).to be_present
+        expect(withdrawal.coin_internal_transfer_operation.sender).to eq(user)
+        expect(withdrawal.coin_internal_transfer_operation.receiver).to eq(receiver)
+        expect(withdrawal.coin_internal_transfer_operation.coin_currency).to eq('usdt')
+        expect(withdrawal.coin_internal_transfer_operation.coin_amount).to eq(10)
+        expect(withdrawal.coin_internal_transfer_operation.status).to eq('completed')
+      end
+
+      it 'creates a coin_internal_transfer_operation when receiver is found by phone_number' do
+        # Mock the phone_number lookup
+        allow(User).to receive(:find_by).with(phone_number: '0987654321').and_return(receiver)
+
+        withdrawal = create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_amount: 10, receiver_phone_number: '0987654321')
+        expect(withdrawal.coin_internal_transfer_operation).to be_present
+        expect(withdrawal.coin_internal_transfer_operation.sender).to eq(user)
+        expect(withdrawal.coin_internal_transfer_operation.receiver).to eq(receiver)
+        expect(withdrawal.coin_internal_transfer_operation.coin_currency).to eq('usdt')
+        expect(withdrawal.coin_internal_transfer_operation.coin_amount).to eq(10)
+        expect(withdrawal.coin_internal_transfer_operation.status).to eq('completed')
+      end
+    end
+
+    context 'with external transfer' do
+      it 'creates a coin_withdrawal_operation' do
+        # Get the actual coin_fee value to check
+        allow_any_instance_of(CoinWithdrawal).to receive(:calculate_coin_fee).and_return(1)
+
+        withdrawal = create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_amount: 10, coin_fee: 1, coin_layer: 'erc20', coin_address: '0x123')
+        expect(withdrawal.coin_withdrawal_operation).to be_present
+        expect(withdrawal.coin_withdrawal_operation.coin_amount).to eq(10)
+        expect(withdrawal.coin_withdrawal_operation.coin_fee).to eq(1)
+        expect(withdrawal.coin_withdrawal_operation.coin_currency).to eq('usdt')
+      end
     end
   end
 end
