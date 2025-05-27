@@ -81,6 +81,56 @@ RSpec.describe CoinWithdrawal, type: :model do
         expect(withdrawal.errors[:coin_layer]).to include("can't be blank")
       end
     end
+
+    describe '#validate_receiver_internal' do
+      let(:user) { create(:user) }
+      let(:receiver) { create(:user) }
+      let(:coin_account) { create(:coin_account, :usdt_main, user: user, balance: 100.0) }
+
+      before do
+        coin_account
+      end
+
+      context 'with receiver_email' do
+        it 'is valid with an existing email' do
+          withdrawal = build(:coin_withdrawal, user: user, coin_currency: 'usdt', receiver_email: receiver.email)
+          expect(withdrawal).to be_valid
+        end
+
+        it 'is invalid with a non-existent email' do
+          withdrawal = build(:coin_withdrawal, user: user, coin_currency: 'usdt', receiver_email: 'nonexistent@example.com')
+          expect(withdrawal).to be_invalid
+          expect(withdrawal.errors[:receiver_email]).to include('not found')
+        end
+
+        it 'prevents transferring to self via email' do
+          withdrawal = build(:coin_withdrawal, user: user, coin_currency: 'usdt', receiver_email: user.email)
+          expect(withdrawal).to be_invalid
+          expect(withdrawal.errors[:receiver_email]).to include('cannot transfer to self')
+        end
+      end
+
+      context 'with receiver_username' do
+        it 'is valid with an existing username' do
+          receiver.update!(username: 'validuser')
+          withdrawal = build(:coin_withdrawal, user: user, coin_currency: 'usdt', receiver_username: receiver.username)
+          expect(withdrawal).to be_valid
+        end
+
+        it 'is invalid with a non-existent username' do
+          withdrawal = build(:coin_withdrawal, user: user, coin_currency: 'usdt', receiver_username: 'nonexistent_username')
+          expect(withdrawal).to be_invalid
+          expect(withdrawal.errors[:receiver_username]).to include('not found')
+        end
+
+        it 'prevents transferring to self via username' do
+          user.update!(username: 'myusername')
+          withdrawal = build(:coin_withdrawal, user: user, coin_currency: 'usdt', receiver_username: user.username)
+          expect(withdrawal).to be_invalid
+          expect(withdrawal.errors[:receiver_username].first).to match(/cannot_transfer_to_self/)
+        end
+      end
+    end
   end
 
   describe 'callbacks' do
@@ -225,6 +275,51 @@ RSpec.describe CoinWithdrawal, type: :model do
         withdrawal.save!
       end
 
+      it 'sends an event to Kafka with recipient_account_key for username-based internal transfers' do
+        withdrawal_service = instance_double(KafkaService::Services::Coin::CoinWithdrawalService)
+        account_key = "#{user.id}-coin-#{coin_account.id}"
+        receiver = create(:user)
+        receiver.update!(username: 'validusername')
+
+        # Create receiver's coin account
+        receiver_coin_account = create(:coin_account, :usdt_main, user: receiver)
+        receiver_account_key = "#{receiver.id}-coin-#{receiver_coin_account.id}"
+
+        allow(KafkaService::Services::Coin::CoinWithdrawalService).to receive(:new).and_return(withdrawal_service)
+        allow(KafkaService::Services::AccountKeyBuilderService).to receive(:build_coin_account_key)
+          .with(user_id: user.id, account_id: coin_account.id)
+          .and_return(account_key)
+        allow(KafkaService::Services::AccountKeyBuilderService).to receive(:build_coin_account_key)
+          .with(user_id: receiver.id, account_id: receiver_coin_account.id)
+          .and_return(receiver_account_key)
+
+        # Create an internal transfer withdrawal using username
+        withdrawal = build(:coin_withdrawal,
+                          id: 10002,
+                          user:,
+                          coin_currency: 'usdt',
+                          coin_amount: 10,
+                          coin_fee: 0,
+                          receiver_username: receiver.username)
+
+        # Stub create_operations to prevent after_create callbacks from executing auto_process!
+        allow(withdrawal).to receive(:create_operations)
+
+        # Setup expectation for the create method with recipient_account_key
+        expect(withdrawal_service).to receive(:create).with(
+          identifier: 10002,
+          status: 'verified',
+          user_id: user.id,
+          coin: 'usdt',
+          account_key: account_key,
+          amount: 10,
+          fee: 0,
+          recipient_account_key: receiver_account_key
+        )
+
+        withdrawal.save!
+      end
+
       it 'handles errors gracefully' do
         withdrawal_service = instance_double(KafkaService::Services::Coin::CoinWithdrawalService)
 
@@ -303,6 +398,32 @@ RSpec.describe CoinWithdrawal, type: :model do
       expect(described_class.ransackable_associations).to match_array(
         %w[user coin_withdrawal_operation coin_transaction coin_internal_transfer_operation]
       )
+    end
+  end
+
+  describe '#internal_transfer?' do
+    let(:user) { create(:user) }
+    let(:receiver) { create(:user) }
+    let(:coin_account) { create(:coin_account, :usdt_main, user: user, balance: 100.0) }
+
+    before do
+      coin_account
+    end
+
+    it 'returns true when receiver_email is present' do
+      withdrawal = build(:coin_withdrawal, user: user, coin_currency: 'usdt', receiver_email: receiver.email)
+      expect(withdrawal.internal_transfer?).to be true
+    end
+
+    it 'returns true when receiver_username is present' do
+      receiver.update!(username: 'testusername')
+      withdrawal = build(:coin_withdrawal, user: user, coin_currency: 'usdt', receiver_username: receiver.username)
+      expect(withdrawal.internal_transfer?).to be true
+    end
+
+    it 'returns false when none of the receiver identifiers are present' do
+      withdrawal = build(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_layer: 'erc20', coin_address: '0x123')
+      expect(withdrawal.internal_transfer?).to be false
     end
   end
 end

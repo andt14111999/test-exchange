@@ -23,7 +23,9 @@ module V1
       expose :tx_hash, if: ->(withdrawal, _) { !withdrawal.internal_transfer? }
 
       # Only expose these fields for internal transfers
-      expose :receiver_email, if: ->(withdrawal, _) { withdrawal.internal_transfer? }
+      expose :receiver_email, if: ->(withdrawal, _) { withdrawal.internal_transfer? && withdrawal.receiver_email.present? }
+      expose :receiver_username, if: ->(withdrawal, _) { withdrawal.internal_transfer? && withdrawal.receiver_username.present? }
+      expose :receiver_phone_number, if: ->(withdrawal, _) { withdrawal.internal_transfer? && withdrawal.receiver_phone_number.present? }
 
       expose :internal_transfer_status, if: ->(withdrawal, _) { withdrawal.internal_transfer? } do |withdrawal|
         withdrawal.coin_internal_transfer_operation&.status
