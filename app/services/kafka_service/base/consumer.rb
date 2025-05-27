@@ -7,10 +7,7 @@ module KafkaService
         @logger = Logger.new('log/kafka_consumer.log')
         @kafka = ::Kafka.new(
           seed_brokers: KafkaService::Config::Brokers::BROKERS,
-          client_id: "#{Rails.env}_#{group_id}",
-          logger: @logger,
-          socket_timeout: 20,
-          connect_timeout: 20
+          **kafka_config(group_id)
         )
         @consumer = initialize_consumer(group_id)
         subscribe_to_topics(topics)
@@ -35,6 +32,34 @@ module KafkaService
       end
 
       private
+
+      def kafka_config(group_id)
+        config = {
+          client_id: "#{Rails.env}_#{group_id}",
+          logger: @logger,
+          socket_timeout: 20,
+          connect_timeout: 20
+        }
+
+        if ssl_enabled?
+          config.merge!(ssl_config)
+        end
+
+        config
+      end
+
+      def ssl_enabled?
+        ENV.fetch('KAFKA_SSL_ENABLED', 'false') == 'true'
+      end
+
+      def ssl_config
+        {
+          ssl_ca_cert_file_path: '/etc/ssl/certs/ca-certificates.crt', # Default CA bundle for AWS MSK
+          ssl_client_cert: nil, # Not needed for TLS-only (no client cert auth)
+          ssl_client_cert_key: nil, # Not needed for TLS-only (no client cert auth)
+          ssl_verify_hostname: false
+        }
+      end
 
       def initialize_consumer(group_id)
         @kafka.consumer(
