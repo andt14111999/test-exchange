@@ -15,7 +15,13 @@ ROLLBAR_ACCESS_TOKEN: ""
 EXCHANGE_BACKEND_DOMAIN: "localhost:3969"
 
 ROLLBAR_ACCESS_TOKEN: ""
+
+# Kafka Configuration
+# For local development (default)
 KAFKA_BROKER: "127.0.0.1:9092"
+
+# For Amazon MSK (production) - Service Discovery enabled
+# KAFKA_SSL_ENABLED: "true"
 
 GOOGLE_CLIENT_ID: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 GOOGLE_CLIENT_SECRET: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

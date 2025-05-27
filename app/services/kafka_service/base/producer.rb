@@ -7,10 +7,7 @@ module KafkaService
         @logger = Logger.new('log/kafka_producer.log')
         @kafka = ::Kafka.new(
           KafkaService::Config::Brokers::BROKERS,
-          client_id: "base_portal_#{Rails.env}",
-          logger: @logger,
-          socket_timeout: 20,
-          connect_timeout: 20
+          **kafka_config
         )
         @producer = initialize_producer
         @logger.info("Kafka Producer initialized with brokers: #{KafkaService::Config::Brokers::BROKERS}")
@@ -34,6 +31,34 @@ module KafkaService
       end
 
       private
+
+      def kafka_config
+        config = {
+          client_id: "base_portal_#{Rails.env}",
+          logger: @logger,
+          socket_timeout: 20,
+          connect_timeout: 20
+        }
+
+        if ssl_enabled?
+          config.merge!(ssl_config)
+        end
+
+        config
+      end
+
+      def ssl_enabled?
+        ENV.fetch('KAFKA_SSL_ENABLED', 'false') == 'true'
+      end
+
+      def ssl_config
+        {
+          ssl_ca_cert_file_path: '/etc/ssl/certs/ca-certificates.crt', # Default CA bundle for AWS MSK
+          ssl_client_cert: nil, # Not needed for TLS-only (no client cert auth)
+          ssl_client_cert_key: nil, # Not needed for TLS-only (no client cert auth)
+          ssl_verify_hostname: false
+        }
+      end
 
       def initialize_producer
         @kafka.producer(**KafkaService::Config::Config::PRODUCER_CONFIG)
