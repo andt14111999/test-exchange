@@ -15,9 +15,10 @@ module V1
           requires :coin_currency, type: String, desc: 'Coin currency (e.g. usdt, eth)'
           optional :coin_layer, type: String, desc: 'Network layer (e.g. erc20, bep20, required for external withdrawals)'
           optional :receiver_email, type: String, desc: 'Email of recipient for internal transfers'
+          optional :receiver_username, type: String, desc: 'Username of recipient for internal transfers'
 
-          mutually_exclusive :coin_address, :receiver_email
-          at_least_one_of :coin_address, :receiver_email
+          mutually_exclusive :coin_address, :receiver_email, :receiver_username
+          at_least_one_of :coin_address, :receiver_email, :receiver_username
 
           given :coin_address do
             requires :coin_layer, type: String, desc: 'Network layer is required for external withdrawals'
@@ -32,7 +33,8 @@ module V1
             coin_amount: params[:coin_amount],
             coin_address: params[:coin_address],
             coin_layer: params[:coin_layer],
-            receiver_email: params[:receiver_email]
+            receiver_email: params[:receiver_email],
+            receiver_username: params[:receiver_username]
           )
 
           if withdrawal.save

@@ -121,7 +121,7 @@ RSpec.describe V1::CoinWithdrawals::Api, type: :request do
       end
 
       context 'when creating an internal transfer' do
-        it 'creates a new internal transfer withdrawal' do
+        it 'creates a new internal transfer withdrawal using receiver_email' do
           sender = create(:user)
           receiver = create(:user)
           create(:coin_account, user: sender, coin_currency: 'usdt', layer: 'erc20', balance: 100)
@@ -150,6 +150,52 @@ RSpec.describe V1::CoinWithdrawals::Api, type: :request do
           expect(withdrawal.coin_internal_transfer_operation.receiver.email).to eq receiver.email
         end
 
+        it 'creates a new internal transfer withdrawal using receiver_username' do
+          sender = create(:user)
+          receiver = create(:user)
+          receiver.update!(username: 'testuser123')
+          create(:coin_account, user: sender, coin_currency: 'usdt', layer: 'erc20', balance: 100)
+
+          # Stub validation to allow the internal transfer to proceed
+          allow_any_instance_of(CoinWithdrawal).to receive(:validate_coin_amount).and_return(true)
+
+          params = {
+            coin_amount: 10.0,
+            coin_currency: 'usdt',
+            receiver_username: receiver.username
+          }
+
+          post '/api/v1/coin_withdrawals', params: params, headers: auth_headers(sender)
+
+          expect(response.status).to eq 201
+          expect(JSON.parse(response.body)['status']).to eq 'success'
+          expect(JSON.parse(response.body)['data']['coin_amount']).to eq '10.0'
+          expect(JSON.parse(response.body)['data']['is_internal_transfer']).to be true
+
+          # Verify internal transfer operation was created
+          withdrawal_id = JSON.parse(response.body)['data']['id']
+          withdrawal = CoinWithdrawal.find(withdrawal_id)
+          expect(withdrawal.coin_internal_transfer_operation).to be_present
+          expect(withdrawal.coin_internal_transfer_operation.receiver.username).to eq receiver.username
+        end
+
+        it 'validates receiver username existence' do
+          user = create(:user)
+          create(:coin_account, user: user, coin_currency: 'usdt', layer: 'erc20', balance: 100)
+
+          params = {
+            coin_amount: 10.0,
+            coin_currency: 'usdt',
+            receiver_username: 'nonexistent_username'
+          }
+
+          post '/api/v1/coin_withdrawals', params: params, headers: auth_headers(user)
+
+          expect(response.status).to eq 422
+          expect(JSON.parse(response.body)['status']).to eq 'error'
+          expect(JSON.parse(response.body)['message']).to include('Receiver username not found')
+        end
+
         it 'validates receiver email existence' do
           user = create(:user)
           create(:coin_account, user: user, coin_currency: 'usdt', layer: 'erc20', balance: 100)
@@ -167,7 +213,7 @@ RSpec.describe V1::CoinWithdrawals::Api, type: :request do
           expect(JSON.parse(response.body)['message']).to include('Receiver email not found')
         end
 
-        it 'prevents transferring to self' do
+        it 'prevents transferring to self via email' do
           user = create(:user)
           create(:coin_account, user: user, coin_currency: 'usdt', layer: 'erc20', balance: 1000)
 
@@ -185,6 +231,27 @@ RSpec.describe V1::CoinWithdrawals::Api, type: :request do
           expect(response.status).to eq 422
           expect(JSON.parse(response.body)['status']).to eq 'error'
           expect(JSON.parse(response.body)['message']).to include('cannot transfer to self')
+        end
+
+        it 'prevents transferring to self via username' do
+          user = create(:user)
+          user.update!(username: 'myusername')
+          create(:coin_account, user: user, coin_currency: 'usdt', layer: 'erc20', balance: 1000)
+
+          # Stub the validation for this specific test because it will fail otherwise
+          allow_any_instance_of(CoinWithdrawal).to receive(:validate_coin_amount).and_return(true)
+
+          params = {
+            coin_amount: 10.0,
+            coin_currency: 'usdt',
+            receiver_username: user.username
+          }
+
+          post '/api/v1/coin_withdrawals', params: params, headers: auth_headers(user)
+
+          expect(response.status).to eq 422
+          expect(JSON.parse(response.body)['status']).to eq 'error'
+          expect(JSON.parse(response.body)['message']).to match(/cannot_transfer_to_self/)
         end
       end
     end

@@ -17,7 +17,7 @@ class CoinWithdrawal < ApplicationRecord
 
   validate :validate_coin_amount
   validate :validate_coin_address_and_layer
-  validate :validate_receiver_email, if: :internal_transfer?
+  validate :validate_receiver_internal, if: :internal_transfer?
 
   before_validation :assign_coin_layer
   before_validation :calculate_coin_fee, on: :create
@@ -76,7 +76,7 @@ class CoinWithdrawal < ApplicationRecord
   end
 
   def internal_transfer?
-    receiver_email.present?
+    receiver_email.present? || receiver_phone_number.present? || receiver_username.present?
   end
 
   private
@@ -96,12 +96,37 @@ class CoinWithdrawal < ApplicationRecord
     errors.add(:coin_layer, :blank) if coin_layer.blank?
   end
 
-  def validate_receiver_email
-    receiver = User.find_by(email: receiver_email)
-    if receiver.nil?
-      errors.add(:receiver_email, :not_found)
-    elsif receiver.id == user.id
-      errors.add(:receiver_email, :cannot_transfer_to_self)
+  def validate_receiver_internal
+    receiver = nil
+
+    if receiver_email.present?
+      receiver = User.find_by(email: receiver_email)
+      if receiver.nil?
+        errors.add(:receiver_email, :not_found)
+        return
+      end
+    elsif receiver_username.present?
+      receiver = User.find_by(username: receiver_username)
+      if receiver.nil?
+        errors.add(:receiver_username, :not_found)
+        return
+      end
+    elsif receiver_phone_number.present?
+      receiver = User.find_by(phone_number: receiver_phone_number)
+      if receiver.nil?
+        errors.add(:receiver_phone_number, :not_found)
+        return
+      end
+    end
+
+    if receiver.id == user.id
+      if receiver_email.present?
+        errors.add(:receiver_email, :cannot_transfer_to_self)
+      elsif receiver_username.present?
+        errors.add(:receiver_username, :cannot_transfer_to_self)
+      elsif receiver_phone_number.present?
+        errors.add(:receiver_phone_number, :cannot_transfer_to_self)
+      end
     end
   end
 
@@ -134,7 +159,15 @@ class CoinWithdrawal < ApplicationRecord
 
   def create_operations
     if internal_transfer?
-      receiver = User.find_by(email: receiver_email)
+      receiver = nil
+      if receiver_email.present?
+        receiver = User.find_by(email: receiver_email)
+      elsif receiver_username.present?
+        receiver = User.find_by(username: receiver_username)
+      elsif receiver_phone_number.present?
+        receiver = User.find_by(phone_number: receiver_phone_number)
+      end
+
       return unless receiver
 
       create_coin_internal_transfer_operation!(
@@ -170,15 +203,25 @@ class CoinWithdrawal < ApplicationRecord
     }
 
     # Add recipient_account_key for internal transfers
-    recipient = User.find_by(email: receiver_email)
-    if internal_transfer? && recipient.present?
-      recipient_account = recipient.coin_accounts.of_coin(coin_currency).main
-      if recipient_account.present?
-        recipient_account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
-          user_id: recipient.id,
-          account_id: recipient_account.id
-        )
-        params[:recipient_account_key] = recipient_account_key
+    recipient = nil
+    if internal_transfer?
+      if receiver_email.present?
+        recipient = User.find_by(email: receiver_email)
+      elsif receiver_username.present?
+        recipient = User.find_by(username: receiver_username)
+      elsif receiver_phone_number.present?
+        recipient = User.find_by(phone_number: receiver_phone_number)
+      end
+
+      if recipient.present?
+        recipient_account = recipient.coin_accounts.of_coin(coin_currency).main
+        if recipient_account.present?
+          recipient_account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
+            user_id: recipient.id,
+            account_id: recipient_account.id
+          )
+          params[:recipient_account_key] = recipient_account_key
+        end
       end
     end
 

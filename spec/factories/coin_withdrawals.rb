@@ -30,11 +30,44 @@ FactoryBot.define do
       coin_fee { 0.0 }
 
       transient do
-        receiver_email { create(:user).email }
+        receiver_email { nil }
+        receiver_username { nil }
+        receiver_phone_number { nil }
       end
 
       after(:build) do |withdrawal, evaluator|
-        withdrawal.receiver_email = evaluator.receiver_email
+        if evaluator.receiver_email.present?
+          withdrawal.receiver_email = evaluator.receiver_email
+        elsif evaluator.receiver_username.present?
+          withdrawal.receiver_username = evaluator.receiver_username
+        elsif evaluator.receiver_phone_number.present?
+          withdrawal.receiver_phone_number = evaluator.receiver_phone_number
+        else
+          # Default to email if no specific identifier is provided
+          receiver = create(:user)
+          withdrawal.receiver_email = receiver.email
+        end
+      end
+    end
+
+    trait :internal_email do
+      internal
+      transient do
+        receiver_email { create(:user).email }
+      end
+    end
+
+    trait :internal_username do
+      internal
+      transient do
+        receiver_username { create(:user).username }
+      end
+    end
+
+    trait :internal_phone do
+      internal
+      transient do
+        receiver_phone_number { create(:user, phone_number: '1234567890').phone_number }
       end
     end
   end
