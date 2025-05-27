@@ -556,7 +556,7 @@ RSpec.describe CoinWithdrawal, type: :model do
     context 'with external transfer' do
       it 'creates a coin_withdrawal_operation' do
         # Get the actual coin_fee value to check
-        allow_any_instance_of(CoinWithdrawal).to receive(:calculate_coin_fee).and_return(1)
+        allow_any_instance_of(described_class).to receive(:calculate_coin_fee).and_return(1)
 
         withdrawal = create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_amount: 10, coin_fee: 1, coin_layer: 'erc20', coin_address: '0x123')
         expect(withdrawal.coin_withdrawal_operation).to be_present
@@ -564,6 +564,101 @@ RSpec.describe CoinWithdrawal, type: :model do
         expect(withdrawal.coin_withdrawal_operation.coin_fee).to eq(1)
         expect(withdrawal.coin_withdrawal_operation.coin_currency).to eq('usdt')
       end
+    end
+  end
+
+  describe 'private methods' do
+    describe '#freeze_user_balance and #unfreeze_user_balance' do
+      let(:user) { create(:user) }
+      let(:withdrawal) { build(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_amount: 50.0, coin_fee: 10.0, coin_layer: 'erc20') }
+      let(:coin_account) { instance_double(CoinAccount, frozen_balance: 0.0) }
+
+      before do
+        allow(withdrawal).to receive(:coin_account).and_return(coin_account)
+      end
+
+      it 'freezes the user balance' do
+        expect(coin_account).to receive(:with_lock).and_yield
+        expect(coin_account).to receive(:update!).with(frozen_balance: 60.0)
+
+        withdrawal.send(:freeze_user_balance)
+      end
+
+      it 'unfreezes the user balance' do
+        allow(coin_account).to receive(:frozen_balance).and_return(60.0)
+        expect(coin_account).to receive(:with_lock).and_yield
+        expect(coin_account).to receive(:update!).with(frozen_balance: 0.0)
+
+        withdrawal.send(:unfreeze_user_balance)
+      end
+    end
+
+    describe '#send_event_fail_withdrawal_to_kafka' do
+      let(:user) { create(:user) }
+      let(:withdrawal_service) { instance_double(KafkaService::Services::Coin::CoinWithdrawalService) }
+
+      before do
+        allow(KafkaService::Services::Coin::CoinWithdrawalService).to receive(:new).and_return(withdrawal_service)
+      end
+
+      it 'sends a failed event to Kafka when status is failed' do
+        withdrawal = build_stubbed(:coin_withdrawal, id: 123)
+        allow(withdrawal).to receive(:failed?).and_return(true)
+
+        expect(withdrawal_service).to receive(:update_status).with(
+          identifier: 123,
+          operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_FAILED
+        )
+
+        withdrawal.send(:send_event_fail_withdrawal_to_kafka)
+      end
+
+      it 'does not send event if not failed' do
+        withdrawal = build_stubbed(:coin_withdrawal)
+        allow(withdrawal).to receive(:failed?).and_return(false)
+
+        expect(withdrawal_service).not_to receive(:update_status)
+        withdrawal.send(:send_event_fail_withdrawal_to_kafka)
+      end
+    end
+
+    describe '#send_event_cancel_withdrawal_to_kafka' do
+      let(:user) { create(:user) }
+      let(:withdrawal_service) { instance_double(KafkaService::Services::Coin::CoinWithdrawalService) }
+
+      before do
+        allow(KafkaService::Services::Coin::CoinWithdrawalService).to receive(:new).and_return(withdrawal_service)
+      end
+
+      it 'sends a cancelled event to Kafka when status is cancelled' do
+        withdrawal = build_stubbed(:coin_withdrawal, id: 123)
+        allow(withdrawal).to receive(:cancelled?).and_return(true)
+
+        expect(withdrawal_service).to receive(:update_status).with(
+          identifier: 123,
+          operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_CANCELLED
+        )
+
+        withdrawal.send(:send_event_cancel_withdrawal_to_kafka)
+      end
+
+      it 'does not send event if not cancelled' do
+        withdrawal = build_stubbed(:coin_withdrawal)
+        allow(withdrawal).to receive(:cancelled?).and_return(false)
+
+        expect(withdrawal_service).not_to receive(:update_status)
+        withdrawal.send(:send_event_cancel_withdrawal_to_kafka)
+      end
+    end
+  end
+
+  describe '#portal_coin' do
+    let(:user) { create(:user) }
+
+    it 'returns the portal coin for the given currency and layer' do
+      withdrawal = build(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_layer: 'erc20')
+      expect(CoinAccount).to receive(:coin_and_layer_to_portal_coin).with('usdt', 'erc20').and_return('erct')
+      expect(withdrawal.portal_coin).to eq('erct')
     end
   end
 end
