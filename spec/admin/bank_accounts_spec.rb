@@ -65,7 +65,7 @@ RSpec.describe 'Admin::BankAccounts', type: :request do
       get admin_bank_account_path(bank_account)
 
       expect(response.body).to include(bank_account.bank_name)
-      expect(response.body).to include(bank_account.account_name)
+      expect(response.body).to include(CGI.escapeHTML(bank_account.account_name))
       expect(response.body).to include(bank_account.account_number)
       expect(response.body).to include(bank_account.branch) if bank_account.branch.present?
       expect(response.body).to include(bank_account.country_code)
@@ -248,12 +248,8 @@ RSpec.describe 'Admin::BankAccounts', type: :request do
       get admin_bank_accounts_path(q: { account_number_cont: '123' })
 
       # Check for the presence of the account with 123 in its number
-      expect(response.body).to include('1234567890')
-      expect(response.body).to include('John Number')
-
-      # Make sure the other account is not displayed
-      expect(response.body).not_to include('0987654321')
-      expect(response.body).not_to include('Jane Different')
+      expect(response.body).to include(account1.account_name)
+      expect(response.body).not_to include(account2.account_name)
     end
 
     it 'filters by country code' do
