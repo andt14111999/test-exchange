@@ -2,6 +2,7 @@
 
 class ApiRoot < Grape::API
   include BaseApiRootModule
+  include Grape::Rails::Cache
 
   helpers Base::Helpers::Meta
 
