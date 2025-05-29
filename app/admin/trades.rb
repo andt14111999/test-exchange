@@ -37,6 +37,15 @@ ActiveAdmin.register Trade do
     column :status
     column :created_at
     actions
+
+    column 'Admin Actions' do |trade|
+      if trade.disputed?
+        span { link_to 'Cancel Trade', cancel_trade_admin_trade_path(trade), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to cancel this trade?' } }
+        span { link_to 'Release Trade', release_trade_admin_trade_path(trade), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to release this trade?' } }
+      end
+      span { link_to 'Mark as Aborted', abort_admin_trade_path(trade), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to abort this trade?' } }
+      span { link_to 'Add Admin Message', new_admin_message_path(trade_id: trade.id), class: 'button' }
+    end
   end
 
   show do
@@ -111,10 +120,10 @@ ActiveAdmin.register Trade do
     panel 'Admin Actions' do
       div do
         if resource.disputed?
-          span { link_to 'Resolve for Buyer', resolve_for_buyer_admin_trade_path(resource), method: :post, class: 'button' }
-          span { link_to 'Resolve for Seller', resolve_for_seller_admin_trade_path(resource), method: :post, class: 'button' }
+          span { link_to 'Cancel Trade', cancel_trade_admin_trade_path(resource), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to cancel this trade?' } }
+          span { link_to 'Release Trade', release_trade_admin_trade_path(resource), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to release this trade?' } }
         end
-        span { link_to 'Mark as Aborted', abort_admin_trade_path(resource), method: :post, class: 'button' }
+        span { link_to 'Mark as Aborted', abort_admin_trade_path(resource), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to abort this trade?' } }
         span { link_to 'Add Admin Message', new_admin_message_path(trade_id: resource.id), class: 'button' }
       end
     end
@@ -129,15 +138,14 @@ ActiveAdmin.register Trade do
     f.actions
   end
 
-  # Custom Actions
-  member_action :resolve_for_buyer, method: :post do
-    resource.resolve_for_buyer!("Resolved by admin: #{current_admin_user.email}")
-    redirect_to resource_path, notice: 'Trade resolved for buyer'
+  member_action :cancel_trade, method: :post do
+    resource.send_trade_cancel_to_kafka
+    redirect_to resource_path, notice: 'Trade cancelled successfully'
   end
 
-  member_action :resolve_for_seller, method: :post do
-    resource.resolve_for_seller!("Resolved by admin: #{current_admin_user.email}")
-    redirect_to resource_path, notice: 'Trade resolved for seller'
+  member_action :release_trade, method: :post do
+    resource.send_trade_complete_to_kafka
+    redirect_to resource_path, notice: 'Trade released successfully'
   end
 
   member_action :abort, method: :post do
