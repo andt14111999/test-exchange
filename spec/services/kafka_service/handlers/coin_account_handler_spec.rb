@@ -20,7 +20,7 @@ RSpec.describe KafkaService::Handlers::CoinAccountHandler, type: :service do
 
       payload = {
         'key' => "#{user.id}-coin-#{account.id}",
-        'availableBalance' => '10.5',
+        'totalBalance' => '10.5',
         'frozenBalance' => '1.5'
       }
 
@@ -47,7 +47,7 @@ RSpec.describe KafkaService::Handlers::CoinAccountHandler, type: :service do
 
       payload = {
         'key' => "#{user.id}-coin-#{existing_account.id}",
-        'availableBalance' => '15.5',
+        'totalBalance' => '15.5',
         'frozenBalance' => '2.5'
       }
 
@@ -64,7 +64,7 @@ RSpec.describe KafkaService::Handlers::CoinAccountHandler, type: :service do
       handler = described_class.new
       payload = {
         'key' => 'invalid',
-        'availableBalance' => '10.5',
+        'totalBalance' => '10.5',
         'frozenBalance' => '1.5'
       }
 
@@ -85,7 +85,7 @@ RSpec.describe KafkaService::Handlers::CoinAccountHandler, type: :service do
 
       payload = {
         'key' => "#{user.id}-coin-#{account.id}",
-        'availableBalance' => '10.5',
+        'totalBalance' => '10.5',
         'frozenBalance' => '1.5'
       }
 
@@ -97,7 +97,7 @@ RSpec.describe KafkaService::Handlers::CoinAccountHandler, type: :service do
       handler = described_class.new
       payload = {
         'key' => '123-coin-456',
-        'availableBalance' => '10.5',
+        'totalBalance' => '10.5',
         'frozenBalance' => '1.5'
       }
 
@@ -177,7 +177,7 @@ RSpec.describe KafkaService::Handlers::CoinAccountHandler, type: :service do
       account = create(:coin_account, balance: '1.0', frozen_balance: '0.5')
 
       payload = {
-        'availableBalance' => '5.5',
+        'totalBalance' => '5.5',
         'frozenBalance' => '2.2'
       }
 

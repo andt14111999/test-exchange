@@ -43,7 +43,7 @@ module KafkaService
 
       def update_account_balance(account, payload)
         account.update!(
-          balance: BigDecimal.safe_convert(payload['availableBalance']),
+          balance: BigDecimal.safe_convert(payload['totalBalance']),
           frozen_balance: BigDecimal.safe_convert(payload['frozenBalance'])
         )
       end
