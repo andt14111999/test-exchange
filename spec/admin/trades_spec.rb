@@ -201,8 +201,8 @@ RSpec.describe 'Admin::Trades', type: :system do
 
       within find('div.panel', text: 'Admin Actions') do
         # Since the trade is in disputed status, it should show the resolution buttons
-        expect(page).to have_link('Resolve for Buyer')
-        expect(page).to have_link('Resolve for Seller')
+        expect(page).to have_link('Cancel Trade')
+        expect(page).to have_link('Release Trade')
         expect(page).to have_link('Mark as Aborted')
         expect(page).to have_link('Add Admin Message')
       end
@@ -245,45 +245,41 @@ RSpec.describe 'Admin::Trades', type: :system do
   end
 
   describe 'Custom Actions', type: :request do
-    describe 'POST resolve_for_buyer' do
-      it 'calls resolve_for_buyer! on the trade' do
+    describe 'POST cancel_trade' do
+      it 'calls send_trade_cancel_to_kafka on the trade' do
         admin_user = create(:admin_user, :admin)
         trade = create(:trade, :disputed)
 
         sign_in admin_user
 
-        # Expect the trade to receive the resolve_for_buyer! method
-        # with an admin note containing the admin's email
-        expect_any_instance_of(Trade).to receive(:resolve_for_buyer!)
-          .with("Resolved by admin: #{admin_user.email}")
+        # Expect the trade to receive the send_trade_cancel_to_kafka method
+        expect_any_instance_of(Trade).to receive(:send_trade_cancel_to_kafka)
           .and_return(true)
 
-        post "/admin/trades/#{trade.id}/resolve_for_buyer"
+        post "/admin/trades/#{trade.id}/cancel_trade"
 
         # Check for redirect to the trade page
         expect(response).to redirect_to("/admin/trades/#{trade.id}")
-        expect(flash[:notice]).to eq('Trade resolved for buyer')
+        expect(flash[:notice]).to eq('Trade cancelled successfully')
       end
     end
 
-    describe 'POST resolve_for_seller' do
-      it 'calls resolve_for_seller! on the trade' do
+    describe 'POST release_trade' do
+      it 'calls send_trade_complete_to_kafka on the trade' do
         admin_user = create(:admin_user, :admin)
         trade = create(:trade, :disputed)
 
         sign_in admin_user
 
-        # Expect the trade to receive the resolve_for_seller! method
-        # with an admin note containing the admin's email
-        expect_any_instance_of(Trade).to receive(:resolve_for_seller!)
-          .with("Resolved by admin: #{admin_user.email}")
+        # Expect the trade to receive the send_trade_complete_to_kafka method
+        expect_any_instance_of(Trade).to receive(:send_trade_complete_to_kafka)
           .and_return(true)
 
-        post "/admin/trades/#{trade.id}/resolve_for_seller"
+        post "/admin/trades/#{trade.id}/release_trade"
 
         # Check for redirect to the trade page
         expect(response).to redirect_to("/admin/trades/#{trade.id}")
-        expect(flash[:notice]).to eq('Trade resolved for seller')
+        expect(flash[:notice]).to eq('Trade released successfully')
       end
     end
 
