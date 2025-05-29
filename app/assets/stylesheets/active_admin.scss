@@ -78,6 +78,8 @@ body.active_admin {
     }
 
     &.compromised,
+    &.locked,
+    &.lock,
     &.light-red {
       background: #e08f86;
     }
@@ -89,6 +91,9 @@ body.active_admin {
 
     &.active,
     &.completed,
+    &.released,
+    &.release,
+    &.usdt,
     &.confirmed,
     &.light-green,
     &.verified,
@@ -126,8 +131,7 @@ body.active_admin {
     &.sol,
     &.filled,
     &.posted,
-    &.positive,
-    &.locked {
+    &.positive {
       background: #8daa92;
     }
 

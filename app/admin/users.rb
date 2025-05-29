@@ -124,6 +124,36 @@ ActiveAdmin.register User do
           end
         end
       end
+
+      tab 'Balance Locks' do
+        panel 'User Balance Locks' do
+          table_for resource.balance_locks.order(created_at: :desc) do
+            column :id
+            column :status do |lock|
+              status_classes = {
+                'pending' => 'warning',
+                'active' => 'error',
+                'unlocked' => 'ok',
+                'failed' => 'error'
+              }
+              status_tag lock.status, class: status_classes[lock.status]
+            end
+            column :locked_balances do |lock|
+              content_tag :pre, lock.locked_balances.to_json
+            end
+            column :performer
+            column :reason
+            column :locked_at
+            column :unlocked_at
+            column :created_at
+            column :actions do |lock|
+              links = []
+              links << link_to('View', admin_balance_lock_path(lock))
+              safe_join(links, ' | ')
+            end
+          end
+        end
+      end
     end
 
     active_admin_comments
@@ -216,6 +246,13 @@ ActiveAdmin.register User do
     link_to 'Ban User', ban_admin_user_path(resource), method: :put if resource.status != 'banned'
   end
 
+  action_item :lock_all_funds, only: :show do
+    link_to 'Lock All Funds',
+      lock_all_funds_admin_user_path(resource),
+      method: :post,
+      data: { confirm: 'Are you sure you want to lock all funds?' }
+  end
+
   member_action :activate, method: :put do
     resource.update(status: 'active')
     redirect_to admin_user_path(resource), notice: 'User has been activated'
@@ -229,6 +266,21 @@ ActiveAdmin.register User do
   member_action :ban, method: :put do
     resource.update(status: 'banned')
     redirect_to admin_user_path(resource), notice: 'User has been banned'
+  end
+
+  member_action :lock_all_funds, method: :post do
+    reason = params[:reason].presence || "Admin-initiated lock by #{current_admin_user.email}"
+    balance_lock = BalanceLock.create(
+      user: resource,
+      reason: reason,
+      performer: current_admin_user.email
+    )
+
+    if balance_lock.persisted?
+      redirect_to admin_balance_lock_path(balance_lock), notice: 'Balance lock has been created'
+    else
+      redirect_to admin_user_path(resource), alert: "Failed to create balance lock: #{balance_lock.errors.full_messages.join(', ')}"
+    end
   end
 
   sidebar 'User Stats', only: :show do

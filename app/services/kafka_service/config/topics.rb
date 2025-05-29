@@ -12,6 +12,7 @@ module KafkaService
       MERCHANT_ESCROW = 'EE.I.merchant_escrow'
       TRADE = 'EE.I.trade'
       OFFER = 'EE.I.offer'
+      BALANCES_LOCK = 'EE.I.balances_lock'
 
       # Output topics
       COIN_ACCOUNT_UPDATE = 'EE.O.coin_account_update'
@@ -19,6 +20,7 @@ module KafkaService
       MERCHANT_ESCROW_UPDATE = 'EE.O.merchant_escrow_update'
       TRADE_UPDATE = 'EE.O.trade_update'
       OFFER_UPDATE = 'EE.O.offer_update'
+      BALANCES_LOCK_UPDATE = 'EE.O.balances_lock_update'
 
       # Aliases
       BALANCE_UPDATE = COIN_ACCOUNT_UPDATE

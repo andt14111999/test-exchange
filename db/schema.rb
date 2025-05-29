@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_05_26_080502) do
+ActiveRecord::Schema[8.0].define(version: 2025_05_27_054025) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -144,6 +144,33 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_26_080502) do
     t.index ["access_key"], name: "index_api_keys_on_access_key", unique: true
     t.index ["encrypted_secret_key_iv"], name: "index_api_keys_on_encrypted_secret_key_iv", unique: true
     t.index ["user_id"], name: "index_api_keys_on_user_id"
+  end
+
+  create_table "balance_lock_operations", force: :cascade do |t|
+    t.bigint "balance_lock_id", null: false
+    t.string "operation_type", null: false
+    t.string "status", default: "pending", null: false
+    t.text "status_explanation"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["balance_lock_id"], name: "index_balance_lock_operations_on_balance_lock_id"
+    t.index ["operation_type"], name: "index_balance_lock_operations_on_operation_type"
+    t.index ["status"], name: "index_balance_lock_operations_on_status"
+  end
+
+  create_table "balance_locks", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.jsonb "locked_balances", default: {}, null: false
+    t.string "status", null: false
+    t.text "reason"
+    t.datetime "locked_at"
+    t.datetime "unlocked_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "performer"
+    t.string "engine_lock_id"
+    t.index ["status"], name: "index_balance_locks_on_status"
+    t.index ["user_id"], name: "index_balance_locks_on_user_id"
   end
 
   create_table "bank_accounts", force: :cascade do |t|
@@ -673,6 +700,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_26_080502) do
   add_foreign_key "amm_positions", "amm_pools"
   add_foreign_key "amm_positions", "users"
   add_foreign_key "api_keys", "users"
+  add_foreign_key "balance_lock_operations", "balance_locks"
+  add_foreign_key "balance_locks", "users"
   add_foreign_key "bank_accounts", "users"
   add_foreign_key "coin_accounts", "users"
   add_foreign_key "coin_deposit_operations", "coin_accounts"
