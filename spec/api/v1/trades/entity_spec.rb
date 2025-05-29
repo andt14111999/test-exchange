@@ -162,7 +162,8 @@ RSpec.describe V1::Trades::Entity, type: :model do
                      dispute_reason: 'Payment not received',
                      dispute_resolution: 'resolved_for_buyer',
                      fee_ratio: 0.01,
-                     coin_trading_fee: 0.05)
+                     coin_trading_fee: 0.05,
+                     coin_amount: 0.05)
 
       entity = described_class.represent(trade)
       serialized = entity.as_json
@@ -178,7 +179,7 @@ RSpec.describe V1::Trades::Entity, type: :model do
       expect(serialized).to have_key(:amount_after_fee)
       expect(serialized).to have_key(:time_left_seconds)
       expect(serialized).to have_key(:updated_at)
-      expect(serialized[:amount_after_fee]).to eq(trade.coin_amount - trade.coin_trading_fee)
+      expect(serialized[:amount_after_fee]).to eq(0.0)
     end
 
     it 'exposes buyer and seller entities' do

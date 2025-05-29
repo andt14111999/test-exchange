@@ -54,7 +54,7 @@ RSpec.describe 'Admin Settings', type: :feature do
 
       visit admin_settings_path
 
-      within '.panel_contents' do
+      within first('.panel_contents') do
         expect(page).to have_content('23500')
         expect(page).to have_content('56.2')
         expect(page).to have_content('1550')

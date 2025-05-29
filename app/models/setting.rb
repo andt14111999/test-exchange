@@ -15,6 +15,18 @@ class Setting < RailsSettings::Base
     field :usdt_trc20_withdrawal_fee, type: :decimal, default: 2
   end
 
+  scope :trading_fees do
+    field :vnd_trading_fee_ratio, type: :decimal, default: 0.001
+    field :php_trading_fee_ratio, type: :decimal, default: 0.001
+    field :ngn_trading_fee_ratio, type: :decimal, default: 0.001
+    field :default_trading_fee_ratio, type: :decimal, default: 0.001
+
+    field :vnd_fixed_trading_fee, type: :decimal, default: 5000
+    field :php_fixed_trading_fee, type: :decimal, default: 10
+    field :ngn_fixed_trading_fee, type: :decimal, default: 300
+    field :default_fixed_trading_fee, type: :decimal, default: 0
+  end
+
   def self.ransackable_attributes(auth_object = nil)
     %w[var value created_at updated_at]
   end
@@ -52,5 +64,31 @@ class Setting < RailsSettings::Base
     else
       raise StandardError, "Exchange rate setting not defined for #{from_currency} to #{to_currency}"
     end
+  end
+
+  def self.get_trading_fee_ratio(currency)
+    currency = currency.to_s.downcase
+    fee_key = "#{currency}_trading_fee_ratio"
+
+    if Setting.respond_to?(fee_key)
+      fee = Setting.send(fee_key)
+      return fee if fee.present?
+    end
+
+    # Return default if currency-specific fee is not found
+    Setting.default_trading_fee_ratio
+  end
+
+  def self.get_fixed_trading_fee(currency)
+    currency = currency.to_s.downcase
+    fee_key = "#{currency}_fixed_trading_fee"
+
+    if Setting.respond_to?(fee_key)
+      fee = Setting.send(fee_key)
+      return fee if fee.present?
+    end
+
+    # Return default if currency-specific fee is not found
+    Setting.default_fixed_trading_fee
   end
 end

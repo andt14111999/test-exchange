@@ -85,9 +85,12 @@ module V1
         trade.is_fiat_token_withdrawal_trade?
       end
       expose :fee_ratio
+      expose :fixed_fee
       expose :coin_trading_fee
+      expose :total_fee
+      expose :amount_after_fee
       expose :amount_after_fee do |trade|
-        trade.coin_amount - trade.coin_trading_fee
+        trade.amount_after_fee
       end
       expose :time_left_seconds do |trade|
         trade.payment_time_left

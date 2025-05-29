@@ -82,8 +82,11 @@ module V1
 
           # Calculate trade details
           fiat_amount = params[:coin_amount] * offer.price
-          fee_ratio = Rails.application.config.default_trade_fee_ratio
+          fee_ratio = Setting.get_trading_fee_ratio(offer.coin_currency)
+          fixed_fee = Setting.get_fixed_trading_fee(offer.coin_currency)
           coin_trading_fee = params[:coin_amount] * fee_ratio
+          total_fee = fixed_fee + coin_trading_fee
+          amount_after_fee = [ params[:coin_amount] - total_fee, 0 ].max
 
           # Determine buyer and seller based on offer type
           if offer.buy?
@@ -112,7 +115,10 @@ module V1
               fiat_amount: fiat_amount,
               price: offer.price,
               fee_ratio: fee_ratio,
+              fixed_fee: fixed_fee,
               coin_trading_fee: coin_trading_fee,
+              total_fee: total_fee,
+              amount_after_fee: amount_after_fee,
               payment_method: offer.payment_method&.name || 'Bank Transfer',
               payment_details: offer.buy? ? {
                 bank_name: params[:bank_name],

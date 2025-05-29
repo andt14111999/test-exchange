@@ -54,7 +54,7 @@ RSpec.describe Trade, type: :model do
         expected_attributes = %w[
           id ref buyer_id seller_id offer_id
           coin_currency fiat_currency coin_amount fiat_amount
-          price fee_ratio coin_trading_fee
+          price fee_ratio coin_trading_fee fixed_fee total_fee amount_after_fee
           payment_method taker_side status
           paid_at released_at expired_at cancelled_at disputed_at
           has_payment_proof payment_proof_status dispute_reason dispute_resolution
@@ -702,7 +702,7 @@ RSpec.describe Trade, type: :model do
 
         trade.set_offer_data(offer)
 
-        expect(trade.fee_ratio).to eq(0.01) # Default fee ratio
+        expect(trade.fee_ratio.to_f).to eq(0.001)
       end
 
       it 'sets price correctly' do

@@ -204,10 +204,13 @@ module KafkaService
 
         # Calculate fees
         fee_ratio = calculate_fee_ratio(buyer_id, seller_id)
+        fixed_fee = Setting.get_fixed_trading_fee(coin_currency) || 0
         coin_amount = BigDecimal.safe_convert(trade_data['coinAmount'])
         price = BigDecimal.safe_convert(trade_data['price'])
         fiat_amount = calculate_fiat_amount(coin_amount, price)
         coin_trading_fee = calculate_trading_fee(coin_amount, fee_ratio)
+        total_fee = fixed_fee + coin_trading_fee
+        amount_after_fee = [ coin_amount - total_fee, 0 ].max
 
         # Create or find trade
         trade = Trade.find_or_initialize_by(id: id)
@@ -225,7 +228,10 @@ module KafkaService
           taker_side: trade_data['takerSide'],
           payment_method: offer.payment_method&.name || 'bank_transfer',
           fee_ratio: fee_ratio,
-          coin_trading_fee: coin_trading_fee
+          fixed_fee: fixed_fee,
+          coin_trading_fee: coin_trading_fee,
+          total_fee: total_fee,
+          amount_after_fee: amount_after_fee
         )
 
         # Set timestamps

@@ -26,7 +26,10 @@ class Trade < ApplicationRecord
   validates :fiat_amount, presence: true, numericality: { greater_than: 0 }
   validates :price, presence: true, numericality: { greater_than: 0 }
   validates :fee_ratio, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :fixed_fee, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :coin_trading_fee, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :total_fee, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :amount_after_fee, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :payment_method, presence: true
   validates :taker_side, presence: true, inclusion: { in: TAKER_SIDES }
   validates :status, presence: true, inclusion: { in: STATUSES }
@@ -147,7 +150,7 @@ class Trade < ApplicationRecord
     %w[
       id ref buyer_id seller_id offer_id
       coin_currency fiat_currency coin_amount fiat_amount
-      price fee_ratio coin_trading_fee
+      price fee_ratio fixed_fee coin_trading_fee total_fee amount_after_fee
       payment_method taker_side status
       paid_at released_at expired_at cancelled_at disputed_at
       has_payment_proof payment_proof_status dispute_reason dispute_resolution
@@ -350,7 +353,8 @@ class Trade < ApplicationRecord
     self.fiat_currency = offer.currency
     self.payment_method = offer.payment_method&.name || 'bank_transfer'
     self.payment_details = offer.payment_details
-    self.fee_ratio = Rails.application.config.trading_fees[coin_currency] || 0.01
+    self.fee_ratio = Setting.get_trading_fee_ratio(coin_currency)
+    self.fixed_fee = Setting.get_fixed_trading_fee(coin_currency)
   end
 
   def set_price(price_value)
@@ -376,7 +380,11 @@ class Trade < ApplicationRecord
   end
 
   def calculate_fees
+    self.fixed_fee ||= Setting.get_fixed_trading_fee(coin_currency)
+    self.fee_ratio ||= Setting.get_trading_fee_ratio(coin_currency)
     self.coin_trading_fee = coin_amount * fee_ratio
+    self.total_fee = fixed_fee + coin_trading_fee
+    self.amount_after_fee = [ coin_amount - total_fee, 0 ].max
   end
 
   def fetch_current_market_price
