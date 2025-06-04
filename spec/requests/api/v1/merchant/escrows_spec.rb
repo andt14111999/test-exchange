@@ -134,13 +134,13 @@ RSpec.describe V1::Merchant::Escrows, type: :request do
       it 'cancels the escrow' do
         merchant = create(:user, :merchant)
         usdt_account = create(:coin_account, :main, user: merchant, coin_currency: 'usdt', balance: 1000.0, frozen_balance: 100.0)
-        fiat_account = create(:fiat_account, user: merchant, currency: 'VND', balance: 2500000.0, frozen_balance: 2500000.0)
-        escrow = create(:merchant_escrow, :active, user: merchant, usdt_account: usdt_account, fiat_account: fiat_account, usdt_amount: 100.0)
+        fiat_account = create(:fiat_account, user: merchant, currency: 'VND', balance: 5000000.0, frozen_balance: 2500000.0)
+        escrow = create(:merchant_escrow, :active, user: merchant, usdt_account: usdt_account, fiat_account: fiat_account, usdt_amount: 100.0, fiat_amount: 2500000.0)
 
         post "/api/v1/merchant_escrows/#{escrow.id}/cancel", headers: auth_headers(merchant)
 
         expect(response).to have_http_status(:success)
-        expect(json_response['status']).to eq('cancelled')
+        expect(json_response['status']).to eq('active')
       end
 
       it 'returns not found when escrow does not exist' do

@@ -17,6 +17,7 @@ class MerchantEscrowService
     escrow = build_escrow
     execute_escrow_transaction(escrow) do
       escrow.save!
+      escrow.send(:send_kafka_event_create)
     end
 
     escrow
@@ -25,11 +26,12 @@ class MerchantEscrowService
   def cancel(escrow)
     validate_merchant!
     validate_cancelable_escrow!(escrow)
+    validate_sufficient_fiat_balance!(escrow)
 
     execute_escrow_transaction(escrow) do
-      escrow.cancel!
+      escrow.send(:send_kafka_event_cancel)
     rescue StandardError => e
-      raise
+      raise e
     end
 
     escrow
@@ -56,6 +58,11 @@ class MerchantEscrowService
   def validate_cancelable_escrow!(escrow)
     raise 'Escrow not found' unless escrow
     raise 'Cannot cancel this escrow' unless escrow.can_cancel?
+  end
+
+  def validate_sufficient_fiat_balance!(escrow)
+    fiat_account = escrow.fiat_account
+    raise "Insufficient fiat balance to cancel escrow. Required: #{escrow.fiat_amount}, Available: #{fiat_account.available_balance}" if fiat_account.available_balance < escrow.fiat_amount
   end
 
   def validate_accounts!

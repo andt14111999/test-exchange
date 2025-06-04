@@ -17,15 +17,14 @@ class MerchantEscrow < ApplicationRecord
   validates :exchange_rate, numericality: { greater_than: 0 }, allow_nil: true
   validate :validate_user_is_merchant
 
-  # Callbacks
-  after_create :send_kafka_event_create
-  after_update :send_kafka_event_cancel, if: -> { status_previously_changed? && status == 'cancelled' }
-
   # Scopes
   scope :sorted, -> { order(created_at: :desc) }
   scope :active, -> { where(status: 'active') }
   scope :cancelled, -> { where(status: 'cancelled') }
   scope :pending, -> { where(status: 'pending') }
+
+  # Callbacks
+  after_save :broadcast_status_change, if: :saved_change_to_status?
 
   # State Machine
   aasm column: 'status', whiny_transitions: false do
@@ -63,10 +62,6 @@ class MerchantEscrow < ApplicationRecord
     update!(status: 'active')
   end
 
-  def cancel!
-    update!(status: 'cancelled')
-  end
-
   # Helper methods to find related accounts
   def find_user_usdt_account
     user.coin_accounts.of_coin('usdt').main
@@ -80,6 +75,10 @@ class MerchantEscrow < ApplicationRecord
 
   def validate_user_is_merchant
     errors.add(:user, :not_merchant) unless user&.merchant?
+  end
+
+  def broadcast_status_change
+    MerchantEscrowBroadcastService.call(self)
   end
 
   def send_kafka_event_create
