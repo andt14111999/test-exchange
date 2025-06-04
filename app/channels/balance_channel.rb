@@ -2,13 +2,12 @@
 
 class BalanceChannel < ApplicationCable::Channel
   def self.broadcast_to_user(user, data)
-    stream_name = "balance:user_#{user.id}"
-    ActionCable.server.broadcast(stream_name, data)
+    broadcast_to(user, data)
   end
 
   def subscribed
     if current_user
-      stream_from "balance:user_#{current_user.id}"
+      stream_for current_user
     else
       reject
     end

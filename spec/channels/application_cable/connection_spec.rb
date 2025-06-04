@@ -7,9 +7,7 @@ RSpec.describe ApplicationCable::Connection, type: :channel do
   let(:secret_key_base) { 'test_secret_key_base' }
 
   before do
-    allow(Rails.application).to receive(:credentials).and_return(
-      ActiveSupport::InheritableOptions.new(secret_key_base: secret_key_base)
-    )
+    allow(Rails.application).to receive(:secret_key_base).and_return(secret_key_base)
   end
 
   describe '#connect' do

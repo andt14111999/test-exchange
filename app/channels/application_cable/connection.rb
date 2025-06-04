@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module ApplicationCable
   class Connection < ActionCable::Connection::Base
     identified_by :current_user
@@ -24,18 +26,23 @@ module ApplicationCable
       begin
         payload = JWT.decode(
           token,
-          Rails.application.credentials.secret_key_base,
+          Rails.application.secret_key_base,
           true,
           { algorithm: 'HS256' }
         ).first
 
         user_id = payload['user_id']
         user = user_id && User.find_by(id: user_id)
-        return user if user
+
+        if user
+          return user
+        else
+          Rails.logger.error("ActionCable: User not found for id: #{user_id}")
+        end
       rescue JWT::DecodeError => e
-        Rails.logger.error("JWT decode error: #{e.message}")
+        Rails.logger.error("ActionCable: JWT decode error: #{e.message}")
       rescue StandardError => e
-        Rails.logger.error("Connection error: #{e.message}")
+        Rails.logger.error("ActionCable: Connection error: #{e.message}")
       end
 
       reject_unauthorized_connection
