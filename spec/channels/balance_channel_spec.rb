@@ -14,7 +14,7 @@ RSpec.describe BalanceChannel, type: :channel do
         subscribe
 
         expect(subscription).to be_confirmed
-        expect(subscription).to have_stream_from("balance:user_#{user.id}")
+        expect(subscription).to have_stream_from("balance:#{user.to_gid_param}")
       end
     end
 
