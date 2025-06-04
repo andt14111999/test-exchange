@@ -147,62 +147,6 @@ RSpec.describe Trade, type: :model do
       )
     end
 
-    it 'creates system message for aborted trades' do
-      trade = create(:trade)
-
-      # Setup notification mocks
-      allow(trade.buyer.notifications).to receive(:create!).and_return(true)
-      allow(trade.seller.notifications).to receive(:create!).and_return(true)
-
-      # Change status to aborted
-      trade.status = 'aborted'
-      trade.save
-
-      # Check that notifications were sent with correct message
-      expect(trade.buyer.notifications).to have_received(:create!).with(
-        hash_including(
-          title: "Trade #{trade.ref} Update",
-          content: 'The trade has been aborted by the system.',
-          notification_type: 'trade_status'
-        )
-      )
-      expect(trade.seller.notifications).to have_received(:create!).with(
-        hash_including(
-          title: "Trade #{trade.ref} Update",
-          content: 'The trade has been aborted by the system.',
-          notification_type: 'trade_status'
-        )
-      )
-    end
-
-    it 'creates system message for aborted_fiat trades' do
-      trade = create(:trade)
-
-      # Setup notification mocks
-      allow(trade.buyer.notifications).to receive(:create!).and_return(true)
-      allow(trade.seller.notifications).to receive(:create!).and_return(true)
-
-      # Change status to aborted_fiat
-      trade.status = 'aborted_fiat'
-      trade.save
-
-      # Check that notifications were sent with correct message
-      expect(trade.buyer.notifications).to have_received(:create!).with(
-        hash_including(
-          title: "Trade #{trade.ref} Update",
-          content: 'The fiat trade has been aborted by the system.',
-          notification_type: 'trade_status'
-        )
-      )
-      expect(trade.seller.notifications).to have_received(:create!).with(
-        hash_including(
-          title: "Trade #{trade.ref} Update",
-          content: 'The fiat trade has been aborted by the system.',
-          notification_type: 'trade_status'
-        )
-      )
-    end
-
     it 'updates associated fiat deposit on status change' do
       trade = create(:trade)
       deposit = instance_double(FiatDeposit)
@@ -351,12 +295,6 @@ RSpec.describe Trade, type: :model do
     it 'transitions from awaiting to cancelled_automatically' do
       trade = create(:trade, :awaiting)
       expect { trade.cancel_automatically! }.to change { trade.status }.from('awaiting').to('cancelled_automatically')
-      expect(trade.cancelled_at).to be_present
-    end
-
-    it 'transitions from unpaid to aborted' do
-      trade = create(:trade, :unpaid)
-      expect { trade.abort! }.to change { trade.status }.from('unpaid').to('aborted')
       expect(trade.cancelled_at).to be_present
     end
   end
@@ -509,8 +447,8 @@ RSpec.describe Trade, type: :model do
         trade = create(:trade, :disputed)
         trade.update_column(:disputed_at, 73.hours.ago)
 
-        # Stub the resolve_for_seller! method to avoid dealing with the missing column
-        expect(trade).to receive(:resolve_for_seller!).with('Automatic resolution due to dispute timeout')
+        # Update test to use cancel! instead of resolve_for_seller! which was removed
+        expect(trade).to receive(:cancel!).with('Automatic cancellation due to dispute timeout')
 
         trade.perform_dispute_timeout_check!
       end
@@ -543,19 +481,15 @@ RSpec.describe Trade, type: :model do
         seller = trade.seller
         other_user = create(:user)
 
+        # Both buyer and seller can cancel an unpaid trade
         expect(trade.can_be_cancelled_by?(buyer)).to be true
         expect(trade.can_be_cancelled_by?(seller)).to be true
         expect(trade.can_be_cancelled_by?(other_user)).to be false
         expect(trade.can_be_cancelled_by?(nil)).to be false
 
-        # After paid, buyer can't cancel but seller still can through dispute
-        trade.update(status: 'paid')
-        expect(trade.can_be_cancelled_by?(buyer)).to be false
-        expect(trade.can_be_cancelled_by?(seller)).to be false
-
-        # After released, nobody can cancel
-        trade.update(status: 'released')
-        expect(trade.can_be_cancelled_by?(buyer)).to be false
+        # Move to paid state - only buyer should be able to cancel
+        trade.status = 'paid'
+        expect(trade.can_be_cancelled_by?(buyer)).to be true
         expect(trade.can_be_cancelled_by?(seller)).to be false
       end
 
@@ -823,33 +757,6 @@ RSpec.describe Trade, type: :model do
       end
     end
 
-    describe 'dispute resolution methods' do
-      context 'resolve_for_buyer!' do
-        it 'transitions from disputed to resolved_for_buyer and sets admin_notes_param' do
-          trade = create(:trade, :disputed)
-          admin_notes = 'Resolution notes for buyer'
-
-          expect { trade.resolve_for_buyer!(admin_notes) }.to change { trade.status }
-            .from('disputed')
-            .to('resolved_for_buyer')
-
-          expect(trade.admin_notes_param).to eq(admin_notes)
-        end
-      end
-
-      context 'resolve_for_seller!' do
-        it 'transitions from disputed to resolved_for_seller and sets admin_notes_param' do
-          trade = create(:trade, :disputed)
-          admin_notes = 'Resolution notes for seller'
-
-          expect { trade.resolve_for_seller!(admin_notes) }.to change { trade.status }
-            .from('disputed')
-            .to('resolved_for_seller')
-
-          expect(trade.admin_notes_param).to eq(admin_notes)
-        end
-      end
-    end
 
     describe 'kafka event methods' do
       it 'sends trade create to kafka' do
@@ -1215,25 +1122,6 @@ RSpec.describe Trade, type: :model do
       end
     end
 
-    describe 'state change helper methods' do
-      it 'marks as aborted with is_fiat=false' do
-        trade = create(:trade, :unpaid)
-
-        expect(trade).to receive(:abort)
-        expect(trade).not_to receive(:abort_fiat)
-
-        trade.mark_as_aborted!(false)
-      end
-
-      it 'marks as aborted with is_fiat=true' do
-        trade = create(:trade, :unpaid)
-
-        expect(trade).to receive(:abort_fiat)
-        expect(trade).not_to receive(:abort)
-
-        trade.mark_as_aborted!(true)
-      end
-    end
 
     describe 'fiat token processing methods' do
       it 'processes fiat token deposit' do

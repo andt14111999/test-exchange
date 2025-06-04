@@ -461,34 +461,9 @@ RSpec.describe FiatDeposit, type: :model do
       trade = create(:trade, status: 'cancelled')
       deposit = create(:fiat_deposit, :ready, payable: trade, payable_type: 'Trade')
 
-      expect(deposit).to receive(:cancel!).with('Trade was cancelled or aborted').and_call_original
+      expect(deposit).to receive(:cancel!).with('Trade was cancelled').and_call_original
 
       expect { deposit.sync_with_trade_status! }.to change { deposit.status }.from('ready').to('cancelled')
-    end
-
-    it 'marks as verifying when trade is resolved for seller' do
-      trade = instance_double(Trade, status: 'resolved_for_seller')
-      deposit = create(:fiat_deposit, :ready)
-
-      allow(deposit).to receive_messages(payable_type: 'Trade', payable: trade, may_mark_as_verifying?: true)
-
-      expect(deposit).to receive(:mark_as_verifying!)
-
-      deposit.sync_with_trade_status!
-    end
-
-    it 'cancels deposit when trade is resolved for buyer' do
-      deposit = create(:fiat_deposit, :ready)
-
-      allow(deposit).to receive_messages(
-        payable_type: 'Trade',
-        payable: instance_double(Trade, status: 'resolved_for_buyer'),
-        may_cancel?: true
-      )
-
-      expect(deposit).to receive(:cancel!).with('Dispute resolved for buyer')
-
-      deposit.sync_with_trade_status!
     end
   end
 

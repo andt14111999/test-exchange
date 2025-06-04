@@ -241,14 +241,10 @@ class FiatDeposit < ApplicationRecord
       mark_as_ready! if may_mark_as_ready?
     when 'released'
       process! if may_process?
-    when 'cancelled', 'cancelled_automatically', 'aborted', 'aborted_fiat'
-      cancel!('Trade was cancelled or aborted') if may_cancel?
+    when 'cancelled', 'cancelled_automatically'
+      cancel!('Trade was cancelled') if may_cancel?
     when 'disputed'
       mark_as_locked!('Trade is under dispute') if may_mark_as_locked?
-    when 'resolved_for_buyer'
-      cancel!('Dispute resolved for buyer') if may_cancel?
-    when 'resolved_for_seller'
-      mark_as_verifying! if may_mark_as_verifying?
     end
   end
 

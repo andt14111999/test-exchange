@@ -160,7 +160,7 @@ RSpec.describe V1::Trades::Entity, type: :model do
                      payment_details: { 'bank_account' => '123456' },
                      payment_receipt_details: { 'transaction_id' => 'TX12345' },
                      dispute_reason: 'Payment not received',
-                     dispute_resolution: 'resolved_for_buyer',
+                     dispute_resolution: 'admin_intervention',
                      fee_ratio: 0.01,
                      coin_trading_fee: 0.05,
                      coin_amount: 0.05)

@@ -2,7 +2,7 @@
 
 class TradeService
   PENDING_STATUSES = %w[awaiting unpaid paid disputed].freeze
-  CLOSED_STATUSES = %w[released cancelled cancelled_automatically aborted aborted_fiat].freeze
+  CLOSED_STATUSES = %w[released cancelled cancelled_automatically].freeze
   SCORABLE_STATUSES = %w[released cancelled disputed].freeze
 
   def initialize(trade)

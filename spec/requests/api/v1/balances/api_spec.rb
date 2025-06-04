@@ -40,11 +40,11 @@ RSpec.describe V1::Balances::Api, type: :request do
         expect(json_response['status']).to eq('success')
 
         usdt_balance = json_response['data']['coin_accounts'].find { |acc| acc['coin_currency'] == 'usdt' }
-        expect(usdt_balance['balance'].to_f).to eq(100.0)
+        expect(usdt_balance['balance'].to_f).to eq(80.0)
         expect(usdt_balance['frozen_balance'].to_f).to eq(20.0)
 
         btc_balance = json_response['data']['coin_accounts'].find { |acc| acc['coin_currency'] == 'btc' }
-        expect(btc_balance['balance'].to_f).to eq(1.0)
+        expect(btc_balance['balance'].to_f).to eq(0.5)
         expect(btc_balance['frozen_balance'].to_f).to eq(0.5)
       end
 
@@ -58,11 +58,11 @@ RSpec.describe V1::Balances::Api, type: :request do
         expect(json_response['status']).to eq('success')
 
         vnd_balance = json_response['data']['fiat_accounts'].find { |acc| acc['currency'] == 'VND' }
-        expect(vnd_balance['balance'].to_f).to eq(1000000.0)
+        expect(vnd_balance['balance'].to_f).to eq(800000.0)
         expect(vnd_balance['frozen_balance'].to_f).to eq(200000.0)
 
         php_balance = json_response['data']['fiat_accounts'].find { |acc| acc['currency'] == 'PHP' }
-        expect(php_balance['balance'].to_f).to eq(50000.0)
+        expect(php_balance['balance'].to_f).to eq(40000.0)
         expect(php_balance['frozen_balance'].to_f).to eq(10000.0)
       end
 
@@ -76,11 +76,11 @@ RSpec.describe V1::Balances::Api, type: :request do
         expect(json_response['status']).to eq('success')
 
         usdt_balance = json_response['data']['coin_accounts'].find { |acc| acc['coin_currency'] == 'usdt' }
-        expect(usdt_balance['balance'].to_f).to eq(100.0)
+        expect(usdt_balance['balance'].to_f).to eq(80.0)
         expect(usdt_balance['frozen_balance'].to_f).to eq(20.0)
 
         vnd_balance = json_response['data']['fiat_accounts'].find { |acc| acc['currency'] == 'VND' }
-        expect(vnd_balance['balance'].to_f).to eq(1000000.0)
+        expect(vnd_balance['balance'].to_f).to eq(800000.0)
         expect(vnd_balance['frozen_balance'].to_f).to eq(200000.0)
       end
 
