@@ -45,6 +45,7 @@ class Trade < ApplicationRecord
   after_save :create_system_message_on_status_change, if: :saved_change_to_status?
   after_save :update_associated_fiat_deposit, if: :saved_change_to_status?
   after_save :update_associated_fiat_withdrawal, if: :saved_change_to_status?
+  after_save :broadcast_trade_update, if: :saved_change_to_status?
 
   attr_accessor :dispute_reason_param, :admin_notes_param, :is_automatic
 
@@ -585,5 +586,9 @@ class Trade < ApplicationRecord
     if withdrawal.present?
       withdrawal.sync_with_trade_status!
     end
+  end
+
+  def broadcast_trade_update
+    TradeBroadcastService.call(self)
   end
 end
