@@ -11,7 +11,7 @@ RSpec.describe TradeService, type: :model do
   describe 'constants' do
     it 'defines status constants' do
       expect(TradeService::PENDING_STATUSES).to eq(%w[awaiting unpaid paid disputed])
-      expect(TradeService::CLOSED_STATUSES).to eq(%w[released cancelled cancelled_automatically aborted aborted_fiat])
+      expect(TradeService::CLOSED_STATUSES).to eq(%w[released cancelled cancelled_automatically])
       expect(TradeService::SCORABLE_STATUSES).to eq(%w[released cancelled disputed])
     end
   end

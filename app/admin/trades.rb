@@ -43,7 +43,6 @@ ActiveAdmin.register Trade do
         span { link_to 'Cancel Trade', cancel_trade_admin_trade_path(trade), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to cancel this trade?' } }
         span { link_to 'Release Trade', release_trade_admin_trade_path(trade), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to release this trade?' } }
       end
-      span { link_to 'Mark as Aborted', abort_admin_trade_path(trade), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to abort this trade?' } }
       span { link_to 'Add Admin Message', new_admin_message_path(trade_id: trade.id), class: 'button' }
     end
   end
@@ -123,7 +122,6 @@ ActiveAdmin.register Trade do
           span { link_to 'Cancel Trade', cancel_trade_admin_trade_path(resource), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to cancel this trade?' } }
           span { link_to 'Release Trade', release_trade_admin_trade_path(resource), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to release this trade?' } }
         end
-        span { link_to 'Mark as Aborted', abort_admin_trade_path(resource), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to abort this trade?' } }
         span { link_to 'Add Admin Message', new_admin_message_path(trade_id: resource.id), class: 'button' }
       end
     end
@@ -146,11 +144,6 @@ ActiveAdmin.register Trade do
   member_action :release_trade, method: :post do
     resource.send_trade_complete_to_kafka
     redirect_to resource_path, notice: 'Trade released successfully'
-  end
-
-  member_action :abort, method: :post do
-    resource.mark_as_aborted!
-    redirect_to resource_path, notice: 'Trade marked as aborted'
   end
 
   controller do

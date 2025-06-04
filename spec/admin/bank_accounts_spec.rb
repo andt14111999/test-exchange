@@ -298,7 +298,7 @@ RSpec.describe 'Admin::BankAccounts', type: :request do
       get edit_admin_bank_account_path(bank_account)
 
       expect(response.body).to include(bank_account.bank_name)
-      expect(response.body).to include(bank_account.account_name)
+      expect(response.body).to include(CGI.escapeHTML(bank_account.account_name))
       expect(response.body).to include(bank_account.account_number)
       expect(response.body).to include(bank_account.country_code)
       expect(response.body).to include('value="' + (bank_account.branch || '').to_s + '"')

@@ -20,14 +20,14 @@ RSpec.describe V1::Balances::Api, type: :request do
     context 'when the user has balances' do
       before do
         # Create coin accounts
-        usdt_account = create(:coin_account, :usdt_main, user: user, balance: 123.456789, frozen_balance: 10.123456)
+        usdt_account = create(:coin_account, :usdt_main, user: user, balance: 133.580245, frozen_balance: 10.123456) # available_balance = 123.456789
 
         # Create fiat accounts
-        vnd_account = create(:fiat_account, :vnd, user: user, balance: 500000.789, frozen_balance: 100000.123)
-        php_account = create(:fiat_account, :php, user: user, balance: 1000.789, frozen_balance: 200.123)
-        ngn_account = create(:fiat_account, :ngn, user: user, balance: 5000.789, frozen_balance: 1000.123)
+        vnd_account = create(:fiat_account, :vnd, user: user, balance: 600000.912, frozen_balance: 100000.123) # available_balance = 500000.789
+        php_account = create(:fiat_account, :php, user: user, balance: 1200.912, frozen_balance: 200.123) # available_balance = 1000.789
+        ngn_account = create(:fiat_account, :ngn, user: user, balance: 6000.912, frozen_balance: 1000.123) # available_balance = 5000.789
 
-        # Mock find calls for accounts - fix RSpec/MessageChain and RSpec/VerifiedDoubleReference
+        # Mock find calls for accounts
         coin_scope = double('CoinScope')
         allow(user.coin_accounts).to receive(:of_coin).with('usdt').and_return(coin_scope)
         allow(coin_scope).to receive(:main).and_return(usdt_account)
@@ -67,7 +67,7 @@ RSpec.describe V1::Balances::Api, type: :request do
 
     context 'when a user has no accounts' do
       before do
-        # Mock for no accounts - fix RSpec/MessageChain and RSpec/VerifiedDoubleReference
+        # Mock for no accounts
         coin_scope = double('CoinScope')
         allow(user.coin_accounts).to receive(:of_coin).with('usdt').and_return(coin_scope)
         allow(coin_scope).to receive(:main).and_return(nil)
@@ -96,12 +96,65 @@ RSpec.describe V1::Balances::Api, type: :request do
         end
       end
     end
+
+    context 'when user is authenticated' do
+      before do
+        usdt_account = create(:coin_account, :usdt_main, user: user, balance: 90.0, frozen_balance: 10.0) # available_balance = 80.0
+        vnd_account = create(:fiat_account, :vnd, user: user, balance: 900000.0, frozen_balance: 100000.0) # available_balance = 800000.0
+        php_account = create(:fiat_account, :php, user: user, balance: 0.0, frozen_balance: 0.0)
+        ngn_account = create(:fiat_account, :ngn, user: user, balance: 0.0, frozen_balance: 0.0)
+
+        coin_scope = double('CoinScope')
+        allow(user.coin_accounts).to receive(:of_coin).with('usdt').and_return(coin_scope)
+        allow(coin_scope).to receive(:main).and_return(usdt_account)
+
+        allow(user.fiat_accounts).to receive(:find_by).with(currency: 'vnd').and_return(vnd_account)
+        allow(user.fiat_accounts).to receive(:find_by).with(currency: 'php').and_return(php_account)
+        allow(user.fiat_accounts).to receive(:find_by).with(currency: 'ngn').and_return(ngn_account)
+      end
+
+      it 'returns correct balances for user with coin accounts' do
+        get '/api/v1/balances', headers: auth_headers
+
+        expect(response).to have_http_status(:success)
+        json = JSON.parse(response.body)
+
+        usdt_balance = json['data']['coin_accounts'].find { |a| a['coin_currency'] == 'usdt' }
+        expect(usdt_balance['balance'].to_f).to eq(80.0)
+        expect(usdt_balance['frozen_balance'].to_f).to eq(10.0)
+      end
+
+      it 'returns correct balances for user with fiat accounts' do
+        get '/api/v1/balances', headers: auth_headers
+
+        expect(response).to have_http_status(:success)
+        json = JSON.parse(response.body)
+
+        vnd_balance = json['data']['fiat_accounts'].find { |a| a['currency'] == 'vnd' }
+        expect(vnd_balance['balance'].to_f).to eq(800000.0)
+        expect(vnd_balance['frozen_balance'].to_f).to eq(100000.0)
+      end
+
+      it 'returns correct balances for user with both coin and fiat accounts' do
+        get '/api/v1/balances', headers: auth_headers
+
+        expect(response).to have_http_status(:success)
+        json = JSON.parse(response.body)
+
+        usdt_balance = json['data']['coin_accounts'].find { |a| a['coin_currency'] == 'usdt' }
+        expect(usdt_balance['balance'].to_f).to eq(80.0)
+        expect(usdt_balance['frozen_balance'].to_f).to eq(10.0)
+
+        vnd_balance = json['data']['fiat_accounts'].find { |a| a['currency'] == 'vnd' }
+        expect(vnd_balance['balance'].to_f).to eq(800000.0)
+        expect(vnd_balance['frozen_balance'].to_f).to eq(100000.0)
+      end
+    end
   end
 
   private
 
   def generate_token_for(user)
-    # Mô phỏng việc tạo token, nhưng thực sự không cần thiết vì chúng ta đã mock authenticate_jwt!
     'mock_token'
   end
 end

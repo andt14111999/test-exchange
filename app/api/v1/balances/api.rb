@@ -17,7 +17,7 @@ module V1
 
               {
                 coin_currency: coin_currency,
-                balance: (main_account&.balance || 0).round(decimal),
+                balance: (main_account&.available_balance || 0).round(decimal),
                 frozen_balance: (main_account&.frozen_balance || 0).round(decimal)
               }
             end,
@@ -27,7 +27,7 @@ module V1
 
               {
                 currency: currency,
-                balance: (account&.balance || 0).round(decimal),
+                balance: (account&.available_balance || 0).round(decimal),
                 frozen_balance: (account&.frozen_balance || 0).round(decimal)
               }
             end

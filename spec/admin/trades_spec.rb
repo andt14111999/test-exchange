@@ -203,7 +203,6 @@ RSpec.describe 'Admin::Trades', type: :system do
         # Since the trade is in disputed status, it should show the resolution buttons
         expect(page).to have_link('Cancel Trade')
         expect(page).to have_link('Release Trade')
-        expect(page).to have_link('Mark as Aborted')
         expect(page).to have_link('Add Admin Message')
       end
     end
@@ -280,25 +279,6 @@ RSpec.describe 'Admin::Trades', type: :system do
         # Check for redirect to the trade page
         expect(response).to redirect_to("/admin/trades/#{trade.id}")
         expect(flash[:notice]).to eq('Trade released successfully')
-      end
-    end
-
-    describe 'POST abort' do
-      it 'calls mark_as_aborted! on the trade' do
-        admin_user = create(:admin_user, :admin)
-        trade = create(:trade, :disputed)
-
-        sign_in admin_user
-
-        # Expect the trade to receive the mark_as_aborted! method
-        expect_any_instance_of(Trade).to receive(:mark_as_aborted!)
-          .and_return(true)
-
-        post "/admin/trades/#{trade.id}/abort"
-
-        # Check for redirect to the trade page
-        expect(response).to redirect_to("/admin/trades/#{trade.id}")
-        expect(flash[:notice]).to eq('Trade marked as aborted')
       end
     end
   end

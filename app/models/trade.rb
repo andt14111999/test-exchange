@@ -11,9 +11,9 @@ class Trade < ApplicationRecord
   has_one :fiat_withdrawal, as: :withdrawable, dependent: :nullify
 
   TAKER_SIDES = %w[buy sell].freeze
-  STATUSES = %w[awaiting unpaid paid disputed resolved_for_buyer resolved_for_seller released cancelled cancelled_automatically aborted aborted_fiat].freeze
+  STATUSES = %w[awaiting unpaid paid disputed released cancelled cancelled_automatically].freeze
   PAYMENT_PROOF_STATUSES = %w[legit fake spam].freeze
-  DISPUTE_RESOLUTIONS = %w[pending resolved_for_buyer resolved_for_seller admin_intervention].freeze
+  DISPUTE_RESOLUTIONS = %w[pending admin_intervention].freeze
   TIMEOUT_MINUTES = 15
 
   validates :ref, presence: true, uniqueness: true
@@ -58,12 +58,6 @@ class Trade < ApplicationRecord
     state :released
     state :cancelled
     state :cancelled_automatically
-    state :aborted
-    state :aborted_fiat
-
-    # Dispute resolution states
-    state :resolved_for_buyer
-    state :resolved_for_seller
 
     # Normal trade flow
     event :mark_as_unpaid do
@@ -81,37 +75,18 @@ class Trade < ApplicationRecord
     end
 
     event :mark_as_released do
-      transitions from: [ :paid, :disputed, :resolved_for_seller ], to: :released,
+      transitions from: [ :paid, :disputed ], to: :released,
                  after: :set_released_timestamp
     end
 
     event :cancel do
-      transitions from: [ :awaiting, :unpaid, :disputed ], to: :cancelled,
+      transitions from: [ :awaiting, :unpaid, :paid, :disputed ], to: :cancelled,
                  after: :set_cancelled_timestamp
     end
 
     event :cancel_automatically do
       transitions from: [ :awaiting, :unpaid ], to: :cancelled_automatically,
                  after: :set_cancelled_timestamp
-    end
-
-    event :abort do
-      transitions from: [ :awaiting, :unpaid, :paid, :disputed ], to: :aborted,
-                 after: :set_cancelled_timestamp
-    end
-
-    event :abort_fiat do
-      transitions from: [ :awaiting, :unpaid, :paid, :disputed ], to: :aborted_fiat,
-                 after: :set_cancelled_timestamp
-    end
-
-    # Dispute resolution flow
-    event :resolve_for_buyer do
-      transitions from: [ :disputed ], to: :resolved_for_buyer
-    end
-
-    event :resolve_for_seller do
-      transitions from: [ :disputed ], to: :resolved_for_seller
     end
   end
 
@@ -120,13 +95,9 @@ class Trade < ApplicationRecord
   scope :unpaid, -> { where(status: 'unpaid') }
   scope :paid, -> { where(status: 'paid') }
   scope :disputed, -> { where(status: 'disputed') }
-  scope :resolved_for_buyer, -> { where(status: 'resolved_for_buyer') }
-  scope :resolved_for_seller, -> { where(status: 'resolved_for_seller') }
   scope :released, -> { where(status: 'released') }
   scope :cancelled, -> { where(status: 'cancelled') }
   scope :cancelled_automatically, -> { where(status: 'cancelled_automatically') }
-  scope :aborted, -> { where(status: 'aborted') }
-  scope :aborted_fiat, -> { where(status: 'aborted_fiat') }
   scope :in_progress, -> { where(status: %w[awaiting unpaid paid disputed]) }
   scope :in_dispute, -> { where(status: 'disputed') }
   scope :needs_admin_intervention, -> { disputed.where('disputed_at < ?', 24.hours.ago) }
@@ -231,24 +202,6 @@ class Trade < ApplicationRecord
     expired_at && Time.zone.now > expired_at
   end
 
-  def mark_as_aborted!(is_fiat = false)
-    if is_fiat
-      abort_fiat
-    else
-      abort
-    end
-  end
-
-  def resolve_for_buyer!(admin_notes = nil)
-    self.admin_notes_param = admin_notes
-    resolve_for_buyer
-  end
-
-  def resolve_for_seller!(admin_notes = nil)
-    self.admin_notes_param = admin_notes
-    resolve_for_seller
-  end
-
   def mark_as_admin_intervention!(admin_notes = nil)
     update!(
       dispute_resolution: 'admin_intervention',
@@ -269,9 +222,8 @@ class Trade < ApplicationRecord
     return unless disputed?
     return unless disputed_at < 72.hours.ago
 
-    # If dispute expires, automatically resolve for seller
-    # This can be configured differently based on your business rules
-    resolve_for_seller!('Automatic resolution due to dispute timeout')
+    # If dispute expires, automatically cancel the trade
+    cancel!('Automatic cancellation due to dispute timeout')
   end
 
   def add_payment_proof!(receipt_details)
@@ -288,11 +240,8 @@ class Trade < ApplicationRecord
   def can_be_cancelled_by?(user)
     # Return false if user is nil
     return false if user.nil?
-
     return false if released? || cancelled? || cancelled_automatically?
-
-    # Buyer can cancel only if not paid
-    return true if user.id == buyer_id && !paid?
+    return true if user.id == buyer_id
 
     # Seller can cancel only if awaiting or unpaid
     return true if user.id == seller_id && (awaiting? || unpaid?)
@@ -606,14 +555,6 @@ class Trade < ApplicationRecord
                 'The trade has been cancelled.'
     when 'cancelled_automatically'
                 'The trade has been automatically cancelled due to timeout.'
-    when 'resolved_for_buyer'
-                "The dispute has been resolved for the buyer. #{admin_notes}"
-    when 'resolved_for_seller'
-                "The dispute has been resolved for the seller. #{admin_notes}"
-    when 'aborted'
-                'The trade has been aborted by the system.'
-    when 'aborted_fiat'
-                'The fiat trade has been aborted by the system.'
     end
 
     notify_users_of_status_change(message) if message.present?
