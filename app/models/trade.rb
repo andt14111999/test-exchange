@@ -512,9 +512,7 @@ class Trade < ApplicationRecord
   end
 
   def generate_ref
-    Rails.logger.info "Generating ref for trade. Current ref: #{ref}"
     self.ref ||= "T#{Time.zone.now.strftime('%Y%m%d')}#{SecureRandom.hex(4).upcase}"
-    Rails.logger.info "Generated new ref: #{ref}"
   end
 
   def generate_trade_memo
