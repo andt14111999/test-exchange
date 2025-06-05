@@ -17,7 +17,6 @@
 //   .status_tag { background: #6090DB; }
 body.active_admin {
   .status_tag {
-
     &.blue,
     &.deposit_received {
       background: #63b8ff;
@@ -73,7 +72,7 @@ body.active_admin {
     }
 
     &.light-yellow,
-    &.running{
+    &.running {
       background: #fdd466;
     }
 
@@ -163,6 +162,22 @@ body.active_admin {
       margin: 1px 2px 1px 0;
       text-align: center;
     }
+
+    &.pending {
+      background: #f0ad4e;
+    }
+
+    &.processed {
+      background: #5cb85c;
+    }
+
+    &.failed {
+      background: #d9534f;
+    }
+
+    &.ok {
+      background: #5cb85c;
+    }
   }
 
   .max-400 {
@@ -228,7 +243,6 @@ body.active_admin {
   }
 
   li.has-error {
-
     input[type="text"],
     input[type="password"],
     input[type="email"],
@@ -367,7 +381,7 @@ body.active_admin {
 
   .panel_contents {
     table {
-      >tfoot {
+      > tfoot {
         tr {
           td {
             font-weight: bold;
@@ -482,7 +496,6 @@ body.active_admin {
 }
 
 body.active_admin {
-
   .hide-column-default,
   .hide-default {
     display: none;
@@ -585,7 +598,7 @@ ul.has-comment {
   font-size: 0.9em;
   padding-left: 0;
   text-transform: uppercase;
-  color: #5E6469;
+  color: #5e6469;
 }
 
 .panel-flex-space {
