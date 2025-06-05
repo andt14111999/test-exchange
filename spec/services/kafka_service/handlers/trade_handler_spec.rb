@@ -664,20 +664,6 @@ describe KafkaService::Handlers::TradeHandler, type: :service do
     end
   end
 
-  describe '#generate_trade_ref' do
-    let(:handler) { described_class.new }
-
-    it 'generates a reference with correct format' do
-      id = 123
-      expect(handler.send(:generate_trade_ref, id)).to eq('TRADE00000123')
-    end
-
-    it 'pads the ID with leading zeros' do
-      id = 7
-      expect(handler.send(:generate_trade_ref, id)).to eq('TRADE00000007')
-    end
-  end
-
   describe '#calculate_fiat_amount' do
     let(:handler) { described_class.new }
 

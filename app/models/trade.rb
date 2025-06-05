@@ -16,7 +16,7 @@ class Trade < ApplicationRecord
   DISPUTE_RESOLUTIONS = %w[pending admin_intervention].freeze
   TIMEOUT_MINUTES = 15
 
-  validates :ref, presence: true, uniqueness: true
+  validates :ref, presence: true, uniqueness: true, format: { with: /\AT\d{8}[A-F0-9]{8}\z/, message: 'must be in format TYYYYMMDDXXXX where XXXX is hex' }
   validates :buyer_id, presence: true
   validates :seller_id, presence: true
   validates :offer_id, presence: true
@@ -512,7 +512,9 @@ class Trade < ApplicationRecord
   end
 
   def generate_ref
+    Rails.logger.info "Generating ref for trade. Current ref: #{ref}"
     self.ref ||= "T#{Time.zone.now.strftime('%Y%m%d')}#{SecureRandom.hex(4).upcase}"
+    Rails.logger.info "Generated new ref: #{ref}"
   end
 
   def generate_trade_memo
