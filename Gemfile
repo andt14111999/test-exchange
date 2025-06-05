@@ -103,7 +103,7 @@ gem 'strong_migrations'       # Safe database migrations
 gem 'json', '~> 2.12.2'
 gem 'net-imap', '~> 0.5.8'
 gem 'nokogiri', '>= 1.18.8'
-gem 'rack', '>= 3.1.12'
+gem 'rack', '>= 3.1.16'
 gem 'rack-session', '>= 2.1.1'
 gem 'uri', '>= 1.0.3'
 
