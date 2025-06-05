@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_05_27_054025) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -453,6 +453,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_27_054025) do
     t.index ["user_id", "status"], name: "index_fiat_withdrawals_on_user_id_and_status"
     t.index ["user_id"], name: "index_fiat_withdrawals_on_user_id"
     t.index ["withdrawable_type", "withdrawable_id"], name: "idx_on_withdrawable_type_withdrawable_id_a5955e33f7"
+  end
+
+  create_table "kafka_events", force: :cascade do |t|
+    t.string "event_id", null: false
+    t.string "topic_name", null: false
+    t.jsonb "payload"
+    t.datetime "processed_at"
+    t.string "status"
+    t.string "error_message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_id", "topic_name"], name: "index_kafka_events_on_event_id_and_topic_name", unique: true
+    t.index ["status"], name: "index_kafka_events_on_status"
   end
 
   create_table "merchant_escrow_operations", force: :cascade do |t|
