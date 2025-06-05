@@ -183,10 +183,6 @@ module KafkaService
         end
       end
 
-      def generate_trade_ref(id)
-        "TRADE#{id.to_s.rjust(8, '0')}"
-      end
-
       def calculate_fiat_amount(coin_amount, price)
         coin_amount * price
       end
@@ -215,7 +211,6 @@ module KafkaService
         # Create or find trade
         trade = Trade.find_or_initialize_by(id: id)
         trade.assign_attributes(
-          ref: generate_trade_ref(id),
           buyer_id: buyer_id,
           seller_id: seller_id,
           offer_id: offer.id,
