@@ -65,5 +65,17 @@ ActiveAdmin.register BalanceLockOperation do
         column :created_at
       end
     end
+
+    panel 'Related Fiat Transactions' do
+      table_for balance_lock_operation.fiat_transactions do
+        column :id do |transaction|
+          link_to transaction.id, admin_fiat_transaction_path(transaction)
+        end
+        column :currency
+        column :amount
+        tag_column :transaction_type
+        column :created_at
+      end
+    end
   end
 end

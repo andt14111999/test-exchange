@@ -101,12 +101,21 @@ class BalanceLock < ApplicationRecord
   end
 
   def send_event_balance_lock_to_kafka
-    account_keys = user.coin_accounts.map do |coin_account|
+    coin_account_keys = user.coin_accounts.map do |coin_account|
       KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
         user_id: user_id,
         account_id: coin_account.id
       )
     end
+
+    fiat_account_keys = user.fiat_accounts.map do |fiat_account|
+      KafkaService::Services::AccountKeyBuilderService.build_fiat_account_key(
+        user_id: user_id,
+        account_id: fiat_account.id
+      )
+    end
+
+    account_keys = coin_account_keys + fiat_account_keys
 
     KafkaService::Services::Coin::BalanceLockService.new.create(
       account_keys: account_keys,

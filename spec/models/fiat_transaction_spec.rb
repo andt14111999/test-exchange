@@ -25,10 +25,10 @@ describe FiatTransaction, type: :model do
       expect(fiat_transaction.errors[:amount]).to include("can't be blank")
     end
 
-    it 'validates amount is greater than 0' do
+    it 'validates amount is other than 0' do
       fiat_transaction = build(:fiat_transaction, amount: 0)
       expect(fiat_transaction).to be_invalid
-      expect(fiat_transaction.errors[:amount]).to include('must be greater than 0')
+      expect(fiat_transaction.errors[:amount]).to include('must be other than 0')
     end
 
     it 'validates presence of transaction_type' do

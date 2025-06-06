@@ -4,11 +4,11 @@ class FiatTransaction < ApplicationRecord
   belongs_to :fiat_account
   belongs_to :operation, polymorphic: true, optional: true
 
-  validates :amount, presence: true, numericality: { greater_than: 0 }
+  validates :amount, presence: true, numericality: { other_than: 0 }
   validates :transaction_type, presence: true
   validates :currency, presence: true
 
-  TRANSACTION_TYPES = %w[mint burn deposit withdrawal transfer refund].freeze
+  TRANSACTION_TYPES = %w[mint burn deposit withdrawal transfer refund lock unlock].freeze
   STATUSES = %w[pending completed failed cancelled].freeze
 
   validates :transaction_type, inclusion: { in: TRANSACTION_TYPES }

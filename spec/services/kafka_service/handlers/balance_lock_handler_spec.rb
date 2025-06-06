@@ -163,7 +163,7 @@ RSpec.describe KafkaService::Handlers::BalanceLockHandler, type: :service do
       expect(handler.send(:parse_locked_balances, {})).to eq({})
     end
 
-    it 'parses account keys to coin currencies' do
+    it 'parses coin account keys to coin currencies' do
       user = create(:user)
       coin_account = create(:coin_account, coin_currency: 'usdt', user: user)
 
@@ -175,8 +175,53 @@ RSpec.describe KafkaService::Handlers::BalanceLockHandler, type: :service do
       expect(result).to eq({ 'usdt' => '100.0' })
     end
 
+    it 'parses fiat account keys to fiat currencies' do
+      user = create(:user)
+      fiat_account = create(:fiat_account, currency: 'VND', user: user)
+
+      # Format should be {user_id}-fiat-{fiat_account_id}
+      account_key = "#{user.id}-fiat-#{fiat_account.id}"
+      input_balances = { account_key => '50000.0' }
+
+      result = handler.send(:parse_locked_balances, input_balances)
+      expect(result).to eq({ 'VND' => '50000.0' })
+    end
+
+    it 'parses mixed coin and fiat account keys' do
+      user = create(:user)
+      coin_account = create(:coin_account, coin_currency: 'usdt', user: user)
+      fiat_account = create(:fiat_account, currency: 'VND', user: user)
+
+      coin_account_key = "#{user.id}-coin-#{coin_account.id}"
+      fiat_account_key = "#{user.id}-fiat-#{fiat_account.id}"
+
+      input_balances = {
+        coin_account_key => '100.0',
+        fiat_account_key => '50000.0'
+      }
+
+      result = handler.send(:parse_locked_balances, input_balances)
+      expect(result).to eq({ 'usdt' => '100.0', 'VND' => '50000.0' })
+    end
+
     it 'falls back to account key if coin account not found' do
       account_key = "123-coin-999" # Non-existent account
+      input_balances = { account_key => '100.0' }
+
+      result = handler.send(:parse_locked_balances, input_balances)
+      expect(result).to eq({ account_key => '100.0' })
+    end
+
+    it 'falls back to account key if fiat account not found' do
+      account_key = "123-fiat-999" # Non-existent account
+      input_balances = { account_key => '50000.0' }
+
+      result = handler.send(:parse_locked_balances, input_balances)
+      expect(result).to eq({ account_key => '50000.0' })
+    end
+
+    it 'falls back to account key for unknown account types' do
+      account_key = "123-unknown-999" # Unknown account type
       input_balances = { account_key => '100.0' }
 
       result = handler.send(:parse_locked_balances, input_balances)
