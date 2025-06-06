@@ -42,10 +42,17 @@ module KafkaService
       def parse_locked_balances(locked_balances)
         result = {}
         locked_balances.each do |account_key, amount|
-          _, _, coin_account_id = account_key.split('-')
-          coin_account = CoinAccount.find_by(id: coin_account_id)
+          _, account_type, account_id = account_key.split('-')
 
-          result[coin_account&.coin_currency || account_key] = amount
+          if account_type == 'coin'
+            coin_account = CoinAccount.find_by(id: account_id)
+            result[coin_account&.coin_currency || account_key] = amount
+          elsif account_type == 'fiat'
+            fiat_account = FiatAccount.find_by(id: account_id)
+            result[fiat_account&.currency || account_key] = amount
+          else
+            result[account_key] = amount
+          end
         end
         result
       end

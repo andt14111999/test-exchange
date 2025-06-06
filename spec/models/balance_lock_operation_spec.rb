@@ -6,6 +6,7 @@ RSpec.describe BalanceLockOperation, type: :model do
   describe 'associations' do
     it { is_expected.to belong_to(:balance_lock) }
     it { is_expected.to have_many(:coin_transactions).dependent(:destroy) }
+    it { is_expected.to have_many(:fiat_transactions).dependent(:destroy) }
   end
 
   describe 'validations' do
@@ -175,7 +176,7 @@ RSpec.describe BalanceLockOperation, type: :model do
 
   describe 'private methods' do
     describe '#lock_user_balances' do
-      it 'creates coin transactions for each locked balance' do
+      it 'creates coin transactions for each locked coin balance' do
         # Create the necessary accounts
         user = create(:user)
         usdt_account = create(:coin_account, :usdt_main, user: user, balance: 200.0, frozen_balance: 0)
@@ -198,8 +199,8 @@ RSpec.describe BalanceLockOperation, type: :model do
         allow(operation.user).to receive(:coin_accounts).and_return(coin_accounts)
         allow(coin_accounts).to receive(:of_coin).with('usdt').and_return(usdt_scope)
         allow(coin_accounts).to receive(:of_coin).with('btc').and_return(btc_scope)
-        allow(usdt_scope).to receive(:main).and_return(usdt_account)
-        allow(btc_scope).to receive(:main).and_return(btc_account)
+        allow(usdt_scope).to receive(:first).and_return(usdt_account)
+        allow(btc_scope).to receive(:first).and_return(btc_account)
 
         # Create stubs for the transaction creation
         expect(operation.coin_transactions).to receive(:create!).with(
@@ -223,10 +224,115 @@ RSpec.describe BalanceLockOperation, type: :model do
         # Call the private method
         operation.send(:lock_user_balances)
       end
+
+      it 'creates fiat transactions for each locked fiat balance' do
+        # Create the necessary accounts
+        user = create(:user)
+        vnd_account = create(:fiat_account, currency: 'VND', user: user, balance: 10000.0, frozen_balance: 0)
+        php_account = create(:fiat_account, currency: 'PHP', user: user, balance: 5000.0, frozen_balance: 0)
+
+        # Create a balance lock with fiat balances
+        balance_lock = create(:balance_lock, user: user, locked_balances: { 'VND' => '5000.0', 'PHP' => '2500.0' })
+
+        # Skip auto process
+        allow_any_instance_of(described_class).to receive(:auto_process!)
+
+        # Create the operation
+        operation = create(:balance_lock_operation, balance_lock: balance_lock, operation_type: 'lock')
+
+        # Stub the method chain for fiat accounts
+        fiat_accounts = double('fiat_accounts')
+        vnd_scope = double('vnd_scope')
+        php_scope = double('php_scope')
+
+        coin_accounts_stub = double('coin_accounts')
+        allow(coin_accounts_stub).to receive(:of_coin).and_return(double('empty_scope', first: nil))
+        allow(operation.user).to receive_messages(coin_accounts: coin_accounts_stub, fiat_accounts: fiat_accounts)
+        allow(fiat_accounts).to receive(:of_currency).with('VND').and_return(vnd_scope)
+        allow(fiat_accounts).to receive(:of_currency).with('PHP').and_return(php_scope)
+        allow(vnd_scope).to receive(:first).and_return(vnd_account)
+        allow(php_scope).to receive(:first).and_return(php_account)
+
+        # Create stubs for the transaction creation
+        expect(operation.fiat_transactions).to receive(:create!).with(
+          hash_including(
+            amount: -5000.0,
+            currency: 'VND',
+            fiat_account: vnd_account,
+            transaction_type: 'lock'
+          )
+        )
+
+        expect(operation.fiat_transactions).to receive(:create!).with(
+          hash_including(
+            amount: -2500.0,
+            currency: 'PHP',
+            fiat_account: php_account,
+            transaction_type: 'lock'
+          )
+        )
+
+        # Call the private method
+        operation.send(:lock_user_balances)
+      end
+
+      it 'creates both coin and fiat transactions for mixed balances' do
+        # Create the necessary accounts
+        user = create(:user)
+        usdt_account = create(:coin_account, :usdt_main, user: user, balance: 200.0, frozen_balance: 0)
+        vnd_account = create(:fiat_account, currency: 'VND', user: user, balance: 10000.0, frozen_balance: 0)
+
+        # Create a balance lock with mixed balances
+        balance_lock = create(:balance_lock, user: user, locked_balances: { 'usdt' => '100.0', 'VND' => '5000.0' })
+
+        # Skip auto process
+        allow_any_instance_of(described_class).to receive(:auto_process!)
+
+        # Create the operation
+        operation = create(:balance_lock_operation, balance_lock: balance_lock, operation_type: 'lock')
+
+        # Stub the method chains
+        coin_accounts = double('coin_accounts')
+        usdt_scope = double('usdt_scope')
+        vnd_coin_scope = double('vnd_coin_scope')
+        fiat_accounts = double('fiat_accounts')
+        vnd_fiat_scope = double('vnd_fiat_scope')
+
+        allow(coin_accounts).to receive(:of_coin).with('usdt').and_return(usdt_scope)
+        allow(coin_accounts).to receive(:of_coin).with('VND').and_return(vnd_coin_scope)
+        allow(usdt_scope).to receive(:first).and_return(usdt_account)
+        allow(vnd_coin_scope).to receive(:first).and_return(nil) # No VND coin account
+
+        allow(operation.user).to receive_messages(coin_accounts: coin_accounts, fiat_accounts: fiat_accounts)
+        allow(fiat_accounts).to receive(:of_currency).with('VND').and_return(vnd_fiat_scope)
+        allow(vnd_fiat_scope).to receive(:first).and_return(vnd_account)
+
+        # Create stubs for the transaction creation
+        expect(operation.coin_transactions).to receive(:create!).with(
+          hash_including(
+            amount: -100.0,
+            coin_currency: 'usdt',
+            coin_account: usdt_account,
+            transaction_type: 'lock'
+          )
+        )
+
+        expect(operation.fiat_transactions).to receive(:create!).with(
+          hash_including(
+            amount: -5000.0,
+            currency: 'VND',
+            fiat_account: vnd_account,
+            transaction_type: 'lock'
+          )
+        )
+
+        # Call the private method
+        operation.send(:lock_user_balances)
+      end
     end
 
     describe '#unlock_user_balances' do
-      it 'creates coin transactions for each locked balance' do
+      it 'creates coin transactions for each locked coin balance' do
         # Create the necessary accounts
         user = create(:user)
         usdt_account = create(:coin_account, :usdt_main, user: user, balance: 200.0, frozen_balance: 100.0)
@@ -249,8 +355,8 @@ RSpec.describe BalanceLockOperation, type: :model do
         allow(operation.user).to receive(:coin_accounts).and_return(coin_accounts)
         allow(coin_accounts).to receive(:of_coin).with('usdt').and_return(usdt_scope)
         allow(coin_accounts).to receive(:of_coin).with('btc').and_return(btc_scope)
-        allow(usdt_scope).to receive(:main).and_return(usdt_account)
-        allow(btc_scope).to receive(:main).and_return(btc_account)
+        allow(usdt_scope).to receive(:first).and_return(usdt_account)
+        allow(btc_scope).to receive(:first).and_return(btc_account)
 
         # Create stubs for the transaction creation
         expect(operation.coin_transactions).to receive(:create!).with(
@@ -274,6 +380,111 @@ RSpec.describe BalanceLockOperation, type: :model do
         # Call the private method
         operation.send(:unlock_user_balances)
       end
+
+      it 'creates fiat transactions for each locked fiat balance' do
+        # Create the necessary accounts
+        user = create(:user)
+        vnd_account = create(:fiat_account, currency: 'VND', user: user, balance: 10000.0, frozen_balance: 5000.0)
+        php_account = create(:fiat_account, currency: 'PHP', user: user, balance: 5000.0, frozen_balance: 2500.0)
+
+        # Create a balance lock with fiat balances
+        balance_lock = create(:balance_lock, user: user, locked_balances: { 'VND' => '5000.0', 'PHP' => '2500.0' })
+
+        # Skip auto process
+        allow_any_instance_of(described_class).to receive(:auto_process!)
+
+        # Create the operation
+        operation = create(:balance_lock_operation, balance_lock: balance_lock, operation_type: 'release')
+
+        # Stub the method chain for fiat accounts
+        fiat_accounts = double('fiat_accounts')
+        vnd_scope = double('vnd_scope')
+        php_scope = double('php_scope')
+
+        coin_accounts_stub = double('coin_accounts')
+        allow(coin_accounts_stub).to receive(:of_coin).and_return(double('empty_scope', first: nil))
+        allow(operation.user).to receive_messages(coin_accounts: coin_accounts_stub, fiat_accounts: fiat_accounts)
+        allow(fiat_accounts).to receive(:of_currency).with('VND').and_return(vnd_scope)
+        allow(fiat_accounts).to receive(:of_currency).with('PHP').and_return(php_scope)
+        allow(vnd_scope).to receive(:first).and_return(vnd_account)
+        allow(php_scope).to receive(:first).and_return(php_account)
+
+        # Create stubs for the transaction creation
+        expect(operation.fiat_transactions).to receive(:create!).with(
+          hash_including(
+            amount: 5000.0,
+            currency: 'VND',
+            fiat_account: vnd_account,
+            transaction_type: 'unlock'
+          )
+        )
+
+        expect(operation.fiat_transactions).to receive(:create!).with(
+          hash_including(
+            amount: 2500.0,
+            currency: 'PHP',
+            fiat_account: php_account,
+            transaction_type: 'unlock'
+          )
+        )
+
+        # Call the private method
+        operation.send(:unlock_user_balances)
+      end
+
+      it 'creates both coin and fiat transactions for mixed balances' do
+        # Create the necessary accounts
+        user = create(:user)
+        usdt_account = create(:coin_account, :usdt_main, user: user, balance: 200.0, frozen_balance: 100.0)
+        vnd_account = create(:fiat_account, currency: 'VND', user: user, balance: 10000.0, frozen_balance: 5000.0)
+
+        # Create a balance lock with mixed balances
+        balance_lock = create(:balance_lock, user: user, locked_balances: { 'usdt' => '100.0', 'VND' => '5000.0' })
+
+        # Skip auto process
+        allow_any_instance_of(described_class).to receive(:auto_process!)
+
+        # Create the operation
+        operation = create(:balance_lock_operation, balance_lock: balance_lock, operation_type: 'release')
+
+        # Stub the method chains
+        coin_accounts = double('coin_accounts')
+        usdt_scope = double('usdt_scope')
+        vnd_coin_scope = double('vnd_coin_scope')
+        fiat_accounts = double('fiat_accounts')
+        vnd_fiat_scope = double('vnd_fiat_scope')
+
+        allow(coin_accounts).to receive(:of_coin).with('usdt').and_return(usdt_scope)
+        allow(coin_accounts).to receive(:of_coin).with('VND').and_return(vnd_coin_scope)
+        allow(usdt_scope).to receive(:first).and_return(usdt_account)
+        allow(vnd_coin_scope).to receive(:first).and_return(nil) # No VND coin account
+
+        allow(operation.user).to receive_messages(coin_accounts: coin_accounts, fiat_accounts: fiat_accounts)
+        allow(fiat_accounts).to receive(:of_currency).with('VND').and_return(vnd_fiat_scope)
+        allow(vnd_fiat_scope).to receive(:first).and_return(vnd_account)
+
+        # Create stubs for the transaction creation
+        expect(operation.coin_transactions).to receive(:create!).with(
+          hash_including(
+            amount: 100.0,
+            coin_currency: 'usdt',
+            coin_account: usdt_account,
+            transaction_type: 'unlock'
+          )
+        )
+
+        expect(operation.fiat_transactions).to receive(:create!).with(
+          hash_including(
+            amount: 5000.0,
+            currency: 'VND',
+            fiat_account: vnd_account,
+            transaction_type: 'unlock'
+          )
+        )
+
+        # Call the private method
+        operation.send(:unlock_user_balances)
+      end
     end
   end
 
@@ -290,7 +501,7 @@ RSpec.describe BalanceLockOperation, type: :model do
 
   describe '.ransackable_associations' do
     it 'returns the expected associations' do
-      expected_associations = %w[balance_lock coin_transactions]
+      expected_associations = %w[balance_lock coin_transactions fiat_transactions]
 
       expect(described_class.ransackable_associations).to match_array(expected_associations)
     end

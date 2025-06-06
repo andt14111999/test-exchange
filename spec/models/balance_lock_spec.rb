@@ -56,20 +56,66 @@ RSpec.describe BalanceLock, type: :model do
   end
 
   describe 'callbacks' do
-    it 'sends balance lock event to Kafka after creation' do
+    it 'sends balance lock event to Kafka after creation with coin and fiat account keys' do
+      user = create(:user)
+      coin_account = create(:coin_account, user: user)
+      fiat_account = create(:fiat_account, user: user)
+
+      kafka_service = instance_double(KafkaService::Services::Coin::BalanceLockService)
+      allow(KafkaService::Services::Coin::BalanceLockService).to receive(:new).and_return(kafka_service)
+
+      coin_account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
+        user_id: user.id,
+        account_id: coin_account.id
+      )
+
+      fiat_account_key = KafkaService::Services::AccountKeyBuilderService.build_fiat_account_key(
+        user_id: user.id,
+        account_id: fiat_account.id
+      )
+
+      expect(kafka_service).to receive(:create).with(
+        account_keys: [ coin_account_key, fiat_account_key ],
+        identifier: kind_of(String)
+      )
+
+      create(:balance_lock, user: user)
+    end
+
+    it 'sends balance lock event to Kafka with only coin account keys when user has no fiat accounts' do
       user = create(:user)
       coin_account = create(:coin_account, user: user)
 
       kafka_service = instance_double(KafkaService::Services::Coin::BalanceLockService)
       allow(KafkaService::Services::Coin::BalanceLockService).to receive(:new).and_return(kafka_service)
 
-      account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
+      coin_account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
         user_id: user.id,
         account_id: coin_account.id
       )
 
       expect(kafka_service).to receive(:create).with(
-        account_keys: [ account_key ],
+        account_keys: [ coin_account_key ],
+        identifier: kind_of(String)
+      )
+
+      create(:balance_lock, user: user)
+    end
+
+    it 'sends balance lock event to Kafka with only fiat account keys when user has no coin accounts' do
+      user = create(:user)
+      fiat_account = create(:fiat_account, user: user)
+
+      kafka_service = instance_double(KafkaService::Services::Coin::BalanceLockService)
+      allow(KafkaService::Services::Coin::BalanceLockService).to receive(:new).and_return(kafka_service)
+
+      fiat_account_key = KafkaService::Services::AccountKeyBuilderService.build_fiat_account_key(
+        user_id: user.id,
+        account_id: fiat_account.id
+      )
+
+      expect(kafka_service).to receive(:create).with(
+        account_keys: [ fiat_account_key ],
         identifier: kind_of(String)
       )
 

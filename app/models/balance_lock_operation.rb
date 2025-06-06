@@ -7,6 +7,7 @@ class BalanceLockOperation < ApplicationRecord
 
   belongs_to :balance_lock
   has_many :coin_transactions, as: :operation, dependent: :destroy
+  has_many :fiat_transactions, as: :operation, dependent: :destroy
 
   validates :operation_type, presence: true, inclusion: { in: %w[lock release] }
   validates :status, presence: true
@@ -64,40 +65,70 @@ class BalanceLockOperation < ApplicationRecord
   end
 
   def self.ransackable_associations(_auth_object = nil)
-    %w[balance_lock coin_transactions]
+    %w[balance_lock coin_transactions fiat_transactions]
   end
 
   private
 
   def lock_user_balances
-    locked_balances.each do |coin_currency, amount|
-      coin_account = user.coin_accounts.of_coin(coin_currency).main
-      next unless coin_account
+    locked_balances.each do |currency, amount|
+      # Try to find coin account first
+      coin_account = user.coin_accounts.of_coin(currency).first
+      if coin_account
+        coin_transactions.create!(
+          amount: -amount.to_d,
+          coin_currency: currency,
+          coin_account: coin_account,
+          transaction_type: 'lock',
+          snapshot_balance: coin_account.balance,
+          snapshot_frozen_balance: coin_account.frozen_balance
+        )
+        next
+      end
 
-      coin_transactions.create!(
-        amount: -amount.to_d,
-        coin_currency: coin_currency,
-        coin_account: coin_account,
-        transaction_type: 'lock',
-        snapshot_balance: coin_account.balance,
-        snapshot_frozen_balance: coin_account.frozen_balance
-      )
+      # Try to find fiat account
+      fiat_account = user.fiat_accounts.of_currency(currency).first
+      if fiat_account
+        fiat_transactions.create!(
+          amount: -amount.to_d,
+          currency: currency,
+          fiat_account: fiat_account,
+          transaction_type: 'lock',
+          snapshot_balance: fiat_account.balance,
+          snapshot_frozen_balance: fiat_account.frozen_balance
+        )
+      end
     end
   end
 
   def unlock_user_balances
-    locked_balances.each do |coin_currency, amount|
-      coin_account = user.coin_accounts.of_coin(coin_currency).main
-      next unless coin_account
+    locked_balances.each do |currency, amount|
+      # Try to find coin account first
+      coin_account = user.coin_accounts.of_coin(currency).first
+      if coin_account
+        coin_transactions.create!(
+          amount: amount.to_d,
+          coin_currency: currency,
+          coin_account: coin_account,
+          transaction_type: 'unlock',
+          snapshot_balance: coin_account.balance,
+          snapshot_frozen_balance: coin_account.frozen_balance
+        )
+        next
+      end
 
-      coin_transactions.create!(
-        amount: amount.to_d,
-        coin_currency: coin_currency,
-        coin_account: coin_account,
-        transaction_type: 'unlock',
-        snapshot_balance: coin_account.balance,
-        snapshot_frozen_balance: coin_account.frozen_balance
-      )
+      # Try to find fiat account
+      fiat_account = user.fiat_accounts.of_currency(currency).first
+      if fiat_account
+        fiat_transactions.create!(
+          amount: amount.to_d,
+          currency: currency,
+          fiat_account: fiat_account,
+          transaction_type: 'unlock',
+          snapshot_balance: fiat_account.balance,
+          snapshot_frozen_balance: fiat_account.frozen_balance
+        )
+      end
     end
   end
 end
