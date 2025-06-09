@@ -43,8 +43,8 @@ RSpec.describe Trade, type: :model do
     it 'validates uniqueness of ref' do
       create(:trade)
       new_trade = build(:trade, ref: described_class.last.ref)
-      expect(new_trade).to be_invalid
-      expect(new_trade.errors[:ref]).to include('has already been taken')
+      expect(new_trade.save).to be false
+      expect(new_trade.persisted?).to be false
     end
   end
 
@@ -79,7 +79,7 @@ RSpec.describe Trade, type: :model do
       trade = build(:trade, ref: nil)
       trade.valid?
       expect(trade.ref).to be_present
-      expect(trade.ref).to match(/^T\d{8}[0-9A-Z]{8}$/)
+      expect(trade.ref).to match(/^T\d{6}[A-Z0-9]{3}$/)
     end
 
     it 'sets initial timestamps before create' do

@@ -16,7 +16,7 @@ class Trade < ApplicationRecord
   DISPUTE_RESOLUTIONS = %w[pending admin_intervention].freeze
   TIMEOUT_MINUTES = 15
 
-  validates :ref, presence: true, uniqueness: true, format: { with: /\AT\d{8}[A-F0-9]{8}\z/, message: 'must be in format TYYYYMMDDXXXX where XXXX is hex' }
+  validates :ref, presence: true, uniqueness: true, format: { with: /\AT\d{6}[A-Z0-9]{3}\z/, message: 'must be in format TYYMMDDXXX where XXX is alphanumeric' }
   validates :buyer_id, presence: true
   validates :seller_id, presence: true
   validates :offer_id, presence: true
@@ -512,7 +512,19 @@ class Trade < ApplicationRecord
   end
 
   def generate_ref
-    self.ref ||= "T#{Time.zone.now.strftime('%Y%m%d')}#{SecureRandom.hex(4).upcase}"
+    loop do
+      new_ref = "T#{Time.zone.now.strftime('%y%m%d')}#{SecureRandom.alphanumeric(3).upcase}"
+
+      if Trade.exists?(ref: new_ref)
+        raise 'Trade reference generation failed. Please try again.' if @ref_generation_attempts.to_i > 3
+
+        @ref_generation_attempts = @ref_generation_attempts.to_i + 1
+        next
+      end
+
+      self.ref = new_ref
+      break
+    end
   end
 
   def generate_trade_memo
