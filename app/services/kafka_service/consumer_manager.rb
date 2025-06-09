@@ -76,7 +76,7 @@ module KafkaService
       payload = JSON.parse(payload) if payload.is_a?(String)
 
       # Get event ID from payload
-      event_id = payload['messageId'] || payload['eventId']
+      event_id = payload['inputEventId'] || payload['eventId'] || payload['messageId']
       return if event_id.blank?
 
       Rails.logger.info("Processing event: #{event_id} for topic: #{topic}")
