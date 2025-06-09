@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 describe 'Tick Admin', type: :feature do
-  let(:admin) { create(:admin_user, :admin) }
+  let(:admin) { create(:admin_user, :super_admin) }
   let(:amm_pool) { create(:amm_pool) }
   let!(:tick) { create(:tick, amm_pool: amm_pool, status: 'active') }
   let!(:inactive_tick) { create(:tick, :inactive, amm_pool: amm_pool) }

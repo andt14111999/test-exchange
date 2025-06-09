@@ -33,7 +33,7 @@ RSpec.describe AdminUser, type: :model do
   describe 'after create callback' do
     it 'enqueues password reset worker for non-admin users' do
       expect do
-        create(:admin_user, roles: 'developer')
+        create(:admin_user, roles: 'operator')
       end.to change(AdminUserPasswordResetJob.jobs, :size).by(1)
     end
   end
@@ -114,6 +114,99 @@ RSpec.describe AdminUser, type: :model do
       expect(admin_user.authenticator_enabled).to be false
       expect(admin_user.authenticator_key).to be_nil
       expect(admin_user.authenticator_key).not_to eq(original_key)
+    end
+  end
+
+  describe 'roles' do
+    describe 'validations' do
+      it { is_expected.to validate_presence_of(:roles) }
+
+      it 'is invalid with invalid roles' do
+        admin_user = build(:admin_user, roles: 'invalid_role')
+        expect(admin_user).to be_invalid
+        expect(admin_user.errors[:roles]).to include('contains invalid or unrecognized roles')
+      end
+
+      it 'is valid with valid roles' do
+        admin_user = build(:admin_user, roles: 'super_admin')
+        expect(admin_user).to be_valid
+      end
+
+      it 'is valid with multiple valid roles' do
+        admin_user = build(:admin_user, roles: 'super_admin,operator')
+        expect(admin_user).to be_valid
+      end
+    end
+
+    describe 'role methods' do
+      it 'returns true for super_admin? when role is super_admin' do
+        admin_user = build(:admin_user, roles: 'super_admin')
+        expect(admin_user.super_admin?).to be true
+      end
+
+      it 'returns false for super_admin? when role is not super_admin' do
+        admin_user = build(:admin_user, roles: 'operator')
+        expect(admin_user.super_admin?).to be false
+      end
+
+      it 'returns true for operator? when role is operator' do
+        admin_user = build(:admin_user, roles: 'operator')
+        expect(admin_user.operator?).to be true
+      end
+
+      it 'returns false for operator? when role is not operator' do
+        admin_user = build(:admin_user, roles: 'super_admin')
+        expect(admin_user.operator?).to be false
+      end
+
+      it 'returns true for admin? when role is super_admin' do
+        admin_user = build(:admin_user, roles: 'super_admin')
+        expect(admin_user.admin?).to be true
+      end
+
+      it 'returns true for admin? when role is operator' do
+        admin_user = build(:admin_user, roles: 'operator')
+        expect(admin_user.admin?).to be true
+      end
+
+      it 'returns false for admin? when role is invalid' do
+        admin_user = build(:admin_user, roles: 'invalid')
+        expect(admin_user.admin?).to be false
+      end
+    end
+
+    describe 'role sanitization' do
+      it 'sanitizes roles from string' do
+        admin_user = build(:admin_user, roles: 'super_admin,  operator  ,')
+        admin_user.valid?
+        expect(admin_user.roles).to eq('super_admin,operator')
+      end
+
+      it 'handles blank roles' do
+        admin_user = build(:admin_user, roles: nil)
+        admin_user.valid?
+        expect(admin_user.roles).to be_nil
+      end
+    end
+  end
+
+  describe 'ransackable attributes' do
+    it 'excludes encrypted_password from ransackable attributes' do
+      expect(described_class.disabled_ransackable_attributes).to include('encrypted_password')
+    end
+  end
+
+  describe '#verify_otp' do
+    let(:admin_user) { create(:admin_user) }
+    let(:otp_verifier) { instance_double(OtpVerifier) }
+
+    before do
+      allow(OtpVerifier).to receive(:new).with(admin_user).and_return(otp_verifier)
+    end
+
+    it 'delegates to otp_verifier' do
+      expect(otp_verifier).to receive(:verify_otp).with('123456')
+      admin_user.verify_otp('123456')
     end
   end
 end

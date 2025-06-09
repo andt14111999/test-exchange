@@ -6,23 +6,56 @@ class AdminAbility
 
   def initialize(user)
     @current_user = user
-    can :manage, :all if user.admin?
 
-    apply_implementor_actions if user.implementor?
+    if user.super_admin?
+      can :manage, :all
+    elsif user.operator?
+      apply_operator_permissions
+    end
+
     apply_general_actions
   end
 
   def apply_general_actions
+    # Common permissions for all admin users
     can %i[read], ActiveAdmin::Page, name: 'Dashboard'
-    can %i[read], AdminUser, { id: current_user.id }
+    can %i[read], AdminUser, id: current_user.id
     can %i[manage], ActiveAdmin::Page, name: 'Setup 2FA'
-    can :read, AmmPool
-    can :manage, SocialAccount
   end
 
-  def apply_implementor_actions
+  def apply_operator_permissions
+    # User Management
+    can :manage, User
+    can :manage, SocialAccount
+    can :manage, ApiKey
+
+    # Coin Management
+    can :manage, CoinDeposit
+    can :manage, CoinWithdrawal
+    can :manage, CoinWithdrawalOperation
+    can :manage, CoinTransaction
+    can :manage, BalanceLock
+    can :manage, BalanceLockOperation
+
+    # Fiat Management
+    can :manage, FiatDeposit
+    can :manage, FiatWithdrawal
+    can :manage, FiatTransaction
+    can :manage, BankAccount
+    can :manage, PaymentMethod
+
+    # Trade Management
+    can :manage, Trade
+    can :manage, Message
+    can :manage, Offer
+
+    # AMM Management
     can :manage, AmmPool
-    can :read, AmmPosition
-    can :read, AmmOrder
+    can :manage, AmmPosition
+    can :manage, AmmOrder
+
+    # System
+    can :manage, Notification
+    can :read, KafkaEvent
   end
 end

@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe 'Admin::CoinTransactions', type: :feature do
   context 'when admin is signed in' do
     before do
-      admin = create(:admin_user, :admin)
+      admin = create(:admin_user, :super_admin)
       login_as admin, scope: :admin_user
     end
 

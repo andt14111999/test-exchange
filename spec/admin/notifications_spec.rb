@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe 'Admin::Notifications' do
   describe 'UI', type: :system do
-    let(:admin) { create(:admin_user, roles: 'admin') }
+    let(:admin) { create(:admin_user, roles: 'super_admin') }
     let(:user) { create(:user) }
     let(:notification) do
       create(:notification,
@@ -119,7 +119,7 @@ RSpec.describe 'Admin::Notifications' do
   end
 
   describe 'API', type: :request do
-    let(:admin) { create(:admin_user, roles: 'admin') }
+    let(:admin) { create(:admin_user, roles: 'super_admin') }
     let(:user) { create(:user) }
 
     before do

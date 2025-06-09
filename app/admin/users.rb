@@ -8,6 +8,8 @@ ActiveAdmin.register User do
 
   actions :all
 
+  before_action :ensure_super_admin_user, only: %i[create update destroy]
+
   filter :id
   filter :email
   filter :username
@@ -294,6 +296,21 @@ ActiveAdmin.register User do
       row 'Last Updated' do |user|
         time_ago_in_words(user.updated_at)
       end
+    end
+  end
+
+  controller do
+    def scoped_collection
+      super.includes(:social_accounts)
+    end
+
+    private
+
+    def ensure_super_admin_user
+      return if current_admin_user.super_admin?
+
+      flash[:error] = 'You are not authorized to perform this action.'
+      redirect_to admin_root_path
     end
   end
 end

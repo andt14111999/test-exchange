@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe 'Admin::CoinWithdrawals', type: :system do
   describe 'index page' do
     it 'displays list of coin withdrawals' do
-      admin_user = create(:admin_user, :admin)
+      admin_user = create(:admin_user, :super_admin)
       user = create(:user, email: 'user1@example.com')
       create(:coin_account, :btc_main, user:, balance: 100.0)
       withdrawal = create(:coin_withdrawal,
@@ -31,7 +31,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
     end
 
     it 'filters withdrawals by coin_currency and status' do
-      admin_user = create(:admin_user, :admin)
+      admin_user = create(:admin_user, :super_admin)
       user = create(:user)
       create(:coin_account, :btc_main, user:, balance: 100.0)
       withdrawal = create(:coin_withdrawal,
@@ -53,7 +53,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
 
   describe 'show page' do
     it 'displays withdrawal details' do
-      admin_user = create(:admin_user, :admin)
+      admin_user = create(:admin_user, :super_admin)
       user = create(:user)
       create(:coin_account, :btc_main, user:, balance: 100.0)
       withdrawal = create(:coin_withdrawal,
@@ -112,7 +112,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
     end
 
     it 'displays "No withdrawal operation found" when there is no operation' do
-      admin_user = create(:admin_user, :admin)
+      admin_user = create(:admin_user, :super_admin)
       user = create(:user)
       create(:coin_account, :btc_main, user:, balance: 100.0)
 
@@ -139,7 +139,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
 
   describe 'cancel action' do
     it 'successfully cancels a pending withdrawal' do
-      admin_user = create(:admin_user, :admin)
+      admin_user = create(:admin_user, :super_admin)
       user = create(:user)
       create(:coin_account, :btc_main, user:, balance: 100.0)
       withdrawal = create(:coin_withdrawal,
@@ -162,7 +162,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
     end
 
     it 'shows error when cancellation fails' do
-      admin_user = create(:admin_user, :admin)
+      admin_user = create(:admin_user, :super_admin)
       user = create(:user)
       create(:coin_account, :btc_main, user:, balance: 100.0)
       withdrawal = create(:coin_withdrawal,
@@ -182,7 +182,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
     end
 
     it 'shows error when cancel! raises exception' do
-      admin_user = create(:admin_user, :admin)
+      admin_user = create(:admin_user, :super_admin)
       user = create(:user)
       create(:coin_account, :btc_main, user:, balance: 100.0)
       withdrawal = create(:coin_withdrawal,

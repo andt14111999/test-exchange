@@ -3,9 +3,9 @@
 require 'rails_helper'
 
 RSpec.describe 'Admin::AdminUsers', type: :system do
-  let(:admin) { create(:admin_user, roles: 'admin') }
-  let(:developer) { create(:admin_user, roles: 'developer') }
-  let(:test_admin) { create(:admin_user, roles: 'admin', email: 'test_admin@example.com', fullname: 'Test Admin') }
+  let(:admin) { create(:admin_user, roles: 'super_admin') }
+  let(:operator) { create(:admin_user, roles: 'operator') }
+  let(:test_admin) { create(:admin_user, roles: 'super_admin', email: 'test_admin@example.com', fullname: 'Test Admin') }
 
   describe 'with admin user' do
     before do
@@ -58,25 +58,25 @@ RSpec.describe 'Admin::AdminUsers', type: :system do
 
       within 'form' do
         fill_in 'Email', with: 'new_admin@example.com'
-        select 'developer', from: 'Roles'
+        select 'operator', from: 'Roles'
         click_button 'Create Admin user'
       end
 
       expect(page).to have_current_path(%r{/admin/admin_users/\d+})
       expect(page).to have_content('new_admin@example.com')
-      expect(page).to have_content('developer')
+      expect(page).to have_content('operator')
     end
 
     it 'allows editing admin user' do
       visit edit_admin_admin_user_path(test_admin)
 
       within 'form' do
-        select 'explorer', from: 'Roles'
+        select 'operator', from: 'Roles'
         click_button 'Update Admin user'
       end
 
       expect(page).to have_current_path(%r{/admin/admin_users/\d+})
-      expect(page).to have_content('explorer')
+      expect(page).to have_content('operator')
     end
 
     it 'shows authenticator field for admin users' do
@@ -109,12 +109,12 @@ RSpec.describe 'Admin::AdminUsers', type: :system do
 
   describe 'with non-admin user' do
     before do
-      sign_in developer, scope: :admin_user
+      sign_in operator, scope: :admin_user
     end
 
     it 'can view admin users page but without admin privileges' do
       visit admin_admin_users_path
-      expect(page).to have_content(developer.email)
+      expect(page).to have_content(operator.email)
     end
 
     it 'redirects when attempting unauthorized actions' do
