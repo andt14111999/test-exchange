@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Admin::Dashboard', type: :system do
-  let(:admin) { create(:admin_user, roles: 'admin') }
+  let(:admin) { create(:admin_user, roles: 'super_admin') }
 
   before do
     sign_in admin, scope: :admin_user

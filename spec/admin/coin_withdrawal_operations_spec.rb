@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Admin::CoinWithdrawalOperations', type: :system do
-  let(:admin) { create(:admin_user, roles: 'admin') }
+  let(:admin) { create(:admin_user, roles: 'super_admin') }
   let(:coin_withdrawal) { create(:coin_withdrawal) }
   let(:coin_withdrawal_operation) do
     create(:coin_withdrawal_operation,

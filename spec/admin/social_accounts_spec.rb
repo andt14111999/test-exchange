@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Admin::SocialAccounts', type: :system do
-  let(:admin_user) { create(:admin_user, :admin) }
+  let(:admin_user) { create(:admin_user, :super_admin) }
 
   before do
     driven_by(:rack_test)

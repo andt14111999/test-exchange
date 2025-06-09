@@ -6,7 +6,7 @@ require 'cancan/matchers'
 RSpec.describe AdminAbility do
   context 'when user is admin' do
     it 'can manage all' do
-      admin = create(:admin_user, :admin)
+      admin = create(:admin_user, :super_admin)
       ability = described_class.new(admin)
 
       expect(ability).to be_able_to(:manage, :all)
@@ -15,27 +15,28 @@ RSpec.describe AdminAbility do
 
   context 'when general actions for all users' do
     it 'has basic permissions' do
-      user = create(:admin_user)
+      user = create(:admin_user, :operator)
+      other_user = create(:admin_user, :operator)
       ability = described_class.new(user)
 
       expect(ability).to be_able_to(:read, ActiveAdmin::Page, name: 'Dashboard')
-      expect(ability).to be_able_to(:read, AdminUser.new(id: user.id))
-      expect(ability).not_to be_able_to(:read, AdminUser.new(id: user.id + 1))
+      expect(ability).to be_able_to(:read, user)
+      expect(ability).not_to be_able_to(:read, other_user)
       expect(ability).to be_able_to(:manage, ActiveAdmin::Page, name: 'Setup 2FA')
     end
   end
 
   context 'when user is implementor' do
     it 'can manage AmmPool' do
-      implementor = create(:admin_user, :implementor)
-      ability = described_class.new(implementor)
+      operator = create(:admin_user, :operator)
+      ability = described_class.new(operator)
 
       expect(ability).to be_able_to(:manage, AmmPool)
     end
 
     it 'can read AmmPool' do
-      implementor = create(:admin_user, :implementor)
-      ability = described_class.new(implementor)
+      operator = create(:admin_user, :operator)
+      ability = described_class.new(operator)
 
       expect(ability).to be_able_to(:read, AmmPool)
     end

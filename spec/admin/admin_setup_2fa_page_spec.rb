@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe 'AdminUser', type: :feature do
   describe 'index page' do
     it 'user enabled 2fa' do
-      user = create(:admin_user, :developer, fullname: 'Developer Name')
+      user = create(:admin_user, :operator, fullname: 'Operator Name')
       sign_in(user, scope: :admin_user)
 
       expect(user).not_to be_authenticator_enabled
@@ -26,13 +26,13 @@ RSpec.describe 'AdminUser', type: :feature do
       code = ROTP::TOTP.new(secret_key).now
       fill_in 'otp-code', with: code
       click_button 'Verify and Enable 2FA'
-      expect(page.current_path).to eq(admin_admin_user_path(user))
+      expect(page.current_path).to eq("/admin/admin_users/#{user.id}")
       expect(user.reload).to be_authenticator_enabled
       expect(user.authenticator_key).to eq(secret_key)
     end
 
     it 'user disabled 2fa' do
-      user = create(:admin_user, :developer, fullname: 'Developer Name')
+      user = create(:admin_user, :operator, fullname: 'Operator Name')
       sign_in(user, scope: :admin_user)
 
       user.assign_authenticator_key
@@ -52,7 +52,7 @@ RSpec.describe 'AdminUser', type: :feature do
       code = ROTP::TOTP.new(user.authenticator_key).now
       fill_in 'otp-code', with: code
       click_button 'Disable 2FA'
-      expect(page.current_path).to eq(admin_admin_user_path(user))
+      expect(page.current_path).to eq("/admin/admin_users/#{user.id}")
       expect(user.reload).not_to be_authenticator_enabled
       expect(user.authenticator_key).to be_nil
     end

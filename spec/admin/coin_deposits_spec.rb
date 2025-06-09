@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Admin::CoinDeposits', type: :request do
-  let(:admin) { create(:admin_user, roles: 'admin') }
+  let(:admin) { create(:admin_user, roles: 'super_admin') }
   let(:current_time) { Time.current }
 
   before do

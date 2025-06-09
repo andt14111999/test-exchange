@@ -5,7 +5,7 @@ ActiveAdmin.register AdminUser do
 
   permit_params :email, :fullname, :roles
 
-  before_action :ensure_admin_user, only: %i[create update destroy]
+  before_action :ensure_super_admin_user, only: %i[create update destroy]
 
   index do
     id_column
@@ -49,8 +49,8 @@ ActiveAdmin.register AdminUser do
   controller do
     private
 
-    def ensure_admin_user
-      return if current_admin_user.admin?
+    def ensure_super_admin_user
+      return if current_admin_user.super_admin?
 
       flash[:error] = 'You are not authorized to perform this action.'
       redirect_to admin_root_path

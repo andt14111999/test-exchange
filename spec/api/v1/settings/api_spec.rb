@@ -114,4 +114,92 @@ RSpec.describe V1::Settings::Api, type: :request do
       )
     end
   end
+
+  describe 'GET /api/v1/settings/trading_fees' do
+    it 'returns custom trading fees when set' do
+      Setting.delete_all # Clean up existing settings
+
+      Setting.vnd_trading_fee_ratio = '0.0025'
+      Setting.php_trading_fee_ratio = '0.003'
+      Setting.ngn_trading_fee_ratio = '0.004'
+      Setting.default_trading_fee_ratio = '0.002'
+      Setting.vnd_fixed_trading_fee = '1000'
+      Setting.php_fixed_trading_fee = '50'
+      Setting.ngn_fixed_trading_fee = '200'
+      Setting.default_fixed_trading_fee = '500'
+
+      get '/api/v1/settings/trading_fees'
+
+      expect(response).to have_http_status(:ok)
+      expect(json_response).to eq(
+        'trading_fees' => {
+          'fee_ratios' => {
+            'vnd' => '0.0025',
+            'php' => '0.003',
+            'ngn' => '0.004',
+            'default' => '0.002'
+          },
+          'fixed_fees' => {
+            'vnd' => '1000',
+            'php' => '50',
+            'ngn' => '200',
+            'default' => '500'
+          }
+        }
+      )
+    end
+
+    it 'returns default trading fees when no settings are explicitly set' do
+      Setting.delete_all # Clean up existing settings
+
+      get '/api/v1/settings/trading_fees'
+
+      expect(response).to have_http_status(:ok)
+      expect(json_response).to eq(
+        'trading_fees' => {
+          'fee_ratios' => {
+            'vnd' => 0.001,
+            'php' => 0.001,
+            'ngn' => 0.001,
+            'default' => 0.001
+          },
+          'fixed_fees' => {
+            'vnd' => 5000,
+            'php' => 10,
+            'ngn' => 300,
+            'default' => 0
+          }
+        }
+      )
+    end
+
+    it 'returns mix of custom and default trading fees' do
+      Setting.delete_all # Clean up existing settings
+
+      Setting.vnd_trading_fee_ratio = '0.0025'
+      Setting.php_trading_fee_ratio = '0.003'
+      Setting.vnd_fixed_trading_fee = '1000'
+      Setting.php_fixed_trading_fee = '50'
+
+      get '/api/v1/settings/trading_fees'
+
+      expect(response).to have_http_status(:ok)
+      expect(json_response).to eq(
+        'trading_fees' => {
+          'fee_ratios' => {
+            'vnd' => '0.0025',
+            'php' => '0.003',
+            'ngn' => 0.001,
+            'default' => 0.001
+          },
+          'fixed_fees' => {
+            'vnd' => '1000',
+            'php' => '50',
+            'ngn' => 300,
+            'default' => 0
+          }
+        }
+      )
+    end
+  end
 end
