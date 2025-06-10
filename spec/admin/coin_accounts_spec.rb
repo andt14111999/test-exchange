@@ -7,7 +7,7 @@ RSpec.describe 'Admin::CoinAccounts', type: :system do
 
   describe 'index page' do
     it 'displays a list of coin accounts' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       user = create(:user, email: 'test@example.com')
       coin_account = create(:coin_account, :btc_main, user: user, balance: 1.5, frozen_balance: 0.5)
 
@@ -25,7 +25,7 @@ RSpec.describe 'Admin::CoinAccounts', type: :system do
     end
 
     it 'has working filters' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       user = create(:user, email: 'test@example.com')
       coin_account = create(:coin_account, :btc_main, user: user, balance: 1.5, frozen_balance: 0.5)
 
@@ -45,7 +45,7 @@ RSpec.describe 'Admin::CoinAccounts', type: :system do
 
   describe 'show page' do
     it 'displays account details and balances' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       user = create(:user, email: 'test@example.com')
       coin_account = create(:coin_account, :btc_main, user: user, balance: 1.5, frozen_balance: 0.5)
 
@@ -64,7 +64,7 @@ RSpec.describe 'Admin::CoinAccounts', type: :system do
     end
 
     it 'displays total balances across all layers' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       user = create(:user, email: 'test@example.com')
       coin_account = create(:coin_account, :btc_main, user: user, balance: 1.5, frozen_balance: 0.5)
       deposit_account = create(:coin_account, :btc_deposit, user: user, balance: 0.5)

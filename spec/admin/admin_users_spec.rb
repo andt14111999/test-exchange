@@ -3,9 +3,9 @@
 require 'rails_helper'
 
 RSpec.describe 'Admin::AdminUsers', type: :system do
-  let(:admin) { create(:admin_user, roles: 'super_admin') }
+  let(:admin) { create(:admin_user, roles: 'superadmin') }
   let(:operator) { create(:admin_user, roles: 'operator') }
-  let(:test_admin) { create(:admin_user, roles: 'super_admin', email: 'test_admin@example.com', fullname: 'Test Admin') }
+  let(:test_admin) { create(:admin_user, roles: 'superadmin', email: 'test_admin@example.com', fullname: 'Test Admin') }
 
   describe 'with admin user' do
     before do

@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe 'Admin::Messages' do
   describe 'UI', type: :system do
-    let(:admin) { create(:admin_user, roles: 'super_admin') }
+    let(:admin) { create(:admin_user, roles: 'superadmin') }
     let(:user) { create(:user) }
     let(:trade) { create(:trade) }
     let(:message) { create(:message, trade: trade, user: user, body: 'Test Message', is_receipt_proof: false, is_system: false) }
@@ -132,7 +132,7 @@ RSpec.describe 'Admin::Messages' do
   end
 
   describe 'API', type: :request do
-    let(:admin) { create(:admin_user, roles: 'super_admin') }
+    let(:admin) { create(:admin_user, roles: 'superadmin') }
     let(:user) { create(:user) }
     let(:trade) { create(:trade) }
     let(:message) { create(:message, trade: trade, user: user, is_receipt_proof: false) }

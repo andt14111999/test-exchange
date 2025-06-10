@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 describe 'AmmPosition Admin', type: :feature do
-  let(:admin) { create(:admin_user, :super_admin) }
+  let(:admin) { create(:admin_user, :superadmin) }
   let!(:position) { create(:amm_position, status: 'open') }
 
   before do

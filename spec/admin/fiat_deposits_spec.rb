@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe 'Admin::FiatDeposits', type: :system do
   describe 'index page' do
     it 'displays fiat deposits list' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       deposit = create(:fiat_deposit)
 
       sign_in admin_user, scope: :admin_user
@@ -17,7 +17,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
     end
 
     it 'shows all required columns' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       create(:fiat_deposit)
 
       sign_in admin_user, scope: :admin_user
@@ -37,7 +37,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
     end
 
     it 'has available filters' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       create(:fiat_deposit)
 
       sign_in admin_user, scope: :admin_user
@@ -61,7 +61,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
     end
 
     it 'has available scopes' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       create(:fiat_deposit)
 
       sign_in admin_user, scope: :admin_user
@@ -85,7 +85,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
     end
 
     it 'filters fiat deposits using scopes' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       create(:fiat_deposit, :awaiting)
       create(:fiat_deposit, :processed)
       create(:fiat_deposit, :cancelled)
@@ -117,7 +117,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
 
   describe 'show page' do
     it 'displays fiat deposit details' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       deposit = create(:fiat_deposit,
         explorer_ref: 'REF12345',
         memo: 'Test memo',
@@ -145,7 +145,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
 
     context 'with associated trade' do
       it 'displays trade information' do
-        admin_user = create(:admin_user, :super_admin)
+        admin_user = create(:admin_user, :superadmin)
         trade = create(:trade)
         deposit = create(:fiat_deposit, payable: trade)
 
@@ -159,7 +159,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
 
     context 'admin actions' do
       it 'shows Mark as Ready button for awaiting or pending deposits' do
-        admin_user = create(:admin_user, :super_admin)
+        admin_user = create(:admin_user, :superadmin)
         awaiting_deposit = create(:fiat_deposit, :awaiting)
         pending_deposit = create(:fiat_deposit, :pending)
 
@@ -177,7 +177,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
       end
 
       it 'shows Mark as Informed and Mark as Verifying buttons for ready deposits' do
-        admin_user = create(:admin_user, :super_admin)
+        admin_user = create(:admin_user, :superadmin)
         ready_deposit = create(:fiat_deposit, :ready)
 
         sign_in admin_user, scope: :admin_user
@@ -190,7 +190,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
       end
 
       it 'shows Process Deposit button for verifying or ownership_verifying deposits' do
-        admin_user = create(:admin_user, :super_admin)
+        admin_user = create(:admin_user, :superadmin)
         verifying_deposit = create(:fiat_deposit, :verifying)
         ownership_verifying_deposit = create(:fiat_deposit, :ownership_verifying)
 
@@ -208,7 +208,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
       end
 
       it 'shows Mark as Locked button for deposits needing ownership verification' do
-        admin_user = create(:admin_user, :super_admin)
+        admin_user = create(:admin_user, :superadmin)
         deposit = create(:fiat_deposit, :ownership_verifying)
 
         sign_in admin_user, scope: :admin_user
@@ -220,7 +220,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
       end
 
       it 'shows Cancel Deposit button for deposits that may be cancelled' do
-        admin_user = create(:admin_user, :super_admin)
+        admin_user = create(:admin_user, :superadmin)
         deposit = create(:fiat_deposit, :awaiting) # assuming this status allows cancellation
 
         sign_in admin_user, scope: :admin_user
@@ -232,7 +232,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
       end
 
       it 'shows Mark as Illegal button for deposits that may be marked as illegal' do
-        admin_user = create(:admin_user, :super_admin)
+        admin_user = create(:admin_user, :superadmin)
         deposit = create(:fiat_deposit, :awaiting) # assuming this status allows marking as illegal
 
         sign_in admin_user, scope: :admin_user
@@ -247,7 +247,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
 
   describe 'form' do
     it 'allows editing fiat deposit' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       deposit = create(:fiat_deposit)
 
       sign_in admin_user, scope: :admin_user
@@ -273,7 +273,7 @@ RSpec.describe 'Admin::FiatDeposits', type: :system do
 
   describe 'admin actions', type: :request do
     let(:deposit) { create(:fiat_deposit) }
-    let(:admin_user) { create(:admin_user, :super_admin) }
+    let(:admin_user) { create(:admin_user, :superadmin) }
 
     before do
       sign_in admin_user, scope: :admin_user

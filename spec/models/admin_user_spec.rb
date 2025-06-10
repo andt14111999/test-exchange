@@ -128,25 +128,25 @@ RSpec.describe AdminUser, type: :model do
       end
 
       it 'is valid with valid roles' do
-        admin_user = build(:admin_user, roles: 'super_admin')
+        admin_user = build(:admin_user, roles: 'superadmin')
         expect(admin_user).to be_valid
       end
 
       it 'is valid with multiple valid roles' do
-        admin_user = build(:admin_user, roles: 'super_admin,operator')
+        admin_user = build(:admin_user, roles: 'superadmin,operator')
         expect(admin_user).to be_valid
       end
     end
 
     describe 'role methods' do
-      it 'returns true for super_admin? when role is super_admin' do
-        admin_user = build(:admin_user, roles: 'super_admin')
-        expect(admin_user.super_admin?).to be true
+      it 'returns true for superadmin? when role is superadmin' do
+        admin_user = build(:admin_user, roles: 'superadmin')
+        expect(admin_user.superadmin?).to be true
       end
 
-      it 'returns false for super_admin? when role is not super_admin' do
+      it 'returns false for superadmin? when role is not superadmin' do
         admin_user = build(:admin_user, roles: 'operator')
-        expect(admin_user.super_admin?).to be false
+        expect(admin_user.superadmin?).to be false
       end
 
       it 'returns true for operator? when role is operator' do
@@ -155,12 +155,12 @@ RSpec.describe AdminUser, type: :model do
       end
 
       it 'returns false for operator? when role is not operator' do
-        admin_user = build(:admin_user, roles: 'super_admin')
+        admin_user = build(:admin_user, roles: 'superadmin')
         expect(admin_user.operator?).to be false
       end
 
-      it 'returns true for admin? when role is super_admin' do
-        admin_user = build(:admin_user, roles: 'super_admin')
+      it 'returns true for admin? when role is superadmin' do
+        admin_user = build(:admin_user, roles: 'superadmin')
         expect(admin_user.admin?).to be true
       end
 
@@ -177,9 +177,9 @@ RSpec.describe AdminUser, type: :model do
 
     describe 'role sanitization' do
       it 'sanitizes roles from string' do
-        admin_user = build(:admin_user, roles: 'super_admin,  operator  ,')
+        admin_user = build(:admin_user, roles: 'superadmin,  operator  ,')
         admin_user.valid?
-        expect(admin_user.roles).to eq('super_admin,operator')
+        expect(admin_user.roles).to eq('superadmin,operator')
       end
 
       it 'handles blank roles' do

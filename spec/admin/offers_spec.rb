@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe 'Admin::Offers', type: :system do
   describe 'index page' do
     it 'displays offers list' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       offer = create(:offer)
 
       sign_in admin_user, scope: :admin_user
@@ -17,7 +17,7 @@ RSpec.describe 'Admin::Offers', type: :system do
     end
 
     it 'shows all required columns' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       create(:offer)
 
       sign_in admin_user, scope: :admin_user
@@ -41,7 +41,7 @@ RSpec.describe 'Admin::Offers', type: :system do
     end
 
     it 'has available filters' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       create(:offer)
 
       sign_in admin_user, scope: :admin_user
@@ -65,7 +65,7 @@ RSpec.describe 'Admin::Offers', type: :system do
     end
 
     it 'has available scopes' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       create(:offer)
 
       sign_in admin_user, scope: :admin_user
@@ -88,7 +88,7 @@ RSpec.describe 'Admin::Offers', type: :system do
     end
 
     it 'filters offers using scopes' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       create(:offer, :buy)
       create(:offer, :sell, disabled: true)
       create(:offer, :buy, deleted: true)
@@ -123,7 +123,7 @@ RSpec.describe 'Admin::Offers', type: :system do
     end
 
     it 'correctly displays scheduled offer statuses' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
 
       active_scheduled = create(:offer,
         schedule_start_time: Time.zone.now - 1.hour,
@@ -161,7 +161,7 @@ RSpec.describe 'Admin::Offers', type: :system do
 
   describe 'show page' do
     it 'displays offer details' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       offer = create(:offer,
         payment_time: 30,
         payment_details: 'Payment details here',
@@ -193,7 +193,7 @@ RSpec.describe 'Admin::Offers', type: :system do
     end
 
     it 'displays associated trades panel' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       offer = create(:offer)
       trade = create(:trade, offer: offer)
 
@@ -210,7 +210,7 @@ RSpec.describe 'Admin::Offers', type: :system do
     end
 
     it 'displays status correctly' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
 
       active_offer = create(:offer)
       disabled_offer = create(:offer, disabled: true)
@@ -243,7 +243,7 @@ RSpec.describe 'Admin::Offers', type: :system do
     end
 
     it 'displays correct status for scheduled offers with various time conditions' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
 
       current_time = Time.zone.now
 
@@ -308,7 +308,7 @@ RSpec.describe 'Admin::Offers', type: :system do
   end
 
   describe 'form' do
-    let(:admin_user) { create(:admin_user, :super_admin) }
+    let(:admin_user) { create(:admin_user, :superadmin) }
     let(:user) { create(:user) }
     let(:payment_method) { create(:payment_method) }
 
@@ -395,7 +395,7 @@ RSpec.describe 'Admin::Offers', type: :system do
   end
 
   describe 'custom actions', type: :request do
-    let(:admin_user) { create(:admin_user, :super_admin) }
+    let(:admin_user) { create(:admin_user, :superadmin) }
 
     before do
       sign_in admin_user
@@ -447,7 +447,7 @@ RSpec.describe 'Admin::Offers', type: :system do
   end
 
   describe 'action items' do
-    let(:admin_user) { create(:admin_user, :super_admin) }
+    let(:admin_user) { create(:admin_user, :superadmin) }
 
     before do
       sign_in admin_user, scope: :admin_user

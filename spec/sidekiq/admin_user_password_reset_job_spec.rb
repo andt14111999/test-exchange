@@ -11,7 +11,7 @@ RSpec.describe AdminUserPasswordResetJob do
   end
 
   it 'does not send reset password instructions to admin user' do
-    admin_user = create(:admin_user, roles: 'super_admin')
+    admin_user = create(:admin_user, roles: 'superadmin')
     expect_any_instance_of(AdminUser).not_to receive(:send_reset_password_instructions)
 
     described_class.new.perform(admin_user.id)

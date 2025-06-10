@@ -7,7 +7,7 @@ FactoryBot.define do
     password { 'password123' }
     password_confirmation { 'password123' }
     fullname { 'Test User' }
-    roles { 'super_admin' }
+    roles { 'superadmin' }
     authenticator_enabled { false }
     authenticator_key { nil }
 
@@ -15,8 +15,8 @@ FactoryBot.define do
       roles { 'operator' }
     end
 
-    trait :super_admin do
-      roles { 'super_admin' }
+    trait :superadmin do
+      roles { 'superadmin' }
     end
   end
 end
