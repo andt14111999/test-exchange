@@ -7,7 +7,7 @@ class AdminAbility
   def initialize(user)
     @current_user = user
 
-    if user.super_admin?
+    if user.superadmin?
       can :manage, :all
     elsif user.operator?
       apply_operator_permissions

@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Admin::Users', type: :request do
-  let(:admin_user) { create(:admin_user, :super_admin) }
+  let(:admin_user) { create(:admin_user, :superadmin) }
 
   before do
     sign_in admin_user, scope: :admin_user

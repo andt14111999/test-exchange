@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe 'Admin::Trades', type: :system do
   describe 'index page' do
     it 'displays trade list' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       trade = create(:trade, :disputed)
 
       sign_in admin_user, scope: :admin_user
@@ -18,7 +18,7 @@ RSpec.describe 'Admin::Trades', type: :system do
     end
 
     it 'shows all required columns' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       create(:trade)
 
       sign_in admin_user, scope: :admin_user
@@ -38,7 +38,7 @@ RSpec.describe 'Admin::Trades', type: :system do
     end
 
     it 'has available filters' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       create(:trade)
 
       sign_in admin_user, scope: :admin_user
@@ -58,7 +58,7 @@ RSpec.describe 'Admin::Trades', type: :system do
     end
 
     it 'has available scopes' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       create(:trade)
 
       sign_in admin_user, scope: :admin_user
@@ -78,7 +78,7 @@ RSpec.describe 'Admin::Trades', type: :system do
     it 'filters trades using scopes' do
       # This test is complex and may not be reliable in CI environment
       # We'll simplify it to just check that the scopes exist and are clickable
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       create(:trade, :disputed, disputed_at: 25.hours.ago)
       create(:trade, :released)
 
@@ -113,7 +113,7 @@ RSpec.describe 'Admin::Trades', type: :system do
 
   describe 'show page' do
     it 'displays trade details' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       trade = create(:trade, :disputed)
 
       sign_in admin_user, scope: :admin_user
@@ -136,7 +136,7 @@ RSpec.describe 'Admin::Trades', type: :system do
 
     context 'with fiat token deposit' do
       it 'displays fiat token deposit details' do
-        admin_user = create(:admin_user, :super_admin)
+        admin_user = create(:admin_user, :superadmin)
         # Create a fiat deposit and associate it directly as payable to ensure the relationship works
         fiat_deposit = create(:fiat_deposit)
         trade = create(:trade)
@@ -156,7 +156,7 @@ RSpec.describe 'Admin::Trades', type: :system do
 
     context 'with fiat token withdrawal' do
       it 'displays fiat token withdrawal details' do
-        admin_user = create(:admin_user, :super_admin)
+        admin_user = create(:admin_user, :superadmin)
         # Create a fiat withdrawal and associate it directly to ensure the relationship works
         fiat_withdrawal = create(:fiat_withdrawal)
         trade = create(:trade)
@@ -175,7 +175,7 @@ RSpec.describe 'Admin::Trades', type: :system do
     end
 
     it 'displays messages panel' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       trade = create(:trade, :disputed)
       message1 = create(:message, trade: trade, body: 'Test message 1')
       message2 = create(:message, trade: trade, body: 'Test message 2', is_system: true)
@@ -193,7 +193,7 @@ RSpec.describe 'Admin::Trades', type: :system do
     end
 
     it 'displays admin actions panel' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       trade = create(:trade, :disputed)
 
       sign_in admin_user, scope: :admin_user
@@ -210,7 +210,7 @@ RSpec.describe 'Admin::Trades', type: :system do
 
   describe 'form' do
     it 'allows editing trade' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       trade = create(:trade, :disputed)
 
       sign_in admin_user, scope: :admin_user
@@ -232,7 +232,7 @@ RSpec.describe 'Admin::Trades', type: :system do
 
   describe 'controller' do
     it 'eager loads associations' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       trade = create(:trade)
 
       sign_in admin_user, scope: :admin_user
@@ -246,7 +246,7 @@ RSpec.describe 'Admin::Trades', type: :system do
   describe 'Custom Actions', type: :request do
     describe 'POST cancel_trade' do
       it 'calls send_trade_cancel_to_kafka on the trade' do
-        admin_user = create(:admin_user, :super_admin)
+        admin_user = create(:admin_user, :superadmin)
         trade = create(:trade, :disputed)
 
         sign_in admin_user
@@ -265,7 +265,7 @@ RSpec.describe 'Admin::Trades', type: :system do
 
     describe 'POST release_trade' do
       it 'calls send_trade_complete_to_kafka on the trade' do
-        admin_user = create(:admin_user, :super_admin)
+        admin_user = create(:admin_user, :superadmin)
         trade = create(:trade, :disputed)
 
         sign_in admin_user

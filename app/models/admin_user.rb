@@ -6,7 +6,7 @@ class AdminUser < ApplicationRecord
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :recoverable, :rememberable, :validatable
 
-  ROLES = %w[super_admin operator].freeze
+  ROLES = %w[superadmin operator].freeze
 
   before_validation :sanitize_roles
   before_validation :set_random_password, on: :create
@@ -23,8 +23,8 @@ class AdminUser < ApplicationRecord
     %w[encrypted_password]
   end
 
-  def super_admin?
-    role?('super_admin')
+  def superadmin?
+    role?('superadmin')
   end
 
   def operator?
@@ -32,7 +32,7 @@ class AdminUser < ApplicationRecord
   end
 
   def admin?
-    super_admin? || operator?
+    superadmin? || operator?
   end
 
   ROLES.each do |role|

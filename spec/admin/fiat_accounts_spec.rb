@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Admin::FiatAccounts', type: :system do
-  let(:admin) { create(:admin_user, roles: 'super_admin') }
+  let(:admin) { create(:admin_user, roles: 'superadmin') }
   let(:user) { create(:user) }
   let(:fiat_account) do
     create(:fiat_account,

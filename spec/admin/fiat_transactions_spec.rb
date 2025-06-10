@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe 'Admin::FiatTransactions', type: :feature do
   context 'when admin is signed in' do
     before do
-      admin = create(:admin_user, :super_admin)
+      admin = create(:admin_user, :superadmin)
       login_as admin, scope: :admin_user
     end
 

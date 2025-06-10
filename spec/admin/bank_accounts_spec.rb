@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Admin::BankAccounts', type: :request do
-  let(:admin_user) { create(:admin_user, roles: 'super_admin') }
+  let(:admin_user) { create(:admin_user, roles: 'superadmin') }
   let(:user) { create(:user) }
   let(:bank_account) { create(:bank_account, user: user) }
 

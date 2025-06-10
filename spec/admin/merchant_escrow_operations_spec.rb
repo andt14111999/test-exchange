@@ -7,7 +7,7 @@ RSpec.describe 'Admin::MerchantEscrowOperations', type: :system do
 
   describe 'index page' do
     it 'displays a list of merchant escrow operations' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       merchant_escrow = create(:merchant_escrow)
       usdt_account = create(:coin_account, :usdt_main)
       fiat_account = create(:fiat_account)
@@ -35,7 +35,7 @@ RSpec.describe 'Admin::MerchantEscrowOperations', type: :system do
     end
 
     it 'has working filters' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       merchant_escrow = create(:merchant_escrow)
       usdt_account = create(:coin_account, :usdt_main)
       fiat_account = create(:fiat_account)
@@ -65,7 +65,7 @@ RSpec.describe 'Admin::MerchantEscrowOperations', type: :system do
 
   describe 'show page' do
     it 'displays operation details' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       merchant_escrow = create(:merchant_escrow)
       usdt_account = create(:coin_account, :usdt_main)
       fiat_account = create(:fiat_account)
@@ -98,7 +98,7 @@ RSpec.describe 'Admin::MerchantEscrowOperations', type: :system do
     end
 
     it 'displays coin transactions' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       operation = create(:merchant_escrow_operation)
       coin_transaction = create(:coin_transaction,
                               coin_account: operation.usdt_account,
@@ -123,7 +123,7 @@ RSpec.describe 'Admin::MerchantEscrowOperations', type: :system do
     end
 
     it 'displays fiat transactions' do
-      admin_user = create(:admin_user, :super_admin)
+      admin_user = create(:admin_user, :superadmin)
       operation = create(:merchant_escrow_operation)
       fiat_transaction = create(:fiat_transaction,
                               fiat_account: operation.fiat_account,

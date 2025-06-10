@@ -6,7 +6,7 @@ RSpec.describe 'Admin::CoinDepositOperations', type: :system do
   include ActionView::Helpers::NumberHelper
   include Admin::BlockchainHelper
 
-  let(:admin_user) { create(:admin_user, :super_admin) }
+  let(:admin_user) { create(:admin_user, :superadmin) }
 
   before do
     driven_by(:rack_test)

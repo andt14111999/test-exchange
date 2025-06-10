@@ -6,7 +6,7 @@ require 'cancan/matchers'
 RSpec.describe AdminAbility do
   context 'when user is admin' do
     it 'can manage all' do
-      admin = create(:admin_user, :super_admin)
+      admin = create(:admin_user, :superadmin)
       ability = described_class.new(admin)
 
       expect(ability).to be_able_to(:manage, :all)

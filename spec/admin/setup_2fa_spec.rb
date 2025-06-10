@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Admin::Setup2FA', type: :system do
-  let(:admin) { create(:admin_user, roles: 'super_admin') }
+  let(:admin) { create(:admin_user, roles: 'superadmin') }
 
   before do
     sign_in admin, scope: :admin_user

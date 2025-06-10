@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Admin::ApiKeys', type: :system do
-  let(:admin_user) { create(:admin_user, :super_admin) }
+  let(:admin_user) { create(:admin_user, :superadmin) }
   let(:user) { create(:user) }
 
   before do

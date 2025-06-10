@@ -8,7 +8,7 @@ ActiveAdmin.register User do
 
   actions :all
 
-  before_action :ensure_super_admin_user, only: %i[create update destroy]
+  before_action :ensure_superadmin_user, only: %i[create update destroy]
 
   filter :id
   filter :email
@@ -306,8 +306,8 @@ ActiveAdmin.register User do
 
     private
 
-    def ensure_super_admin_user
-      return if current_admin_user.super_admin?
+    def ensure_superadmin_user
+      return if current_admin_user.superadmin?
 
       flash[:error] = 'You are not authorized to perform this action.'
       redirect_to admin_root_path

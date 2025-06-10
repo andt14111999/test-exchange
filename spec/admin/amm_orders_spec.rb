@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 describe 'AmmOrder Admin', type: :feature do
-  let(:admin) { create(:admin_user, :super_admin) }
+  let(:admin) { create(:admin_user, :superadmin) }
   let(:user) { create(:user) }
   let(:amm_pool) { create(:amm_pool) }
   let!(:order) { create(:amm_order, status: 'pending', user: user, amm_pool: amm_pool) }
