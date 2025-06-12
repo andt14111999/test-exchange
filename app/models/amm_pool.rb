@@ -4,6 +4,8 @@ class AmmPool < ApplicationRecord
   include AASM
   include Ransackable
 
+  acts_as_paranoid
+
   has_many :amm_positions, dependent: :restrict_with_error
   has_many :ticks, dependent: :destroy
 

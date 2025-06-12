@@ -40,6 +40,7 @@ FactoryBot.define do
 
     trait :deleted do
       deleted { true }
+      deleted_at { Time.zone.now }
     end
 
     trait :scheduled do

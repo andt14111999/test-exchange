@@ -3,6 +3,8 @@
 class BalanceLockOperation < ApplicationRecord
   include AASM
 
+  acts_as_paranoid
+
   delegate :locked_balances, to: :balance_lock
 
   belongs_to :balance_lock

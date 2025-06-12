@@ -143,7 +143,7 @@ module V1
           optional :automatic, type: Boolean, desc: 'Is automatic'
         end
         put ':id' do
-          offer = current_user.offers.find(params[:id])
+          offer = current_user.offers.with_deleted.find(params[:id])
 
           if offer.deleted?
             error!({ error: 'Cannot update a deleted offer' }, 400)
@@ -194,7 +194,7 @@ module V1
           requires :id, type: String, desc: 'Offer ID'
         end
         put ':id/disable' do
-          offer = current_user.offers.find(params[:id])
+          offer = current_user.offers.with_deleted.find(params[:id])
 
           if offer.deleted?
             error!({ error: 'Cannot disable a deleted offer' }, 400)
@@ -216,7 +216,7 @@ module V1
           requires :id, type: String, desc: 'Offer ID'
         end
         put ':id/enable' do
-          offer = current_user.offers.find(params[:id])
+          offer = current_user.offers.with_deleted.find(params[:id])
 
           if offer.deleted?
             error!({ error: 'Cannot enable a deleted offer' }, 400)
@@ -243,7 +243,7 @@ module V1
           requires :id, type: String, desc: 'Offer ID'
         end
         delete ':id' do
-          offer = current_user.offers.find(params[:id])
+          offer = current_user.offers.with_deleted.find(params[:id])
 
           if offer.deleted?
             error!({ error: 'Offer is already deleted' }, 400)
@@ -262,7 +262,7 @@ module V1
           requires :online, type: Boolean, desc: 'Online status'
         end
         put ':id/online_status' do
-          offer = current_user.offers.find(params[:id])
+          offer = current_user.offers.with_deleted.find(params[:id])
 
           if offer.deleted?
             error!({ error: 'Cannot change online status for a deleted offer' }, 400)

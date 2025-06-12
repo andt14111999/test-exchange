@@ -3,6 +3,8 @@
 class FiatDeposit < ApplicationRecord
   include AASM
 
+  acts_as_paranoid
+
   belongs_to :user
   belongs_to :fiat_account
   belongs_to :payable, polymorphic: true, optional: true

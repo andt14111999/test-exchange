@@ -3,6 +3,8 @@
 class FiatWithdrawal < ApplicationRecord
   include AASM
 
+  acts_as_paranoid
+
   belongs_to :user
   belongs_to :fiat_account
   belongs_to :withdrawable, polymorphic: true, optional: true

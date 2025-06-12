@@ -3,6 +3,8 @@
 class MerchantEscrowOperation < ApplicationRecord
   include AASM
 
+  acts_as_paranoid
+
   # Constants
   OPERATION_TYPES = %w[mint burn].freeze
   OPERATION_TRANSACTION_TYPES = {

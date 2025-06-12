@@ -3,6 +3,8 @@
 class CoinDeposit < ApplicationRecord
   include AASM
 
+  acts_as_paranoid
+
   belongs_to :coin_account, optional: true
   belongs_to :user, optional: true
   has_one :coin_deposit_operation, autosave: false, dependent: :destroy

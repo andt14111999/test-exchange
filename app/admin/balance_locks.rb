@@ -3,7 +3,7 @@
 ActiveAdmin.register BalanceLock do
   menu priority: 7, parent: 'Coin Management', label: 'Balance Locks'
 
-  actions :all, except: [ :new, :edit ]
+  actions :all, except: [ :new, :edit, :destroy ]
 
   index do
     selectable_column

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class User < ApplicationRecord
+  acts_as_paranoid
+
   has_many :social_accounts, dependent: :destroy
   has_many :coin_accounts, dependent: :destroy
   has_many :fiat_accounts, dependent: :destroy

@@ -99,7 +99,7 @@ module KafkaService
           offer = Offer.find_by(id: payload['actionId'])
           return unless offer
 
-          offer.update!(deleted: true)
+          offer.update!(deleted: true, deleted_at: Time.zone.now)
           Rails.logger.info("Offer marked as deleted: #{offer.id}")
         rescue StandardError => e
           Rails.logger.error("Error processing offer delete: #{e.message}")

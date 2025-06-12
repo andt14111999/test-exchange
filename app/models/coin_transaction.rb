@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class CoinTransaction < ApplicationRecord
+  acts_as_paranoid
+
   belongs_to :coin_account
   belongs_to :operation, polymorphic: true, optional: true
 

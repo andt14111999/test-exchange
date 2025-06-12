@@ -4,6 +4,8 @@ class Tick < ApplicationRecord
   include Ransackable
   include AASM
 
+  acts_as_paranoid
+
   belongs_to :amm_pool
 
   validates :pool_pair, presence: true

@@ -3,6 +3,8 @@
 class Trade < ApplicationRecord
   include AASM
 
+  acts_as_paranoid
+
   belongs_to :buyer, class_name: 'User'
   belongs_to :seller, class_name: 'User'
   belongs_to :offer

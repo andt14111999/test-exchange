@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class BankAccount < ApplicationRecord
+  acts_as_paranoid
+
   belongs_to :user
 
   validates :bank_name, presence: true

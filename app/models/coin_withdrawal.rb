@@ -3,6 +3,8 @@
 class CoinWithdrawal < ApplicationRecord
   include AASM
 
+  acts_as_paranoid
+
   belongs_to :user
   has_one :coin_withdrawal_operation, dependent: :destroy
   has_one :coin_transaction, as: :reference, dependent: :nullify

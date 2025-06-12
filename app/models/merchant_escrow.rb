@@ -3,6 +3,8 @@
 class MerchantEscrow < ApplicationRecord
   include AASM
 
+  acts_as_paranoid
+
   # Associations
   belongs_to :user
   belongs_to :usdt_account, class_name: 'CoinAccount', foreign_key: 'usdt_account_id'

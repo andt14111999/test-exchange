@@ -4,6 +4,8 @@ class AmmPosition < ApplicationRecord
   include Ransackable
   include AASM
 
+  acts_as_paranoid
+
   belongs_to :user
   belongs_to :amm_pool
 
