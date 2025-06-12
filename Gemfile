@@ -87,6 +87,7 @@ gem 'snappy'
 # Monitoring & Error Tracking
 ################################################################################
 gem 'paper_trail', '~> 16.0' # Model versioning
+gem 'paranoia'                # Soft delete
 gem 'rollbar'
 
 ################################################################################

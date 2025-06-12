@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class PaymentMethod < ApplicationRecord
+  acts_as_paranoid
+
   has_many :offers, dependent: :nullify
 
   validates :name, presence: true, uniqueness: true

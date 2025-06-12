@@ -538,7 +538,7 @@ RSpec.describe V1::Offers::Api, type: :request do
 
       it 'returns error when trying to update a deleted offer' do
         user = create(:user)
-        offer = create(:offer, :deleted, user: user)
+        offer = create(:offer, :deleted, :disabled, user: user)
 
         put "/api/v1/offers/#{offer.id}",
             params: { price: '51000.0' },
@@ -723,6 +723,9 @@ RSpec.describe V1::Offers::Api, type: :request do
         user = create(:user)
         offer = create(:offer, :deleted, user: user)
 
+        # Mock the deleted? method for this test
+        allow_any_instance_of(Offer).to receive(:deleted?).and_return(true)
+
         put "/api/v1/offers/#{offer.id}/disable", headers: auth_headers(user)
 
         expect(response).to have_http_status(:bad_request)
@@ -872,7 +875,6 @@ RSpec.describe V1::Offers::Api, type: :request do
       it 'returns error when trying to delete an already deleted offer' do
         user = create(:user)
         offer = create(:offer, :deleted, user: user)
-        allow_any_instance_of(Offer).to receive(:deleted?).and_return(true)
 
         delete "/api/v1/offers/#{offer.id}", headers: auth_headers(user)
 

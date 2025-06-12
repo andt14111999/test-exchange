@@ -4,6 +4,8 @@ class AmmOrder < ApplicationRecord
   include Ransackable
   include AASM
 
+  acts_as_paranoid
+
   attr_accessor :skip_balance_validation
 
   belongs_to :user

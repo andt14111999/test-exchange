@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Offer < ApplicationRecord
+  acts_as_paranoid
+
   belongs_to :user
   belongs_to :payment_method, optional: true
   has_many :trades, dependent: :nullify

@@ -5,6 +5,8 @@ class CoinAccount < ApplicationRecord
   include CategorizedAccount
   include BalanceNotification
 
+  acts_as_paranoid
+
   belongs_to :user
   has_many :coin_transactions, dependent: :destroy
 

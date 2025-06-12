@@ -3,6 +3,8 @@
 class BalanceLock < ApplicationRecord
   include AASM
 
+  acts_as_paranoid
+
   belongs_to :user
   has_many :balance_lock_operations, dependent: :destroy
   has_many :coin_transactions, as: :operation, dependent: :destroy

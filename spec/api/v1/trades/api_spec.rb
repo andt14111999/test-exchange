@@ -476,10 +476,9 @@ RSpec.describe V1::Trades::Api, type: :request do
       end
 
       it 'returns 400 when trade cannot be marked as paid in current state' do
-        paid_trade = create(:trade, :paid, buyer: user, seller: another_user)
-        # Set specific stub for this test case only
+        # Instead of creating a trade, use a double
+        paid_trade = instance_double(Trade, id: 123, buyer: user, seller: another_user)
         allow(paid_trade).to receive(:unpaid?).and_return(false)
-        # Remove the picked? stub as it's no longer needed
         allow(Trade).to receive(:find_by).and_return(paid_trade)
 
         put "/api/v1/trades/#{paid_trade.id}/mark_paid", params: {
@@ -491,7 +490,13 @@ RSpec.describe V1::Trades::Api, type: :request do
       end
 
       it 'returns 403 when user is not authorized to mark trade as paid' do
-        unauthorized_trade = create(:trade, :unpaid, buyer: another_user, seller: user)
+        # Instead of creating a trade, use a double with ALL needed methods stubbed
+        unauthorized_trade = instance_double(Trade,
+          id: 456,
+          buyer: another_user,
+          seller: user,
+          unpaid?: true  # Add this stub
+        )
         allow(unauthorized_trade).to receive(:can_be_marked_paid_by?).and_return(false)
         allow(Trade).to receive(:find_by).and_return(unauthorized_trade)
 

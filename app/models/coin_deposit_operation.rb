@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class CoinDepositOperation < CoinOperation
+  acts_as_paranoid
+
   has_many :coin_transactions, as: :operation, dependent: :destroy
   belongs_to :coin_account, optional: true
   belongs_to :coin_deposit, optional: true, touch: true

@@ -3,6 +3,8 @@
 class CoinWithdrawalOperation < Operation
   include AASM
 
+  acts_as_paranoid
+
   delegate :user, :record_tx_hash_arrived_at, to: :coin_withdrawal
   delegate :coin_address, to: :coin_withdrawal
 

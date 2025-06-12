@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_06_025704) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -61,7 +61,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.decimal "amount_received", precision: 32, scale: 16, default: "0.0"
+    t.datetime "deleted_at"
     t.index ["amm_pool_id"], name: "index_amm_orders_on_amm_pool_id"
+    t.index ["deleted_at"], name: "index_amm_orders_on_deleted_at"
     t.index ["identifier"], name: "index_amm_orders_on_identifier", unique: true
     t.index ["user_id"], name: "index_amm_orders_on_user_id"
   end
@@ -92,6 +94,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.decimal "init_price", precision: 36, scale: 18
+    t.datetime "deleted_at"
+    t.index ["deleted_at"], name: "index_amm_pools_on_deleted_at"
     t.index ["pair"], name: "index_amm_pools_on_pair", unique: true
     t.index ["status"], name: "index_amm_pools_on_status"
     t.index ["token0", "token1", "fee_percentage"], name: "index_amm_pools_on_token0_and_token1_and_fee_percentage", unique: true
@@ -124,7 +128,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.decimal "estimate_fee_token0", precision: 36, scale: 18, default: "0.0", null: false
     t.decimal "estimate_fee_token1", precision: 36, scale: 18, default: "0.0", null: false
     t.decimal "apr", precision: 10, scale: 6, default: "0.0", null: false
+    t.datetime "deleted_at"
     t.index ["amm_pool_id"], name: "index_amm_positions_on_amm_pool_id"
+    t.index ["deleted_at"], name: "index_amm_positions_on_deleted_at"
     t.index ["identifier"], name: "index_amm_positions_on_identifier", unique: true
     t.index ["status"], name: "index_amm_positions_on_status"
     t.index ["user_id"], name: "index_amm_positions_on_user_id"
@@ -153,7 +159,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.text "status_explanation"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "deleted_at"
     t.index ["balance_lock_id"], name: "index_balance_lock_operations_on_balance_lock_id"
+    t.index ["deleted_at"], name: "index_balance_lock_operations_on_deleted_at"
     t.index ["operation_type"], name: "index_balance_lock_operations_on_operation_type"
     t.index ["status"], name: "index_balance_lock_operations_on_status"
   end
@@ -169,6 +177,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.datetime "updated_at", null: false
     t.string "performer"
     t.string "engine_lock_id"
+    t.datetime "deleted_at"
+    t.index ["deleted_at"], name: "index_balance_locks_on_deleted_at"
     t.index ["status"], name: "index_balance_locks_on_status"
     t.index ["user_id"], name: "index_balance_locks_on_user_id"
   end
@@ -184,7 +194,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.boolean "is_primary", default: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "deleted_at"
     t.index ["country_code"], name: "index_bank_accounts_on_country_code"
+    t.index ["deleted_at"], name: "index_bank_accounts_on_deleted_at"
     t.index ["user_id", "bank_name", "account_number"], name: "idx_on_user_id_bank_name_account_number_9dd9c83454", unique: true
     t.index ["user_id"], name: "index_bank_accounts_on_user_id"
   end
@@ -199,6 +211,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.string "address"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "deleted_at"
+    t.index ["deleted_at"], name: "index_coin_accounts_on_deleted_at"
     t.index ["user_id", "coin_currency", "layer"], name: "index_coin_accounts_on_user_id_and_coin_currency_and_layer", unique: true
     t.index ["user_id"], name: "index_coin_accounts_on_user_id"
   end
@@ -216,8 +230,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.text "status_explanation"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "deleted_at"
     t.index ["coin_account_id"], name: "index_coin_deposit_operations_on_coin_account_id"
     t.index ["coin_deposit_id"], name: "index_coin_deposit_operations_on_coin_deposit_id"
+    t.index ["deleted_at"], name: "index_coin_deposit_operations_on_deleted_at"
     t.index ["status"], name: "index_coin_deposit_operations_on_status"
     t.index ["tx_hash", "out_index"], name: "index_coin_deposit_operations_on_tx_hash_and_out_index", unique: true
     t.index ["tx_hash"], name: "index_coin_deposit_operations_on_tx_hash"
@@ -240,8 +256,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.jsonb "metadata"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "deleted_at"
     t.index ["coin_account_id"], name: "index_coin_deposits_on_coin_account_id"
     t.index ["created_at"], name: "index_coin_deposits_on_created_at"
+    t.index ["deleted_at"], name: "index_coin_deposits_on_deleted_at"
     t.index ["status"], name: "index_coin_deposits_on_status"
     t.index ["tx_hash", "out_index", "coin_currency", "coin_account_id"], name: "index_coin_deposits_on_tx_hash_and_related", unique: true
     t.index ["user_id"], name: "index_coin_deposits_on_user_id"
@@ -277,9 +295,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "transaction_type", default: "transfer", null: false
+    t.datetime "deleted_at"
     t.index ["coin_account_id"], name: "index_coin_transactions_on_coin_account_id"
     t.index ["coin_currency"], name: "index_coin_transactions_on_coin_currency"
     t.index ["created_at"], name: "index_coin_transactions_on_created_at"
+    t.index ["deleted_at"], name: "index_coin_transactions_on_deleted_at"
     t.index ["operation_type", "operation_id"], name: "index_coin_transactions_on_operation"
     t.index ["operation_type", "operation_id"], name: "index_coin_transactions_on_operation_type_and_operation_id"
   end
@@ -297,8 +317,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.string "withdrawal_status"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "deleted_at"
     t.index ["coin_withdrawal_id"], name: "index_coin_withdrawal_operations_on_coin_withdrawal_id"
     t.index ["created_at"], name: "index_coin_withdrawal_operations_on_created_at"
+    t.index ["deleted_at"], name: "index_coin_withdrawal_operations_on_deleted_at"
     t.index ["scheduled_at"], name: "index_coin_withdrawal_operations_on_scheduled_at"
     t.index ["status"], name: "index_coin_withdrawal_operations_on_status"
     t.index ["tx_hash"], name: "index_coin_withdrawal_operations_on_tx_hash"
@@ -328,8 +350,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.bigint "withdrawable_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "deleted_at"
     t.index ["coin_address"], name: "index_on_coin_address_of_coin_withdrawals_if_lightning", unique: true, where: "((coin_layer)::text = 'lightning'::text)"
     t.index ["coin_currency", "coin_layer"], name: "index_coin_withdrawals_on_coin_currency_and_coin_layer"
+    t.index ["deleted_at"], name: "index_coin_withdrawals_on_deleted_at"
     t.index ["status", "approve_scheduled_at"], name: "index_coin_withdrawals_for_delayed_approval", where: "((status)::text = 'delayed_approval'::text)"
     t.index ["status", "updated_at"], name: "index_coin_withdrawals_for_stuck_recovery", where: "((status)::text = ANY (ARRAY[('prepared'::character varying)::text, ('verifying'::character varying)::text, ('verified'::character varying)::text]))"
     t.index ["user_id", "coin_currency", "id"], name: "index_coin_withdrawals_on_user_id_and_coin_currency_and_id"
@@ -348,7 +372,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.datetime "updated_at", null: false
     t.string "country_code"
     t.string "frozen_reason"
+    t.datetime "deleted_at"
     t.index ["country_code"], name: "index_fiat_accounts_on_country_code"
+    t.index ["deleted_at"], name: "index_fiat_accounts_on_deleted_at"
     t.index ["user_id", "currency"], name: "index_fiat_accounts_on_user_id_and_currency", unique: true
     t.index ["user_id"], name: "index_fiat_accounts_on_user_id"
   end
@@ -381,7 +407,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.jsonb "bank_response_data", default: {}
     t.string "payment_proof_url"
     t.text "payment_description"
+    t.datetime "deleted_at"
     t.index ["country_code"], name: "index_fiat_deposits_on_country_code"
+    t.index ["deleted_at"], name: "index_fiat_deposits_on_deleted_at"
     t.index ["explorer_ref"], name: "index_fiat_deposits_on_explorer_ref"
     t.index ["fiat_account_id"], name: "index_fiat_deposits_on_fiat_account_id"
     t.index ["memo"], name: "index_fiat_deposits_on_memo", unique: true
@@ -408,8 +436,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.string "status", default: "pending", null: false
     t.jsonb "details", default: {}
     t.string "reference"
+    t.datetime "deleted_at"
     t.index ["created_at"], name: "index_fiat_transactions_on_created_at"
     t.index ["currency"], name: "index_fiat_transactions_on_currency"
+    t.index ["deleted_at"], name: "index_fiat_transactions_on_deleted_at"
     t.index ["fiat_account_id"], name: "index_fiat_transactions_on_fiat_account_id"
     t.index ["operation_type", "operation_id"], name: "index_fiat_transactions_on_operation"
     t.index ["operation_type", "operation_id"], name: "index_fiat_transactions_on_operation_type_and_operation_id"
@@ -444,8 +474,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.jsonb "bank_response_data", default: {}
     t.string "verification_status"
     t.integer "verification_attempts", default: 0
+    t.datetime "deleted_at"
     t.index ["bank_reference"], name: "index_fiat_withdrawals_on_bank_reference"
     t.index ["country_code"], name: "index_fiat_withdrawals_on_country_code"
+    t.index ["deleted_at"], name: "index_fiat_withdrawals_on_deleted_at"
     t.index ["fiat_account_id"], name: "index_fiat_withdrawals_on_fiat_account_id"
     t.index ["status", "created_at"], name: "index_fiat_withdrawals_on_status_and_created_at"
     t.index ["status"], name: "index_fiat_withdrawals_on_status"
@@ -480,7 +512,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.text "status_explanation"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "deleted_at"
     t.index ["created_at"], name: "index_merchant_escrow_operations_on_created_at"
+    t.index ["deleted_at"], name: "index_merchant_escrow_operations_on_deleted_at"
     t.index ["fiat_account_id"], name: "index_merchant_escrow_operations_on_fiat_account_id"
     t.index ["merchant_escrow_id"], name: "index_merchant_escrow_operations_on_merchant_escrow_id"
     t.index ["operation_type"], name: "index_merchant_escrow_operations_on_operation_type"
@@ -500,7 +534,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.decimal "exchange_rate", precision: 20, scale: 8
+    t.datetime "deleted_at"
     t.index ["created_at"], name: "index_merchant_escrows_on_created_at"
+    t.index ["deleted_at"], name: "index_merchant_escrows_on_deleted_at"
     t.index ["fiat_account_id"], name: "index_merchant_escrows_on_fiat_account_id"
     t.index ["fiat_currency"], name: "index_merchant_escrows_on_fiat_currency"
     t.index ["status"], name: "index_merchant_escrows_on_status"
@@ -561,8 +597,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.datetime "updated_at", null: false
     t.datetime "schedule_start_time"
     t.datetime "schedule_end_time"
+    t.datetime "deleted_at"
     t.index ["coin_currency", "currency", "offer_type", "disabled", "deleted"], name: "idx_on_coin_currency_currency_offer_type_disabled_d_97f0c3ccae"
     t.index ["country_code"], name: "index_offers_on_country_code"
+    t.index ["deleted_at"], name: "index_offers_on_deleted_at"
     t.index ["payment_method_id"], name: "index_offers_on_payment_method_id"
     t.index ["schedule_end_time"], name: "index_offers_on_schedule_end_time"
     t.index ["schedule_start_time"], name: "index_offers_on_schedule_start_time"
@@ -580,7 +618,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.string "icon_url"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "deleted_at"
     t.index ["country_code"], name: "index_payment_methods_on_country_code"
+    t.index ["deleted_at"], name: "index_payment_methods_on_deleted_at"
     t.index ["name"], name: "index_payment_methods_on_name", unique: true
   end
 
@@ -625,7 +665,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.bigint "updated_at_timestamp"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "deleted_at"
     t.index ["amm_pool_id"], name: "index_ticks_on_amm_pool_id"
+    t.index ["deleted_at"], name: "index_ticks_on_deleted_at"
     t.index ["pool_pair", "tick_index"], name: "index_ticks_on_pool_pair_and_tick_index", unique: true
     t.index ["pool_pair"], name: "index_ticks_on_pool_pair"
     t.index ["status"], name: "index_ticks_on_status"
@@ -672,8 +714,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.decimal "fixed_fee", precision: 32, scale: 16, default: "0.0"
     t.decimal "total_fee", precision: 32, scale: 16, default: "0.0"
     t.decimal "amount_after_fee", precision: 32, scale: 16, default: "0.0"
+    t.datetime "deleted_at"
     t.index ["buyer_id", "status"], name: "index_trades_on_buyer_id_and_status"
     t.index ["buyer_id"], name: "index_trades_on_buyer_id"
+    t.index ["deleted_at"], name: "index_trades_on_deleted_at"
     t.index ["fiat_token_deposit_id"], name: "index_trades_on_fiat_token_deposit_id"
     t.index ["fiat_token_withdrawal_id"], name: "index_trades_on_fiat_token_withdrawal_id"
     t.index ["offer_id"], name: "index_trades_on_offer_id"
@@ -694,6 +738,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_05_183412) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "username", limit: 20
+    t.datetime "deleted_at"
+    t.index ["deleted_at"], name: "index_users_on_deleted_at"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["username"], name: "index_users_on_username", unique: true
   end

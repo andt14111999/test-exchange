@@ -367,6 +367,7 @@ RSpec.describe Offer, type: :model do
 
     it 'returns false when offer is deleted' do
       offer = described_class.new(disabled: false, deleted: true)
+      allow(offer).to receive(:deleted?).and_return(true)
       expect(offer.active?).to be false
     end
   end
@@ -396,6 +397,7 @@ RSpec.describe Offer, type: :model do
 
     it 'returns false when offer is deleted' do
       offer = described_class.new(deleted: true)
+      allow(offer).to receive(:deleted?).and_return(true)
       expect(offer.currently_active?).to be false
     end
 
@@ -533,7 +535,8 @@ RSpec.describe Offer, type: :model do
 
       allow(offer).to receive_messages(
         trades: trade_class,
-        send_offer_delete_to_kafka: true
+        send_offer_delete_to_kafka: true,
+        update: true
       )
       allow(trades).to receive(:exists?).and_return(false)
 

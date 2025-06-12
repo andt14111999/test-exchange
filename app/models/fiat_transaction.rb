@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class FiatTransaction < ApplicationRecord
+  acts_as_paranoid
+
   belongs_to :fiat_account
   belongs_to :operation, polymorphic: true, optional: true
 
