@@ -17,7 +17,7 @@
 !/tmp/.keep
 
 
-/storage/payment_proofs/*
+/storage/*
 !/storage/.keep
 
 # Ignore pidfiles, but keep the directory.

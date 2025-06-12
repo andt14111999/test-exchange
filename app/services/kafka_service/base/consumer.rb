@@ -4,7 +4,7 @@ module KafkaService
   module Base
     class Consumer
       def initialize(group_id:, topics:)
-        @logger = Logger.new('log/kafka_consumer.log')
+        @logger = Rails.env.production? ? Rails.logger : Logger.new('log/kafka_consumer.log')
         @kafka = ::Kafka.new(
           seed_brokers: KafkaService::Config::Brokers::BROKERS,
           **kafka_config(group_id)
