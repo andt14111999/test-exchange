@@ -3,7 +3,7 @@
 Rails.application.configure do
   # Sử dụng biến môi trường cho URL
   if Rails.env.production?
-    config.action_cable.url = ENV.fetch('ACTION_CABLE_URL') { 'wss://your-domain.com/cable' }
+    config.action_cable.url = ENV.fetch('ACTION_CABLE_URL') { 'wss://snow.exchange/cable' }
   else
     config.action_cable.url = 'ws://localhost:3969/cable'
   end
@@ -12,7 +12,7 @@ Rails.application.configure do
 
   if Rails.env.production?
     config.action_cable.allowed_request_origins = [
-      ENV.fetch('FRONTEND_URL') { 'https://your-frontend-domain.com' }
+      ENV.fetch('FRONTEND_URL') { 'https://snow.exchange' }
     ]
   else
     config.action_cable.allowed_request_origins = [

@@ -4,7 +4,7 @@ module KafkaService
   module Base
     class Service
       def initialize
-         @logger = Logger.new("log/#{service_name}.log")
+         @logger = Rails.env.production? ? Rails.logger : Logger.new("log/#{service_name}.log")
         initialize_producer
       end
 

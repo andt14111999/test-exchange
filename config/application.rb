@@ -35,7 +35,7 @@ module Exchange
     # Cấu hình CORS
     config.middleware.insert_before 0, Rack::Cors do
       allow do
-        origins '*' # Trong production nên giới hạn domain cụ thể
+        origins ENV.fetch('FRONTEND_URL') { 'https://snow.exchange' }
         resource '*',
           headers: :any,
           methods: %i[get post put patch delete options],

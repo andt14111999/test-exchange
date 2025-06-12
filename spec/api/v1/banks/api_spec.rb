@@ -43,7 +43,7 @@ RSpec.describe V1::Banks::Api, type: :request do
         allow(File).to receive(:read).and_call_original
 
         # Nhưng đối với file banks.json, trả về dữ liệu mẫu
-        allow(File).to receive(:read).with(Rails.root.join('storage', 'banks.json')).and_return(sample_banks_data.to_json)
+        allow(File).to receive(:read).with(Rails.root.join('data', 'banks.json')).and_return(sample_banks_data.to_json)
       end
 
       it 'returns all banks from the JSON file' do

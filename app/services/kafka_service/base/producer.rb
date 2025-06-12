@@ -4,7 +4,7 @@ module KafkaService
   module Base
     class Producer
       def initialize
-        @logger = Logger.new('log/kafka_producer.log')
+        @logger = Rails.env.production? ? Rails.logger : Logger.new('log/kafka_producer.log')
         @kafka = ::Kafka.new(
           KafkaService::Config::Brokers::BROKERS,
           **kafka_config
