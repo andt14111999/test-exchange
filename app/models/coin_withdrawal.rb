@@ -21,6 +21,7 @@ class CoinWithdrawal < ApplicationRecord
   validate :validate_coin_address_and_layer
   validate :validate_receiver_internal, if: :internal_transfer?
 
+  before_validation :detect_internal_transfer_by_address
   before_validation :assign_coin_layer
   before_validation :calculate_coin_fee, on: :create
   after_create :send_event_withdrawal_to_kafka
@@ -130,6 +131,17 @@ class CoinWithdrawal < ApplicationRecord
         errors.add(:receiver_phone_number, :cannot_transfer_to_self)
       end
     end
+  end
+
+  def detect_internal_transfer_by_address
+    return if coin_address.blank?
+    return if receiver_email.present? || receiver_phone_number.present? || receiver_username.present?
+
+    target_account = CoinAccount.find_by(address: coin_address, coin_currency: coin_currency)
+    return if target_account.blank?
+
+    # Set the receiver information to the target account's user email
+    self.receiver_email = target_account.user.email
   end
 
   def assign_coin_layer
