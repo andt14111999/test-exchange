@@ -661,4 +661,160 @@ RSpec.describe CoinWithdrawal, type: :model do
       expect(withdrawal.portal_coin).to eq('erct')
     end
   end
+
+  describe '#detect_internal_transfer_by_address' do
+    context 'when address-based internal transfer detection' do
+      it 'detects internal transfer when coin_address matches an existing CoinAccount address' do
+        sender = create(:user)
+        receiver = create(:user)
+        create(:coin_account, :usdt_main, user: sender, balance: 100.0)
+        create(:coin_account, user: receiver, coin_currency: 'usdt', layer: 'erc20', address: '0x1234567890abcdef', account_type: 'deposit')
+
+        withdrawal = build(:coin_withdrawal,
+          user: sender,
+          coin_currency: 'usdt',
+          coin_layer: 'erc20',
+          coin_address: '0x1234567890abcdef',
+          coin_amount: 10.0
+        )
+
+        withdrawal.valid?
+
+        expect(withdrawal.receiver_email).to eq(receiver.email)
+        expect(withdrawal.internal_transfer?).to be true
+      end
+
+      it 'does not detect internal transfer when coin_address does not match any CoinAccount' do
+        sender = create(:user)
+        create(:coin_account, :usdt_main, user: sender, balance: 100.0)
+
+        withdrawal = build(:coin_withdrawal,
+          user: sender,
+          coin_currency: 'usdt',
+          coin_layer: 'erc20',
+          coin_address: '0xnonexistentaddress',
+          coin_amount: 10.0
+        )
+
+        withdrawal.valid?
+
+        expect(withdrawal.receiver_email).to be_nil
+        expect(withdrawal.internal_transfer?).to be false
+      end
+
+      it 'does not detect internal transfer when coin_address matches but currency differs' do
+        sender = create(:user)
+        receiver = create(:user)
+        create(:coin_account, :usdt_main, user: sender, balance: 100.0)
+        create(:coin_account, user: receiver, coin_currency: 'eth', layer: 'erc20', address: '0x1234567890abcdef', account_type: 'deposit')
+
+        withdrawal = build(:coin_withdrawal,
+          user: sender,
+          coin_currency: 'usdt',
+          coin_layer: 'erc20',
+          coin_address: '0x1234567890abcdef',
+          coin_amount: 10.0
+        )
+
+        withdrawal.valid?
+
+        expect(withdrawal.receiver_email).to be_nil
+        expect(withdrawal.internal_transfer?).to be false
+      end
+
+      it 'does not override existing receiver information' do
+        sender = create(:user)
+        receiver = create(:user)
+        other_receiver = create(:user)
+        create(:coin_account, :usdt_main, user: sender, balance: 100.0)
+        create(:coin_account, user: other_receiver, coin_currency: 'usdt', layer: 'erc20', address: '0x1234567890abcdef', account_type: 'deposit')
+
+        withdrawal = build(:coin_withdrawal,
+          user: sender,
+          coin_currency: 'usdt',
+          coin_layer: 'erc20',
+          coin_address: '0x1234567890abcdef',
+          coin_amount: 10.0,
+          receiver_email: receiver.email
+        )
+
+        withdrawal.valid?
+
+        expect(withdrawal.receiver_email).to eq(receiver.email)
+        expect(withdrawal.internal_transfer?).to be true
+      end
+
+      it 'does not detect internal transfer when coin_address is blank' do
+        sender = create(:user)
+        create(:coin_account, :usdt_main, user: sender, balance: 100.0)
+
+        withdrawal = build(:coin_withdrawal,
+          user: sender,
+          coin_currency: 'usdt',
+          coin_layer: 'erc20',
+          coin_address: nil,
+          coin_amount: 10.0
+        )
+
+        withdrawal.valid?
+
+        expect(withdrawal.receiver_email).to be_nil
+      end
+
+      it 'creates internal transfer operation when address belongs to our exchange' do
+        sender = create(:user)
+        receiver = create(:user)
+        create(:coin_account, :usdt_main, user: sender, balance: 100.0)
+        create(:coin_account, user: receiver, coin_currency: 'usdt', layer: 'erc20', address: '0x1234567890abcdef', account_type: 'deposit')
+
+        withdrawal = create(:coin_withdrawal,
+          user: sender,
+          coin_currency: 'usdt',
+          coin_layer: 'erc20',
+          coin_address: '0x1234567890abcdef',
+          coin_amount: 10.0
+        )
+
+        expect(withdrawal.coin_internal_transfer_operation).to be_present
+        expect(withdrawal.coin_internal_transfer_operation.sender).to eq(sender)
+        expect(withdrawal.coin_internal_transfer_operation.receiver).to eq(receiver)
+        expect(withdrawal.coin_internal_transfer_operation.coin_currency).to eq('usdt')
+        expect(withdrawal.coin_internal_transfer_operation.coin_amount).to eq(10.0)
+        expect(withdrawal.coin_withdrawal_operation).to be_nil
+      end
+
+      it 'creates regular withdrawal operation when address does not belong to our exchange' do
+        sender = create(:user)
+        create(:coin_account, :usdt_main, user: sender, balance: 100.0)
+
+        withdrawal = create(:coin_withdrawal,
+          user: sender,
+          coin_currency: 'usdt',
+          coin_layer: 'erc20',
+          coin_address: '0xexternaladdress',
+          coin_amount: 10.0
+        )
+
+        expect(withdrawal.coin_withdrawal_operation).to be_present
+        expect(withdrawal.coin_internal_transfer_operation).to be_nil
+      end
+
+      it 'prevents self-transfer when address belongs to sender' do
+        sender = create(:user)
+        create(:coin_account, :usdt_main, user: sender, balance: 100.0)
+        create(:coin_account, user: sender, coin_currency: 'usdt', layer: 'erc20', address: '0x1234567890abcdef', account_type: 'deposit')
+
+        withdrawal = build(:coin_withdrawal,
+          user: sender,
+          coin_currency: 'usdt',
+          coin_layer: 'erc20',
+          coin_address: '0x1234567890abcdef',
+          coin_amount: 10.0
+        )
+
+        expect(withdrawal).to be_invalid
+        expect(withdrawal.errors[:receiver_email]).to include('cannot transfer to self')
+      end
+    end
+  end
 end
