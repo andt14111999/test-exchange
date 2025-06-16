@@ -20,7 +20,7 @@ RSpec.describe KafkaService::Handlers::TransactionResponseHandler do
         {
           'isSuccess' => false,
           'actionType' => action_type,
-          'recordId' => record.id,
+          'actionId' => record.id,
           'errorMessage' => 'Transaction failed'
         }
       end

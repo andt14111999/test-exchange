@@ -7,9 +7,9 @@ module KafkaService
         return if payload['isSuccess']
 
         error_message = payload['errorMessage']
-        record = find_record(payload['actionType'], payload['recordId'])
+        record = find_record(payload['actionType'], payload['actionId'])
 
-        log_error_to_rollbar(payload['actionType'], payload['recordId'], error_message)
+        log_error_to_rollbar(payload['actionType'], payload['actionId'], error_message)
 
         return unless record
 
