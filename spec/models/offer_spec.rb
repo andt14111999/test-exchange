@@ -819,7 +819,7 @@ RSpec.describe Offer, type: :model do
         country_code disabled deleted automatic online
         terms_of_trade disable_reason margin fixed_coin_price
         bank_names schedule_start_time schedule_end_time
-        created_at updated_at
+        created_at updated_at error_message
       ]
       expect(described_class.ransackable_attributes).to match_array(expected_attributes)
     end

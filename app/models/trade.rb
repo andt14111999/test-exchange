@@ -8,12 +8,14 @@ class Trade < ApplicationRecord
   belongs_to :buyer, class_name: 'User'
   belongs_to :seller, class_name: 'User'
   belongs_to :offer
+  belongs_to :fiat_token_deposit, class_name: 'FiatDeposit', optional: true
+  belongs_to :fiat_token_withdrawal, class_name: 'FiatWithdrawal', optional: true
   has_many :messages, dependent: :destroy
   has_one :fiat_deposit, as: :payable, dependent: :nullify
   has_one :fiat_withdrawal, as: :withdrawable, dependent: :nullify
 
   TAKER_SIDES = %w[buy sell].freeze
-  STATUSES = %w[awaiting unpaid paid disputed released cancelled cancelled_automatically].freeze
+  STATUSES = %w[awaiting unpaid paid disputed released cancelled cancelled_automatically transaction_error].freeze
   PAYMENT_PROOF_STATUSES = %w[legit fake spam].freeze
   DISPUTE_RESOLUTIONS = %w[pending admin_intervention].freeze
   TIMEOUT_MINUTES = 15
@@ -61,6 +63,7 @@ class Trade < ApplicationRecord
     state :released
     state :cancelled
     state :cancelled_automatically
+    state :transaction_error
 
     # Normal trade flow
     event :mark_as_unpaid do
@@ -90,6 +93,13 @@ class Trade < ApplicationRecord
     event :cancel_automatically do
       transitions from: [ :awaiting, :unpaid ], to: :cancelled_automatically,
                  after: :set_cancelled_timestamp
+    end
+
+    event :transaction_fail do
+      before do |error_msg|
+        self.error_message = error_msg
+      end
+      transitions from: [ :awaiting, :unpaid, :paid ], to: :transaction_error
     end
   end
 
@@ -128,12 +138,12 @@ class Trade < ApplicationRecord
       payment_method taker_side status
       paid_at released_at expired_at cancelled_at disputed_at
       has_payment_proof payment_proof_status dispute_reason dispute_resolution
-      created_at updated_at
+      created_at updated_at error_message
     ]
   end
 
   def self.ransackable_associations(_auth_object = nil)
-    %w[buyer seller offer messages fiat_deposit fiat_withdrawal]
+    %w[buyer seller offer messages fiat_deposit fiat_withdrawal fiat_token_deposit fiat_token_withdrawal]
   end
 
   # Status check methods

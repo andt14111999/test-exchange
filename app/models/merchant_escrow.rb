@@ -15,7 +15,6 @@ class MerchantEscrow < ApplicationRecord
   validates :usdt_amount, presence: true, numericality: { greater_than: 0 }
   validates :fiat_amount, presence: true, numericality: { greater_than: 0 }
   validates :fiat_currency, presence: true
-  validates :status, presence: true, inclusion: { in: %w[pending active cancelled] }
   validates :exchange_rate, numericality: { greater_than: 0 }, allow_nil: true
   validate :validate_user_is_merchant
 
@@ -24,6 +23,7 @@ class MerchantEscrow < ApplicationRecord
   scope :active, -> { where(status: 'active') }
   scope :cancelled, -> { where(status: 'cancelled') }
   scope :pending, -> { where(status: 'pending') }
+  scope :transaction_error, -> { where(status: 'transaction_error') }
 
   # Callbacks
   after_save :broadcast_status_change, if: :saved_change_to_status?
@@ -33,6 +33,7 @@ class MerchantEscrow < ApplicationRecord
     state :pending, initial: true
     state :active
     state :cancelled
+    state :transaction_error
 
     event :activate do
       transitions from: :pending, to: :active
@@ -40,6 +41,13 @@ class MerchantEscrow < ApplicationRecord
 
     event :cancel do
       transitions from: [ :pending, :active ], to: :cancelled
+    end
+
+    event :transaction_fail do
+      before do |error_msg|
+        self.error_message = error_msg
+      end
+      transitions from: [ :pending, :active ], to: :transaction_error
     end
   end
 

@@ -65,7 +65,7 @@ class Offer < ApplicationRecord
       country_code disabled deleted automatic online
       terms_of_trade disable_reason margin fixed_coin_price
       bank_names schedule_start_time schedule_end_time
-      created_at updated_at
+      created_at updated_at error_message
     ]
   end
 

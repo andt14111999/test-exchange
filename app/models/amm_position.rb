@@ -13,7 +13,6 @@ class AmmPosition < ApplicationRecord
   delegate :pair, :token0, :token1, :tick_spacing, to: :amm_pool, prefix: false, allow_nil: true
 
   validates :identifier, presence: true, uniqueness: true
-  validates :status, presence: true, inclusion: { in: %w[pending open closed error], message: 'must be one of: pending, open, closed, error' }
   validates :liquidity, numericality: { greater_than_or_equal_to: 0 }
   validates :slippage, numericality: { greater_than_or_equal_to: 0 }
   validates :amount0, numericality: { greater_than_or_equal_to: 0 }
@@ -40,12 +39,14 @@ class AmmPosition < ApplicationRecord
   STATUS_OPEN = 'open'
   STATUS_CLOSED = 'closed'
   STATUS_ERROR = 'error'
+  STATUS_TRANSACTION_ERROR = 'transaction_error'
 
   aasm column: 'status' do
     state :pending, initial: true
     state :open
     state :closed
     state :error
+    state :transaction_error
 
     event :open_position do
       transitions from: :pending, to: :open
@@ -60,6 +61,13 @@ class AmmPosition < ApplicationRecord
         self.error_message = error_msg
       end
       transitions from: [ :pending, :open ], to: :error
+    end
+
+    event :transaction_fail do
+      before do |error_msg|
+        self.error_message = error_msg
+      end
+      transitions from: [ :pending, :open ], to: :transaction_error
     end
   end
 

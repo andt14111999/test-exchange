@@ -19,7 +19,7 @@ class AmmOrder < ApplicationRecord
   validates :amount_actual, numericality: { greater_than_or_equal_to: 0 }
   validates :amount_received, numericality: { greater_than_or_equal_to: 0 }
   validates :slippage, numericality: { greater_than_or_equal_to: 0 }
-  validate :user_has_sufficient_balance, unless: -> { skip_balance_validation }
+  validate :user_has_sufficient_balance, on: :create, unless: -> { skip_balance_validation }
 
   AMM_ORDER_SWAP = 'amm_order_swap'
 
@@ -28,6 +28,7 @@ class AmmOrder < ApplicationRecord
     state :processing
     state :success
     state :error
+    state :transaction_error
 
     event :process do
       transitions from: :pending, to: :processing
@@ -42,6 +43,13 @@ class AmmOrder < ApplicationRecord
         self.error_message = error_msg
       end
       transitions from: [ :pending, :processing ], to: :error
+    end
+
+    event :transaction_fail do
+      before do |error_msg|
+        self.error_message = error_msg
+      end
+      transitions from: [ :pending, :processing, :success ], to: :transaction_error
     end
   end
 
