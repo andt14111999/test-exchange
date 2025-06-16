@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_06_025704) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_16_051727) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -95,6 +95,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_06_025704) do
     t.datetime "updated_at", null: false
     t.decimal "init_price", precision: 36, scale: 18
     t.datetime "deleted_at"
+    t.text "error_message"
     t.index ["deleted_at"], name: "index_amm_pools_on_deleted_at"
     t.index ["pair"], name: "index_amm_pools_on_pair", unique: true
     t.index ["status"], name: "index_amm_pools_on_status"
@@ -178,6 +179,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_06_025704) do
     t.string "performer"
     t.string "engine_lock_id"
     t.datetime "deleted_at"
+    t.text "error_message"
     t.index ["deleted_at"], name: "index_balance_locks_on_deleted_at"
     t.index ["status"], name: "index_balance_locks_on_status"
     t.index ["user_id"], name: "index_balance_locks_on_user_id"
@@ -296,6 +298,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_06_025704) do
     t.datetime "updated_at", null: false
     t.string "transaction_type", default: "transfer", null: false
     t.datetime "deleted_at"
+    t.string "status", default: "pending"
+    t.text "error_message"
     t.index ["coin_account_id"], name: "index_coin_transactions_on_coin_account_id"
     t.index ["coin_currency"], name: "index_coin_transactions_on_coin_currency"
     t.index ["created_at"], name: "index_coin_transactions_on_created_at"
@@ -535,6 +539,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_06_025704) do
     t.datetime "updated_at", null: false
     t.decimal "exchange_rate", precision: 20, scale: 8
     t.datetime "deleted_at"
+    t.text "error_message"
     t.index ["created_at"], name: "index_merchant_escrows_on_created_at"
     t.index ["deleted_at"], name: "index_merchant_escrows_on_deleted_at"
     t.index ["fiat_account_id"], name: "index_merchant_escrows_on_fiat_account_id"
@@ -598,6 +603,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_06_025704) do
     t.datetime "schedule_start_time"
     t.datetime "schedule_end_time"
     t.datetime "deleted_at"
+    t.string "status", default: "active"
+    t.text "error_message"
     t.index ["coin_currency", "currency", "offer_type", "disabled", "deleted"], name: "idx_on_coin_currency_currency_offer_type_disabled_d_97f0c3ccae"
     t.index ["country_code"], name: "index_offers_on_country_code"
     t.index ["deleted_at"], name: "index_offers_on_deleted_at"
@@ -715,6 +722,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_06_025704) do
     t.decimal "total_fee", precision: 32, scale: 16, default: "0.0"
     t.decimal "amount_after_fee", precision: 32, scale: 16, default: "0.0"
     t.datetime "deleted_at"
+    t.text "error_message"
     t.index ["buyer_id", "status"], name: "index_trades_on_buyer_id_and_status"
     t.index ["buyer_id"], name: "index_trades_on_buyer_id"
     t.index ["deleted_at"], name: "index_trades_on_deleted_at"

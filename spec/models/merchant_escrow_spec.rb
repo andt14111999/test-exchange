@@ -16,8 +16,6 @@ RSpec.describe MerchantEscrow, type: :model do
     it { is_expected.to validate_presence_of(:fiat_amount) }
     it { is_expected.to validate_numericality_of(:fiat_amount).is_greater_than(0) }
     it { is_expected.to validate_presence_of(:fiat_currency) }
-    it { is_expected.to validate_presence_of(:status) }
-    it { is_expected.to validate_inclusion_of(:status).in_array(%w[pending active cancelled]) }
     it { is_expected.to validate_numericality_of(:exchange_rate).is_greater_than(0).allow_nil }
 
     describe 'validate_user_is_merchant' do

@@ -50,6 +50,7 @@ ActiveAdmin.register MerchantEscrow do
       row :status do |escrow|
         status_tag escrow.status
       end
+      row :error_message
       row :completed_at
       row :created_at
       row :updated_at

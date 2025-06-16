@@ -58,7 +58,7 @@ RSpec.describe Trade, type: :model do
           payment_method taker_side status
           paid_at released_at expired_at cancelled_at disputed_at
           has_payment_proof payment_proof_status dispute_reason dispute_resolution
-          created_at updated_at
+          created_at updated_at error_message
         ]
 
         expect(described_class.ransackable_attributes).to match_array(expected_attributes)
@@ -67,7 +67,7 @@ RSpec.describe Trade, type: :model do
 
     describe '.ransackable_associations' do
       it 'returns allowed associations for ransack' do
-        expected_associations = %w[buyer seller offer messages fiat_deposit fiat_withdrawal]
+        expected_associations = %w[buyer seller offer messages fiat_deposit fiat_withdrawal fiat_token_deposit fiat_token_withdrawal]
 
         expect(described_class.ransackable_associations).to match_array(expected_associations)
       end

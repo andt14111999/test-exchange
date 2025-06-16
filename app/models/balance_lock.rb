@@ -23,6 +23,7 @@ class BalanceLock < ApplicationRecord
     state :releasing
     state :released
     state :failed
+    state :transaction_error
 
     event :mark_as_locked do
       before do
@@ -55,6 +56,13 @@ class BalanceLock < ApplicationRecord
 
       transitions from: [ :releasing ], to: :released
     end
+
+    event :transaction_fail do
+      before do |error_msg|
+        self.error_message = error_msg
+      end
+      transitions from: [ :pending, :locked, :releasing, :released, :failed ], to: :transaction_error
+    end
   end
 
   def total_locked_amount_for_coin(coin_currency)
@@ -68,7 +76,7 @@ class BalanceLock < ApplicationRecord
   def self.ransackable_attributes(_auth_object = nil)
     %w[
       id user_id locked_balances status reason
-      locked_at unlocked_at created_at updated_at
+      locked_at unlocked_at created_at updated_at error_message
     ]
   end
 

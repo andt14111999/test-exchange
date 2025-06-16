@@ -24,6 +24,7 @@ class AmmPool < ApplicationRecord
     state :active
     state :inactive
     state :failed
+    state :transaction_error
 
     event :activate do
       transitions from: [ :pending, :inactive ], to: :active
@@ -39,6 +40,13 @@ class AmmPool < ApplicationRecord
       end
 
       transitions from: [ :pending, :active, :inactive ], to: :failed
+    end
+
+    event :transaction_fail do
+      before do |error_msg|
+        self.error_message = error_msg
+      end
+      transitions from: [ :pending, :active, :inactive, :failed ], to: :transaction_error
     end
   end
 

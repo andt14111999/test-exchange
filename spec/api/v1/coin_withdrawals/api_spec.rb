@@ -257,7 +257,7 @@ RSpec.describe V1::CoinWithdrawals::Api, type: :request do
     end
   end
 
-  describe 'POST /api/v1/coin_withdrawals/check_receiver' do
+  describe 'GET /api/v1/coin_withdrawals/check_receiver' do
     context 'when user is not authenticated' do
       it 'returns unauthorized error' do
         post '/api/v1/coin_withdrawals/check_receiver', params: { receiver_username: 'testuser' }
@@ -268,7 +268,7 @@ RSpec.describe V1::CoinWithdrawals::Api, type: :request do
     context 'when user is authenticated' do
       context 'when receiver_username parameter is missing' do
         it 'returns bad request error' do
-          post '/api/v1/coin_withdrawals/check_receiver', headers: auth_header
+          get '/api/v1/coin_withdrawals/check_receiver', headers: auth_header
 
           expect(response).to have_http_status(:bad_request)
           json_response = JSON.parse(response.body)
@@ -280,7 +280,7 @@ RSpec.describe V1::CoinWithdrawals::Api, type: :request do
         it 'returns true for existing username' do
           existing_user = create(:user, username: 'existinguser')
 
-          post '/api/v1/coin_withdrawals/check_receiver',
+          get '/api/v1/coin_withdrawals/check_receiver',
                params: { receiver_username: existing_user.username },
                headers: auth_header
 
@@ -292,7 +292,7 @@ RSpec.describe V1::CoinWithdrawals::Api, type: :request do
 
       context 'when receiver does not exist' do
         it 'returns false for non-existing username' do
-          post '/api/v1/coin_withdrawals/check_receiver',
+          get '/api/v1/coin_withdrawals/check_receiver',
                params: { receiver_username: 'nonexistentuser' },
                headers: auth_header
 
@@ -304,7 +304,7 @@ RSpec.describe V1::CoinWithdrawals::Api, type: :request do
 
       context 'when receiver_username is empty string' do
         it 'returns false for empty username' do
-          post '/api/v1/coin_withdrawals/check_receiver',
+          get '/api/v1/coin_withdrawals/check_receiver',
                params: { receiver_username: '' },
                headers: auth_header
 
@@ -316,7 +316,7 @@ RSpec.describe V1::CoinWithdrawals::Api, type: :request do
 
       context 'when receiver_username contains special characters' do
         it 'returns false for username with special characters' do
-          post '/api/v1/coin_withdrawals/check_receiver',
+          get '/api/v1/coin_withdrawals/check_receiver',
                params: { receiver_username: 'user@#$%' },
                headers: auth_header
 
@@ -330,7 +330,7 @@ RSpec.describe V1::CoinWithdrawals::Api, type: :request do
         it 'returns true when checking own username' do
           user.update!(username: 'myownusername')
 
-          post '/api/v1/coin_withdrawals/check_receiver',
+          get '/api/v1/coin_withdrawals/check_receiver',
                params: { receiver_username: user.username },
                headers: auth_header
 
@@ -346,7 +346,7 @@ RSpec.describe V1::CoinWithdrawals::Api, type: :request do
           api_key = create(:api_key, user: user)
           timestamp = Time.current.to_i.to_s
           path = '/api/v1/coin_withdrawals/check_receiver'
-          method = 'POST'
+          method = 'GET'
           message = "#{method}#{path}#{timestamp}"
 
           # Generate HMAC signature
@@ -359,7 +359,7 @@ RSpec.describe V1::CoinWithdrawals::Api, type: :request do
             'X-Timestamp' => timestamp
           }
 
-          post '/api/v1/coin_withdrawals/check_receiver',
+          get '/api/v1/coin_withdrawals/check_receiver',
                params: { receiver_username: existing_user.username },
                headers: headers
 

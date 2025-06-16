@@ -112,6 +112,7 @@ ActiveAdmin.register Offer do
       row :bank_names
       row :schedule_start_time
       row :schedule_end_time
+      row :error_message
       row :created_at
       row :updated_at
     end

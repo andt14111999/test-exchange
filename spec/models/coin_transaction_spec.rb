@@ -92,7 +92,7 @@ RSpec.describe CoinTransaction, type: :model do
   describe 'ransackable attributes' do
     it 'returns correct ransackable attributes' do
       expected_attributes = %w[
-        amount coin_account_id coin_currency created_at id operation_id operation_type
+        amount coin_account_id coin_currency created_at error_message id operation_id operation_type
         transaction_type updated_at snapshot_balance snapshot_frozen_balance
       ]
       expect(described_class.ransackable_attributes).to match_array(expected_attributes)

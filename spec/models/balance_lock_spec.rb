@@ -248,7 +248,7 @@ RSpec.describe BalanceLock, type: :model do
     it 'returns the expected attributes' do
       expected_attributes = %w[
         id user_id locked_balances status reason
-        locked_at unlocked_at created_at updated_at
+        locked_at unlocked_at created_at updated_at error_message
       ]
 
       expect(described_class.ransackable_attributes).to match_array(expected_attributes)

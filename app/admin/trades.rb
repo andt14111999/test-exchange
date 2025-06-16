@@ -35,6 +35,7 @@ ActiveAdmin.register Trade do
     column :fiat_amount
     column :price
     column :status
+    column :error_message
     column :created_at
     actions
 
@@ -72,6 +73,7 @@ ActiveAdmin.register Trade do
       row :dispute_resolution
       row :has_payment_proof
       row :payment_proof_status
+      row :error_message
       row :created_at
       row :updated_at
     end

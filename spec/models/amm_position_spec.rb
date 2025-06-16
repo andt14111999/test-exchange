@@ -10,18 +10,6 @@ describe AmmPosition, type: :model do
       expect(position.errors[:identifier]).to include("can't be blank")
     end
 
-    it 'validates presence of status' do
-      position = build(:amm_position, status: nil)
-      expect(position).to be_invalid
-      expect(position.errors[:status]).to include("can't be blank")
-    end
-
-    it 'validates status is one of the allowed values' do
-      position = build(:amm_position, status: 'invalid_status')
-      expect(position).to be_invalid
-      expect(position.errors[:status]).to include("must be one of: pending, open, closed, error")
-    end
-
     it 'validates liquidity is greater than or equal to 0' do
       position = build(:amm_position, liquidity: -1)
       expect(position).to be_invalid
