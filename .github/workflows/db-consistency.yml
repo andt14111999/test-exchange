@@ -2,9 +2,9 @@ name: Database Consistency
 
 on:
   push:
-    branches: ["master"]
+    branches: ["main"]
   pull_request:
-    branches: ["master"]
+    branches: ["main"]
 
 jobs:
   db-consistency:
