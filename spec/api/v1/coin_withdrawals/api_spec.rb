@@ -257,6 +257,120 @@ RSpec.describe V1::CoinWithdrawals::Api, type: :request do
     end
   end
 
+  describe 'POST /api/v1/coin_withdrawals/check_receiver' do
+    context 'when user is not authenticated' do
+      it 'returns unauthorized error' do
+        post '/api/v1/coin_withdrawals/check_receiver', params: { receiver_username: 'testuser' }
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context 'when user is authenticated' do
+      context 'when receiver_username parameter is missing' do
+        it 'returns bad request error' do
+          post '/api/v1/coin_withdrawals/check_receiver', headers: auth_header
+
+          expect(response).to have_http_status(:bad_request)
+          json_response = JSON.parse(response.body)
+          expect(json_response['error']).to include('receiver_username is missing')
+        end
+      end
+
+            context 'when receiver exists' do
+        it 'returns true for existing username' do
+          existing_user = create(:user, username: 'existinguser')
+
+          post '/api/v1/coin_withdrawals/check_receiver',
+               params: { receiver_username: existing_user.username },
+               headers: auth_header
+
+          expect(response).to have_http_status(:success)
+          json_response = JSON.parse(response.body)
+          expect(json_response).to be true
+        end
+      end
+
+      context 'when receiver does not exist' do
+        it 'returns false for non-existing username' do
+          post '/api/v1/coin_withdrawals/check_receiver',
+               params: { receiver_username: 'nonexistentuser' },
+               headers: auth_header
+
+          expect(response).to have_http_status(:success)
+          json_response = JSON.parse(response.body)
+          expect(json_response).to be false
+        end
+      end
+
+      context 'when receiver_username is empty string' do
+        it 'returns false for empty username' do
+          post '/api/v1/coin_withdrawals/check_receiver',
+               params: { receiver_username: '' },
+               headers: auth_header
+
+          expect(response).to have_http_status(:success)
+          json_response = JSON.parse(response.body)
+          expect(json_response).to be false
+        end
+      end
+
+      context 'when receiver_username contains special characters' do
+        it 'returns false for username with special characters' do
+          post '/api/v1/coin_withdrawals/check_receiver',
+               params: { receiver_username: 'user@#$%' },
+               headers: auth_header
+
+          expect(response).to have_http_status(:success)
+          json_response = JSON.parse(response.body)
+          expect(json_response).to be false
+        end
+      end
+
+      context 'when checking current user username' do
+        it 'returns true when checking own username' do
+          user.update!(username: 'myownusername')
+
+          post '/api/v1/coin_withdrawals/check_receiver',
+               params: { receiver_username: user.username },
+               headers: auth_header
+
+          expect(response).to have_http_status(:success)
+          json_response = JSON.parse(response.body)
+          expect(json_response).to be true
+        end
+      end
+
+      context 'with API key authentication' do
+        it 'returns receiver existence status with valid API key' do
+          existing_user = create(:user, username: 'apiuser')
+          api_key = create(:api_key, user: user)
+          timestamp = Time.current.to_i.to_s
+          path = '/api/v1/coin_withdrawals/check_receiver'
+          method = 'POST'
+          message = "#{method}#{path}#{timestamp}"
+
+          # Generate HMAC signature
+          digest = OpenSSL::Digest.new('sha256')
+          signature = OpenSSL::HMAC.hexdigest(digest, api_key.secret_key, message)
+
+          headers = {
+            'X-Access-Key' => api_key.access_key,
+            'X-Signature' => signature,
+            'X-Timestamp' => timestamp
+          }
+
+          post '/api/v1/coin_withdrawals/check_receiver',
+               params: { receiver_username: existing_user.username },
+               headers: headers
+
+          expect(response).to have_http_status(:success)
+          json_response = JSON.parse(response.body)
+          expect(json_response).to be true
+        end
+      end
+    end
+  end
+
   describe 'GET /api/v1/coin_withdrawals/:id' do
     let!(:withdrawal) { create(:coin_withdrawal, user: user, coin_currency: coin_currency, coin_amount: coin_amount, coin_address: coin_address, coin_layer: coin_layer) }
     let!(:other_user_withdrawal) { create(:coin_withdrawal, user: other_user, coin_currency: coin_currency, coin_amount: coin_amount, coin_address: coin_address, coin_layer: coin_layer) }

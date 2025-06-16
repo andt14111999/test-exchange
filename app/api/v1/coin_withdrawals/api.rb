@@ -50,6 +50,17 @@ module V1
           end
         end
 
+        desc 'Check if receiver exists in system'
+        params do
+          requires :receiver_username, type: String, desc: 'Username of receiver to check'
+        end
+
+        get :check_receiver do
+          user_exists = User.exists?(username: params[:receiver_username])
+
+          body(user_exists.to_json)
+        end
+
         desc 'Get coin withdrawal details by ID'
         params do
           requires :id, type: Integer, desc: 'Coin withdrawal ID'
