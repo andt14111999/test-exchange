@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: ["master"]
+    branches: ["main"]
 
 jobs:
   wait-for-checks:
@@ -69,7 +69,7 @@ jobs:
     needs: wait-for-checks
     name: Deploy to Production
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -80,4 +80,4 @@ jobs:
           git_remote_url: ${{ secrets.DOKKU_SSH_URL }}/exchange-backend
           ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
           git_push_flags: "--force"
-          branch: "master"
+          branch: "main"
