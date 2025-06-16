@@ -99,6 +99,7 @@ ActiveAdmin.register AmmPosition do
       row :apr do |position|
         "#{position.apr.to_f.round(2)}%"
       end
+      row :error_message
       row :created_at
       row :updated_at
     end

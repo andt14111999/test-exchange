@@ -62,6 +62,7 @@ ActiveAdmin.register BalanceLock do
         end
       end
       row :reason
+      row :error_message
       row :locked_at
       row :unlocked_at
       row :created_at

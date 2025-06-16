@@ -55,6 +55,7 @@ ActiveAdmin.register CoinTransaction do
       row :snapshot_frozen_balance do |tx|
         number_with_precision(tx.snapshot_frozen_balance, precision: 8)
       end
+      row :error_message
       row :created_at
       row :updated_at
     end

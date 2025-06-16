@@ -73,6 +73,7 @@ ActiveAdmin.register AmmPool do
       row :liquidity
       row :status
       row :status_explanation
+      row :error_message
       row :created_at
       row :updated_at
 
