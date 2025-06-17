@@ -16,9 +16,9 @@ RSpec.describe V1::Settings::Api, type: :request do
       expect(response).to have_http_status(:ok)
       expect(json_response).to eq(
         'exchange_rates' => {
-          'usdt_to_vnd' => '24500',
-          'usdt_to_php' => '56.5',
-          'usdt_to_ngn' => '1550.75'
+          'usdt_to_vnd' => 24500.0,
+          'usdt_to_php' => 56.5,
+          'usdt_to_ngn' => 1550.75
         }
       )
     end
@@ -49,8 +49,8 @@ RSpec.describe V1::Settings::Api, type: :request do
       expect(response).to have_http_status(:ok)
       expect(json_response).to eq(
         'exchange_rates' => {
-          'usdt_to_vnd' => '24500',
-          'usdt_to_php' => '56.5',
+          'usdt_to_vnd' => 24500.0,
+          'usdt_to_php' => 56.5,
           'usdt_to_ngn' => 450.0 # Default value
         }
       )
@@ -71,10 +71,10 @@ RSpec.describe V1::Settings::Api, type: :request do
       expect(response).to have_http_status(:ok)
       expect(json_response).to eq(
         'withdrawal_fees' => {
-          'usdt_erc20' => '25.5',
-          'usdt_bep20' => '10.5',
-          'usdt_solana' => '5.2',
-          'usdt_trc20' => '1.8'
+          'usdt_erc20' => 25.5,
+          'usdt_bep20' => 10.5,
+          'usdt_solana' => 5.2,
+          'usdt_trc20' => 1.8
         }
       )
     end
@@ -87,10 +87,10 @@ RSpec.describe V1::Settings::Api, type: :request do
       expect(response).to have_http_status(:ok)
       expect(json_response).to eq(
         'withdrawal_fees' => {
-          'usdt_erc20' => 10,
-          'usdt_bep20' => 1,
-          'usdt_solana' => 3,
-          'usdt_trc20' => 2
+          'usdt_erc20' => 10.0,
+          'usdt_bep20' => 1.0,
+          'usdt_solana' => 3.0,
+          'usdt_trc20' => 2.0
         }
       )
     end
@@ -106,10 +106,10 @@ RSpec.describe V1::Settings::Api, type: :request do
       expect(response).to have_http_status(:ok)
       expect(json_response).to eq(
         'withdrawal_fees' => {
-          'usdt_erc20' => '25.5',
-          'usdt_bep20' => '10.5',
-          'usdt_solana' => 3,
-          'usdt_trc20' => 2
+          'usdt_erc20' => 25.5,
+          'usdt_bep20' => 10.5,
+          'usdt_solana' => 3.0,
+          'usdt_trc20' => 2.0
         }
       )
     end
@@ -134,16 +134,16 @@ RSpec.describe V1::Settings::Api, type: :request do
       expect(json_response).to eq(
         'trading_fees' => {
           'fee_ratios' => {
-            'vnd' => '0.0025',
-            'php' => '0.003',
-            'ngn' => '0.004',
-            'default' => '0.002'
+            'vnd' => 0.0025,
+            'php' => 0.003,
+            'ngn' => 0.004,
+            'default' => 0.002
           },
           'fixed_fees' => {
-            'vnd' => '1000',
-            'php' => '50',
-            'ngn' => '200',
-            'default' => '500'
+            'vnd' => 1000.0,
+            'php' => 50.0,
+            'ngn' => 200.0,
+            'default' => 500.0
           }
         }
       )
@@ -164,10 +164,10 @@ RSpec.describe V1::Settings::Api, type: :request do
             'default' => 0.001
           },
           'fixed_fees' => {
-            'vnd' => 5000,
-            'php' => 10,
-            'ngn' => 300,
-            'default' => 0
+            'vnd' => 5000.0,
+            'php' => 10.0,
+            'ngn' => 300.0,
+            'default' => 0.0
           }
         }
       )
@@ -187,16 +187,16 @@ RSpec.describe V1::Settings::Api, type: :request do
       expect(json_response).to eq(
         'trading_fees' => {
           'fee_ratios' => {
-            'vnd' => '0.0025',
-            'php' => '0.003',
+            'vnd' => 0.0025,
+            'php' => 0.003,
             'ngn' => 0.001,
             'default' => 0.001
           },
           'fixed_fees' => {
-            'vnd' => '1000',
-            'php' => '50',
-            'ngn' => 300,
-            'default' => 0
+            'vnd' => 1000.0,
+            'php' => 50.0,
+            'ngn' => 300.0,
+            'default' => 0.0
           }
         }
       )
