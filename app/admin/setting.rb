@@ -3,109 +3,257 @@
 ActiveAdmin.register_page 'Settings' do
   menu priority: 1, label: 'Settings'
 
-  content title: 'Settings' do
-    active_admin_form_for :settings, url: admin_settings_update_settings_path, method: :post do |f|
-      f.inputs 'USDT Exchange Rates' do
-        f.input :usdt_to_vnd_rate, label: 'USDT to VND Rate',
-                input_html: { value: Setting.usdt_to_vnd_rate, step: 'any', type: 'number' }
-        f.input :usdt_to_php_rate, label: 'USDT to PHP Rate',
-                input_html: { value: Setting.usdt_to_php_rate, step: 'any', type: 'number' }
-        f.input :usdt_to_ngn_rate, label: 'USDT to NGN Rate',
-                input_html: { value: Setting.usdt_to_ngn_rate, step: 'any', type: 'number' }
-      end
+  content do
+    panel 'Settings' do
+      div class: 'settings-container' do
+        table_for Setting.keys do
+          column :name do |key|
+            key.humanize
+          end
 
-      f.inputs 'USDT Withdrawal Fees' do
-        f.input :usdt_erc20_withdrawal_fee, label: 'USDT ERC20 Withdrawal Fee',
-                input_html: { value: Setting.usdt_erc20_withdrawal_fee, step: 'any', type: 'number' }
-        f.input :usdt_bep20_withdrawal_fee, label: 'USDT BEP20 Withdrawal Fee',
-                input_html: { value: Setting.usdt_bep20_withdrawal_fee, step: 'any', type: 'number' }
-        f.input :usdt_solana_withdrawal_fee, label: 'USDT Solana Withdrawal Fee',
-                input_html: { value: Setting.usdt_solana_withdrawal_fee, step: 'any', type: 'number' }
-        f.input :usdt_trc20_withdrawal_fee, label: 'USDT TRC20 Withdrawal Fee',
-                input_html: { value: Setting.usdt_trc20_withdrawal_fee, step: 'any', type: 'number' }
-      end
+          column :type do |key|
+            value = Setting.send(key)
+            value.class.to_s
+          end
 
-      f.inputs 'Trading Fee Ratios (%)' do
-        f.input :vnd_trading_fee_ratio, label: 'VND Trading Fee Ratio',
-                input_html: { value: Setting.vnd_trading_fee_ratio, step: '0.0001', type: 'number' }
-        f.input :php_trading_fee_ratio, label: 'PHP Trading Fee Ratio',
-                input_html: { value: Setting.php_trading_fee_ratio, step: '0.0001', type: 'number' }
-        f.input :ngn_trading_fee_ratio, label: 'NGN Trading Fee Ratio',
-                input_html: { value: Setting.ngn_trading_fee_ratio, step: '0.0001', type: 'number' }
-        f.input :default_trading_fee_ratio, label: 'Default Trading Fee Ratio',
-                input_html: { value: Setting.default_trading_fee_ratio, step: '0.0001', type: 'number' }
-      end
+          column :current_value do |key|
+            current_value = Setting.send(key)
+            if key.to_s.include?('ratio')
+              "#{(current_value.to_f * 100).round(4)}%"
+            else
+              current_value.to_s
+            end
+          end
 
-      f.inputs 'Fixed Trading Fees' do
-        f.input :vnd_fixed_trading_fee, label: 'VND Fixed Trading Fee',
-                input_html: { value: Setting.vnd_fixed_trading_fee, step: 'any', type: 'number' }
-        f.input :php_fixed_trading_fee, label: 'PHP Fixed Trading Fee',
-                input_html: { value: Setting.php_fixed_trading_fee, step: 'any', type: 'number' }
-        f.input :ngn_fixed_trading_fee, label: 'NGN Fixed Trading Fee',
-                input_html: { value: Setting.ngn_fixed_trading_fee, step: 'any', type: 'number' }
-        f.input :default_fixed_trading_fee, label: 'Default Fixed Trading Fee',
-                input_html: { value: Setting.default_fixed_trading_fee, step: 'any', type: 'number' }
-      end
+          column :input do |key|
+            current_value = Setting.send(key)
+            display_options = Setting.display_options[key.to_s]
 
-      f.actions do
-        f.action :submit, label: 'Update Settings'
+            if display_options && display_options[:type] == :select
+              select_tag "setting_#{key}",
+                options_for_select(display_options[:options], current_value),
+                id: "setting_#{key}",
+                class: 'setting-input',
+                data: {
+                  key: key,
+                  old_value: current_value.to_s
+                }
+            elsif display_options && display_options[:type] == :boolean
+              check_box_tag "setting_#{key}",
+                'true',
+                current_value == true,
+                id: "setting_#{key}",
+                class: 'setting-input boolean-input',
+                data: {
+                  key: key,
+                  old_value: current_value.to_s
+                }
+            elsif display_options && display_options[:type] == :number
+              number_field_tag "setting_#{key}",
+                current_value.to_s,
+                id: "setting_#{key}",
+                class: 'setting-input',
+                min: display_options[:min],
+                max: display_options[:max],
+                step: display_options[:step] || 1,
+                data: {
+                  key: key,
+                  old_value: current_value.to_s
+                }
+            else
+              text_area_tag "setting_#{key}",
+                current_value.to_s,
+                id: "setting_#{key}",
+                class: 'setting-input',
+                rows: 2,
+                data: {
+                  key: key,
+                  old_value: current_value.to_s
+                }
+            end
+          end
+        end
       end
     end
 
-    panel 'Current Exchange Rates' do
-      attributes_table_for Setting do
-        row 'USDT to VND Rate' do
-          Setting.usdt_to_vnd_rate
-        end
-        row 'USDT to PHP Rate' do
-          Setting.usdt_to_php_rate
-        end
-        row 'USDT to NGN Rate' do
-          Setting.usdt_to_ngn_rate
-        end
-      end
+    # Add CSS styles
+    style do
+      raw <<~CSS
+        .settings-container table {
+          width: 100%;
+        }
+        .settings-container th {
+          background-color: #f0f0f0;
+          padding: 10px;
+          text-align: left;
+        }
+        .settings-container td {
+          padding: 8px;
+          border-bottom: 1px solid #ddd;
+        }
+        .setting-input {
+          width: 100%;
+          padding: 6px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+        }
+        .setting-notification {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          padding: 15px 20px;
+          border-radius: 4px;
+          color: white;
+          font-weight: bold;
+          z-index: 9999;
+        }
+        .setting-notification--success {
+          background-color: #4CAF50;
+        }
+        .setting-notification--error {
+          background-color: #f44336;
+        }
+      CSS
     end
 
-    panel 'Current Trading Fees' do
-      attributes_table_for Setting do
-        row 'VND Trading Fee Ratio' do
-          "#{(Setting.vnd_trading_fee_ratio.to_f * 100).round(4)}%"
-        end
-        row 'PHP Trading Fee Ratio' do
-          "#{(Setting.php_trading_fee_ratio.to_f * 100).round(4)}%"
-        end
-        row 'NGN Trading Fee Ratio' do
-          "#{(Setting.ngn_trading_fee_ratio.to_f * 100).round(4)}%"
-        end
-        row 'Default Trading Fee Ratio' do
-          "#{(Setting.default_trading_fee_ratio.to_f * 100).round(4)}%"
-        end
-        row 'VND Fixed Trading Fee' do
-          Setting.vnd_fixed_trading_fee
-        end
-        row 'PHP Fixed Trading Fee' do
-          Setting.php_fixed_trading_fee
-        end
-        row 'NGN Fixed Trading Fee' do
-          Setting.ngn_fixed_trading_fee
-        end
-        row 'Default Fixed Trading Fee' do
-          Setting.default_fixed_trading_fee
-        end
-      end
+    # Add JavaScript for real-time updates
+    script do
+      raw <<~JS
+        $(document).ready(function() {
+          // Define the updateSetting function
+          window.updateSetting = function(input) {
+            const key = input.dataset.key;
+            const oldValue = input.dataset.oldValue;
+            let value = input.value;
+
+            // Special handling for checkboxes
+            if (input.type === 'checkbox') {
+              value = input.checked ? 'true' : 'false';
+            }
+
+            if (oldValue === value) return;
+
+            $.ajax({
+              url: "/admin/settings/update",
+              method: "PATCH",
+              data: { id: key, value: value },
+              dataType: 'json',
+              success: function(data) {
+                if (data.success) {
+                  // Update the current value display
+                  const row = $(input).closest("tr");
+                  row.find("td:nth-child(2)").text(data.type);
+                  row.find("td:nth-child(3)").text(data.display_value || data.value);
+                  input.dataset.oldValue = value;
+                  showNotification("success", data.message);
+                } else {
+                  showNotification("error", data.message || "Failed to update setting");
+                  revertValue(input, oldValue);
+                }
+              },
+              error: function(xhr, status, error) {
+                let message = "Network error occurred";
+
+                try {
+                  // Try to parse JSON response for validation errors
+                  const response = JSON.parse(xhr.responseText);
+                  if (response.message) {
+                    message = response.message;
+                  }
+                } catch (e) {
+                  // If parsing fails, use default message
+                  console.error("Error parsing response:", e);
+                }
+
+                showNotification("error", message);
+                revertValue(input, oldValue);
+              },
+            });
+          };
+
+          // Helper function to revert input value
+          function revertValue(input, oldValue) {
+            if (input.type === 'checkbox') {
+              input.checked = oldValue === 'true';
+            } else {
+              input.value = oldValue;
+            }
+          }
+
+          // Define showNotification function
+          function showNotification(type, message) {
+            console.log("Showing notification:", type, message); // Debug log
+
+            $(".setting-notification").remove();
+
+            const notification = $("<div/>", {
+              class: `setting-notification setting-notification--${type}`,
+              text: message,
+            }).hide();
+
+            $("body").append(notification);
+            notification.fadeIn(300);
+
+            setTimeout(function() {
+              notification.fadeOut(300, function() {
+                $(this).remove();
+              });
+            }, 3000);
+          }
+
+          // Set up event listeners
+          $('.setting-input:not(.boolean-input)').on('blur', function() {
+            updateSetting(this);
+          });
+
+          $('select.setting-input').on('change', function() {
+            updateSetting(this);
+          });
+
+          $('.boolean-input').on('change', function() {
+            updateSetting(this);
+          });
+        });
+      JS
     end
   end
 
-  page_action :update_settings, method: :post do
-    if params[:settings].present?
-      params[:settings].each do |key, value|
-        next if value.blank?
+  page_action :update, method: :patch do
+    key = params[:id]
+    value = params[:value]
 
-        Setting.send("#{key}=", value) if Setting.respond_to?("#{key}=")
+    return render json: { success: false, message: 'Unauthorized' } unless authorized?(:manage, Setting)
+
+    begin
+      # Use our validation method
+      result = Setting.update_with_validation(key, value)
+
+      if result[:success]
+        current_value = Setting.send(key)
+        display_value = if key.to_s.include?('ratio')
+                         "#{(current_value.to_f * 100).round(4)}%"
+        else
+                         current_value.to_s
+        end
+
+        render json: {
+          success: true,
+          message: 'Setting updated successfully',
+          value: current_value.to_s,
+          display_value: display_value,
+          type: current_value.class.to_s
+        }
+      else
+        render json: {
+          success: false,
+          message: result[:errors].join(', ')
+        }, status: :unprocessable_entity
       end
-      redirect_to admin_settings_path, notice: 'Settings updated successfully'
-    else
-      redirect_to admin_settings_path, alert: 'No settings provided'
+    rescue StandardError => e
+      render json: {
+        success: false,
+        message: e.message
+      }, status: :unprocessable_entity
     end
   end
 end
