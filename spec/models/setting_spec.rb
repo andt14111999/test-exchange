@@ -218,11 +218,6 @@ RSpec.describe Setting, type: :model do
         expect(errors).to be_empty
       end
 
-      it 'allows trading fee ratios at minimum (0.1%)' do
-        errors = described_class.validate_setting('vnd_trading_fee_ratio', 0.001)
-        expect(errors).to be_empty
-      end
-
       it 'allows trading fee ratios at maximum (100%)' do
         errors = described_class.validate_setting('vnd_trading_fee_ratio', 1.0)
         expect(errors).to be_empty

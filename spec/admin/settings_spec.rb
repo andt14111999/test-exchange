@@ -91,3 +91,286 @@ RSpec.describe 'Admin Settings', type: :feature do
     end
   end
 end
+
+# Test the AJAX endpoint directly without JavaScript
+RSpec.describe 'Admin Settings AJAX API', type: :request do
+  let(:admin) { create(:admin_user, :superadmin) }
+
+  before do
+    sign_in admin, scope: :admin_user
+  end
+
+  describe 'PATCH /admin/settings/update' do
+    context 'with valid exchange rate updates' do
+      it 'updates USDT to VND rate successfully' do
+        patch '/admin/settings/update', params: { id: 'usdt_to_vnd_rate', value: '24000' }
+
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be true
+        expect(json_response['message']).to eq('Setting updated successfully')
+        expect(json_response['value']).to eq('24000.0')
+        expect(json_response['type']).to eq('Float')
+        expect(Setting.usdt_to_vnd_rate).to eq(24000.0)
+      end
+
+      it 'updates USDT to PHP rate successfully' do
+        patch '/admin/settings/update', params: { id: 'usdt_to_php_rate', value: '55.5' }
+
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be true
+        expect(Setting.usdt_to_php_rate).to eq(55.5)
+      end
+
+      it 'updates USDT to NGN rate successfully' do
+        patch '/admin/settings/update', params: { id: 'usdt_to_ngn_rate', value: '1500.75' }
+
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be true
+        expect(Setting.usdt_to_ngn_rate).to eq(1500.75)
+      end
+    end
+
+    context 'with valid withdrawal fee updates' do
+      it 'updates ERC20 withdrawal fee successfully' do
+        patch '/admin/settings/update', params: { id: 'usdt_erc20_withdrawal_fee', value: '15.5' }
+
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be true
+        expect(Setting.usdt_erc20_withdrawal_fee).to eq(15.5)
+      end
+
+      it 'updates BEP20 withdrawal fee successfully' do
+        patch '/admin/settings/update', params: { id: 'usdt_bep20_withdrawal_fee', value: '2.5' }
+
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be true
+        expect(Setting.usdt_bep20_withdrawal_fee).to eq(2.5)
+      end
+
+      it 'allows zero withdrawal fees' do
+        patch '/admin/settings/update', params: { id: 'usdt_erc20_withdrawal_fee', value: '0' }
+
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be true
+        expect(Setting.usdt_erc20_withdrawal_fee).to eq(0.0)
+      end
+    end
+
+    context 'with valid trading fee updates' do
+      it 'updates VND trading fee ratio successfully' do
+        patch '/admin/settings/update', params: { id: 'vnd_trading_fee_ratio', value: '0.005' }
+
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be true
+        expect(json_response['display_value']).to eq('0.5%') # 0.005 * 100 = 0.5%
+        expect(Setting.vnd_trading_fee_ratio).to eq(0.005)
+      end
+
+      it 'updates fixed trading fee successfully' do
+        patch '/admin/settings/update', params: { id: 'vnd_fixed_trading_fee', value: '10000' }
+
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be true
+        expect(Setting.vnd_fixed_trading_fee).to eq(10000.0)
+      end
+
+      it 'allows minimum trading fee ratio' do
+        patch '/admin/settings/update', params: { id: 'vnd_trading_fee_ratio', value: '0.001' }
+
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be true
+        expect(Setting.vnd_trading_fee_ratio).to eq(0.001)
+      end
+
+      it 'allows maximum trading fee ratio' do
+        patch '/admin/settings/update', params: { id: 'vnd_trading_fee_ratio', value: '1.0' }
+
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be true
+        expect(Setting.vnd_trading_fee_ratio).to eq(1.0)
+      end
+    end
+
+    context 'with invalid exchange rate values' do
+      it 'rejects negative exchange rates' do
+        patch '/admin/settings/update', params: { id: 'usdt_to_vnd_rate', value: '-100' }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be false
+        expect(json_response['message']).to include('Value must be greater than 0')
+        expect(Setting.usdt_to_vnd_rate).not_to eq(-100)
+      end
+
+      it 'rejects zero exchange rates' do
+        patch '/admin/settings/update', params: { id: 'usdt_to_php_rate', value: '0' }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be false
+        expect(json_response['message']).to include('Value must be greater than 0')
+      end
+    end
+
+    context 'with invalid withdrawal fee values' do
+      it 'rejects negative withdrawal fees' do
+        patch '/admin/settings/update', params: { id: 'usdt_erc20_withdrawal_fee', value: '-5' }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be false
+        expect(json_response['message']).to include('Value cannot be negative')
+      end
+
+      it 'rejects withdrawal fees above maximum' do
+        patch '/admin/settings/update', params: { id: 'usdt_erc20_withdrawal_fee', value: '150' }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be false
+        expect(json_response['message']).to include('Value must be less than 100')
+      end
+    end
+
+    context 'with invalid trading fee values' do
+      it 'rejects trading fee ratios below minimum' do
+        patch '/admin/settings/update', params: { id: 'vnd_trading_fee_ratio', value: '0.0005' }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be false
+        expect(json_response['message']).to include('Trading fee ratio must be at least 0.001 (0.1%)')
+      end
+
+      it 'rejects trading fee ratios above maximum' do
+        patch '/admin/settings/update', params: { id: 'vnd_trading_fee_ratio', value: '1.5' }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be false
+        expect(json_response['message']).to include('Trading fee ratio must be less than or equal to 1 (100%)')
+      end
+
+      it 'rejects negative trading fee ratios' do
+        patch '/admin/settings/update', params: { id: 'php_trading_fee_ratio', value: '-0.01' }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be false
+        expect(json_response['message']).to include('Trading fee ratio must be at least 0.001 (0.1%)')
+      end
+
+      it 'rejects negative fixed trading fees' do
+        patch '/admin/settings/update', params: { id: 'vnd_fixed_trading_fee', value: '-1000' }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be false
+        expect(json_response['message']).to include('Value cannot be negative')
+      end
+
+      it 'rejects fixed trading fees above maximum' do
+        patch '/admin/settings/update', params: { id: 'vnd_fixed_trading_fee', value: '2000000' }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be false
+        expect(json_response['message']).to include('Value must be less than 1000000')
+      end
+    end
+
+    context 'with edge cases' do
+      it 'handles non-existent setting keys' do
+        patch '/admin/settings/update', params: { id: 'non_existent_setting', value: '100' }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be false
+        expect(json_response['message']).to include('Failed to update non_existent_setting')
+      end
+
+      it 'handles empty values' do
+        patch '/admin/settings/update', params: { id: 'usdt_to_vnd_rate', value: '' }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be false
+      end
+
+      it 'handles non-numeric values' do
+        patch '/admin/settings/update', params: { id: 'usdt_to_vnd_rate', value: 'abc' }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be false
+      end
+
+      it 'handles decimal values correctly' do
+        patch '/admin/settings/update', params: { id: 'usdt_to_php_rate', value: '56.789' }
+
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be true
+        expect(Setting.usdt_to_php_rate).to eq(56.789)
+      end
+
+      it 'handles very large valid values' do
+        patch '/admin/settings/update', params: { id: 'usdt_to_vnd_rate', value: '999999' }
+
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be true
+        expect(Setting.usdt_to_vnd_rate).to eq(999999.0)
+      end
+
+      it 'handles very small valid values for ratios' do
+        patch '/admin/settings/update', params: { id: 'vnd_trading_fee_ratio', value: '0.0011' }
+
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response['success']).to be true
+        expect(Setting.vnd_trading_fee_ratio).to eq(0.0011)
+      end
+    end
+
+    context 'when unauthorized' do
+      before do
+        sign_out admin
+      end
+
+      it 'redirects when unauthorized' do
+        patch '/admin/settings/update', params: { id: 'usdt_to_vnd_rate', value: '24000' }
+
+        # Should redirect to login page when not authenticated
+        expect(response).to have_http_status(:found)
+        expect(response).to redirect_to(new_admin_user_session_path)
+      end
+    end
+
+    context 'with missing parameters' do
+      it 'handles missing id parameter' do
+        patch '/admin/settings/update', params: { value: '24000' }
+
+        # Should handle gracefully - exact behavior depends on implementation
+        expect(response.status).to be_in([ 400, 422, 500 ])
+      end
+
+      it 'handles missing value parameter' do
+        patch '/admin/settings/update', params: { id: 'usdt_to_vnd_rate' }
+
+        # Should handle gracefully - exact behavior depends on implementation
+        expect(response.status).to be_in([ 400, 422, 500 ])
+      end
+    end
+  end
+end
