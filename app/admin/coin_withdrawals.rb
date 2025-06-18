@@ -103,6 +103,10 @@ ActiveAdmin.register CoinWithdrawal do
     end
   end
 
+  action_item :cancel, only: :show, if: proc { resource.may_cancel? } do
+    link_to 'Cancel Withdrawal', cancel_admin_coin_withdrawal_path(resource), method: :put, data: { confirm: 'Are you sure?' }
+  end
+
   member_action :cancel, method: :put do
     withdrawal = resource
     begin
@@ -110,6 +114,20 @@ ActiveAdmin.register CoinWithdrawal do
       redirect_to resource_path, notice: 'Withdrawal was successfully cancelled'
     rescue StandardError => e
       redirect_to resource_path, alert: 'Could not cancel withdrawal'
+    end
+  end
+
+  action_item :retry_complete_event, only: :show, if: proc { resource.completed? } do
+    link_to 'Retry Complete EE Event', retry_complete_event_admin_coin_withdrawal_path(resource), method: :put, data: { confirm: 'Are you sure?' }
+  end
+
+  member_action :retry_complete_event, method: :put do
+    withdrawal = resource
+    begin
+      withdrawal.send_event_complete_withdrawal_to_kafka
+      redirect_to resource_path, notice: 'Complete event was successfully retried to Exchange Engine'
+    rescue StandardError => e
+      redirect_to resource_path, alert: 'Could not retry complete event to Exchange Engine'
     end
   end
 end

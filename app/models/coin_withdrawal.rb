@@ -64,7 +64,7 @@ class CoinWithdrawal < ApplicationRecord
 
   def self.ransackable_attributes(_auth_object = nil)
     %w[
-      id user_id coin_currency coin_amount
+      id user_id coin_currency coin_amount receiver_email receiver_username receiver_phone_number
       coin_fee coin_address coin_layer status
       tx_hash created_at updated_at
     ]
@@ -80,6 +80,15 @@ class CoinWithdrawal < ApplicationRecord
 
   def internal_transfer?
     receiver_email.present? || receiver_phone_number.present? || receiver_username.present?
+  end
+
+  def send_event_complete_withdrawal_to_kafka
+    return unless completed?
+
+    KafkaService::Services::Coin::CoinWithdrawalService.new.update_status(
+      identifier: id,
+      operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_RELEASING
+    )
   end
 
   private
@@ -257,15 +266,6 @@ class CoinWithdrawal < ApplicationRecord
     KafkaService::Services::Coin::CoinWithdrawalService.new.create(**params)
   rescue StandardError => e
     Rails.logger.error("Failed to send withdrawal event to Kafka: #{e.message}")
-  end
-
-  def send_event_complete_withdrawal_to_kafka
-    return unless completed?
-
-    KafkaService::Services::Coin::CoinWithdrawalService.new.update_status(
-      identifier: id,
-      operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_RELEASING
-    )
   end
 
   def send_event_fail_withdrawal_to_kafka

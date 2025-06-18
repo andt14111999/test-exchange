@@ -514,7 +514,7 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
   describe '.ransackable_attributes' do
     it 'returns allowed attributes for ransack' do
       expect(described_class.ransackable_attributes).to match_array(
-        %w[id user_id coin_currency coin_amount coin_fee coin_address coin_layer status tx_hash created_at updated_at]
+        %w[id user_id coin_currency coin_amount coin_fee coin_address coin_layer status tx_hash created_at updated_at receiver_email receiver_username receiver_phone_number]
       )
     end
   end
