@@ -12,6 +12,7 @@ ActiveAdmin.register CoinWithdrawal do
   filter :coin_amount
   filter :coin_fee
   filter :coin_address
+  filter :receiver_username
   filter :coin_layer
   filter :status, as: :select, collection: -> { CoinWithdrawal.aasm.states.map(&:name) }
   filter :created_at
@@ -25,6 +26,7 @@ ActiveAdmin.register CoinWithdrawal do
     column :coin_amount
     column :coin_fee
     column :coin_address
+    column :receiver_username
     tag_column :coin_layer
     column :status do |withdrawal|
       status_tag withdrawal.status
@@ -44,6 +46,9 @@ ActiveAdmin.register CoinWithdrawal do
       row :coin_fee
       row :coin_address
       row :tx_hash
+      row :receiver_username
+      row :receiver_email
+      row :receiver_phone_number
       tag_row :coin_layer
       row :status do |withdrawal|
         status_tag withdrawal.status
