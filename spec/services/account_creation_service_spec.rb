@@ -8,7 +8,7 @@ RSpec.describe AccountCreationService, type: :service do
       user = create(:user)
       service = described_class.new(user)
 
-      expect { service.create_all_accounts }.to change(CoinAccount, :count).by(12)
+      expect { service.create_all_accounts }.to change(CoinAccount, :count).by(13)
         .and change(FiatAccount, :count).by(3)
     end
   end
@@ -95,7 +95,7 @@ RSpec.describe AccountCreationService, type: :service do
       user = create(:user)
       service = described_class.new(user)
 
-      expect { service.send(:create_deposit_accounts) }.to change(CoinAccount, :count).by(8)
+      expect { service.send(:create_deposit_accounts) }.to change(CoinAccount, :count).by(9)
     end
 
     it 'does not create duplicate deposit accounts' do
@@ -103,7 +103,7 @@ RSpec.describe AccountCreationService, type: :service do
       create(:coin_account, user: user, coin_currency: 'btc', layer: 'bitcoin', account_type: 'deposit')
       service = described_class.new(user)
 
-      expect { service.send(:create_deposit_accounts) }.to change(CoinAccount, :count).by(7)
+      expect { service.send(:create_deposit_accounts) }.to change(CoinAccount, :count).by(8)
     end
   end
 

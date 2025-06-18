@@ -11,7 +11,7 @@ class CoinAccount < ApplicationRecord
   has_many :coin_transactions, dependent: :destroy
 
   SUPPORTED_NETWORKS = {
-    'usdt' => %w[erc20 bep20 trc20],
+    'usdt' => %w[erc20 bep20 trc20 solana],
     'eth' => %w[erc20 bep20],
     'bnb' => %w[bep20],
     'btc' => %w[bitcoin bep20]

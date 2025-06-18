@@ -19,6 +19,7 @@ class CoinWithdrawal < ApplicationRecord
 
   validate :validate_coin_amount
   validate :validate_coin_address_and_layer
+  validate :validate_coin_address_format, unless: :internal_transfer?
   validate :validate_receiver_internal, if: :internal_transfer?
 
   before_validation :detect_internal_transfer_by_address
@@ -97,6 +98,17 @@ class CoinWithdrawal < ApplicationRecord
     return errors.add(:coin_address, :blank) if coin_address.blank?
 
     errors.add(:coin_layer, :blank) if coin_layer.blank?
+  end
+
+  def validate_coin_address_format
+    return if coin_address.blank? || internal_transfer?
+
+    validator = CryptocurrencyAddressValidator.new(coin_address, coin_layer)
+    unless validator.valid?
+      errors.add(:coin_address, :invalid_format)
+    end
+  rescue ArgumentError => e
+    errors.add(:coin_layer, e.message)
   end
 
   def validate_receiver_internal

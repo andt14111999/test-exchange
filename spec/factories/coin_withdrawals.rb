@@ -9,7 +9,7 @@ FactoryBot.define do
     user
     coin_currency { 'usdt' }
     coin_layer { 'erc20' }
-    coin_address { '0x0000000000000000000000000000000000000000' }
+    coin_address { '0xde709f2102306220921060314715629080e2fb77' }
     coin_amount { 1.0 }
     coin_fee { 0.1 }
     status { 'pending' }
