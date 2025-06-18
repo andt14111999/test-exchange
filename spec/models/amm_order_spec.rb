@@ -492,4 +492,50 @@ describe AmmOrder, type: :model do
       expect(order.error_message).to eq('Error message')
     end
   end
+
+  describe 'after_update callback' do
+    before do
+      allow_any_instance_of(described_class).to receive(:process_order).and_return(true)
+    end
+
+    it 'calls broadcast_amm_order_update when status changes' do
+      order = create(:amm_order, status: 'pending')
+
+      expect(order).to receive(:broadcast_amm_order_update)
+
+      order.update(status: 'processing')
+    end
+
+    it 'does not call broadcast_amm_order_update when status does not change' do
+      order = create(:amm_order, status: 'pending')
+
+      expect(order).not_to receive(:broadcast_amm_order_update)
+
+      order.update(amount_specified: 200)
+    end
+  end
+
+  describe '#broadcast_amm_order_update' do
+    let(:user) { create(:user) }
+    let(:order) { create(:amm_order, user: user) }
+
+    before do
+      allow_any_instance_of(described_class).to receive(:process_order).and_return(true)
+    end
+
+    it 'calls AmmOrderBroadcastService with user' do
+      expect(AmmOrderBroadcastService).to receive(:call).with(user)
+
+      order.send(:broadcast_amm_order_update)
+    end
+
+    it 'logs error when broadcast fails' do
+      error = StandardError.new('Broadcast failed')
+      allow(AmmOrderBroadcastService).to receive(:call).and_raise(error)
+
+      expect(Rails.logger).to receive(:error).with('Failed to broadcast AMM order update: Broadcast failed')
+
+      order.send(:broadcast_amm_order_update)
+    end
+  end
 end
