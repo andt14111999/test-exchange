@@ -527,7 +527,7 @@ GEM
     redis (4.5.1)
     redis-classy (2.4.1)
       redis-namespace (~> 1.0)
-    redis-client (0.24.0)
+    redis-client (0.25.0)
       connection_pool
     redis-namespace (1.11.0)
       redis (>= 4)
