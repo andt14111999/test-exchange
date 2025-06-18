@@ -17,6 +17,7 @@ en:
     too_large: "is too large"
     messages:
       cannot_transfer_to_self: "cannot transfer to self"
+      invalid_format: "has invalid format"
   activerecord:
     errors:
       models:
@@ -32,6 +33,8 @@ en:
           attributes:
             coin_amount:
               exceed_available_balance: "exceeds available balance"
+            coin_address:
+              invalid_format: "has invalid format"
   activemodel:
     errors:
       models:
@@ -43,3 +46,5 @@ en:
     attributes:
       receiver_email:
         cannot_transfer_to_self: "cannot transfer to self"
+      coin_address:
+        invalid_format: "has invalid format"

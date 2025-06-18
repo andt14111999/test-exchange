@@ -127,9 +127,9 @@ RSpec.describe CoinAccount, type: :model do
     it 'validates layer for deposit account with unsupported layer' do
       account = build(:coin_account, coin_currency: 'usdt', layer: 'invalid_layer')
       expect(account).to be_invalid
-      expect(account.errors[:layer]).to include(
-        'is not supported for usdt. Supported layers are: erc20, bep20, trc20'
-      )
+              expect(account.errors[:layer]).to include(
+          'is not supported for usdt. Supported layers are: erc20, bep20, trc20, solana'
+        )
     end
   end
 
@@ -306,7 +306,7 @@ RSpec.describe CoinAccount, type: :model do
 
     describe '.supported_networks_for' do
       it 'returns supported networks for a coin currency' do
-        expect(described_class.supported_networks_for('usdt')).to eq(%w[erc20 bep20 trc20])
+        expect(described_class.supported_networks_for('usdt')).to eq(%w[erc20 bep20 trc20 solana])
         expect(described_class.supported_networks_for('unknown')).to eq([])
       end
     end

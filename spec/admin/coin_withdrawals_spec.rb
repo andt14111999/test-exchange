@@ -14,7 +14,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
         coin_amount: 1.0,
         coin_fee: 0.0,
         coin_address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
-        coin_layer: 'btc',
+        coin_layer: 'bitcoin',
         status: 'pending')
 
       login_as(admin_user, scope: :admin_user)
@@ -62,7 +62,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
         coin_amount: 1.0,
         coin_fee: 0.0,
         coin_address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
-        coin_layer: 'btc',
+        coin_layer: 'bitcoin',
         status: 'pending')
 
       operation = create(:coin_withdrawal_operation,
@@ -124,7 +124,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
         coin_amount: 1.0,
         coin_fee: 0.0,
         coin_address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
-        coin_layer: 'btc',
+        coin_layer: 'bitcoin',
         status: 'pending')
       CoinWithdrawal.set_callback(:create, :after, :create_operations)
 
@@ -148,7 +148,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
         coin_amount: 1.0,
         coin_fee: 0.0,
         coin_address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
-        coin_layer: 'btc',
+        coin_layer: 'bitcoin',
         status: 'pending')
 
       login_as(admin_user, scope: :admin_user)
@@ -171,7 +171,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
         coin_amount: 1.0,
         coin_fee: 0.0,
         coin_address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
-        coin_layer: 'btc',
+        coin_layer: 'bitcoin',
         status: 'completed')
 
       login_as(admin_user, scope: :admin_user)
@@ -191,7 +191,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
         coin_amount: 1.0,
         coin_fee: 0.0,
         coin_address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
-        coin_layer: 'btc',
+        coin_layer: 'bitcoin',
         status: 'pending')
 
       allow(withdrawal).to receive(:cancel!).and_raise(StandardError.new('Some error'))

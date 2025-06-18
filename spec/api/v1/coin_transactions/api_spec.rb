@@ -23,7 +23,7 @@ RSpec.describe V1::CoinTransactions::Api, type: :request do
         user: user,
         coin_currency: coin_currency,
         coin_amount: 50.0,
-        coin_address: '0x456',
+        coin_address: '0xde709f2102306220921060314715629080e2fb77',
         status: 'completed',
         tx_hash: '0x789'
       )
@@ -62,7 +62,7 @@ RSpec.describe V1::CoinTransactions::Api, type: :request do
                 'coin_currency' => coin_currency,
                 'status' => 'completed',
                 'hash' => '0x789',
-                'address' => '0x456',
+                'address' => '0xde709f2102306220921060314715629080e2fb77',
                 'created_at' => withdrawal.created_at.as_json,
                 'updated_at' => withdrawal.updated_at.as_json
               }

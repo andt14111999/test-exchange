@@ -82,6 +82,56 @@ RSpec.describe CoinWithdrawal, type: :model do
       end
     end
 
+    describe '#validate_coin_address_format' do
+      context 'when not internal transfer' do
+        it 'validates address format using CryptocurrencyAddressValidator' do
+          validator = instance_double(CryptocurrencyAddressValidator)
+          allow(CryptocurrencyAddressValidator).to receive(:new)
+            .with(withdrawal.coin_address, 'erc20')
+            .and_return(validator)
+          allow(validator).to receive(:valid?).and_return(true)
+
+          withdrawal.coin_layer = 'erc20'
+          withdrawal.valid?
+
+          expect(CryptocurrencyAddressValidator).to have_received(:new)
+            .with(withdrawal.coin_address, 'erc20')
+        end
+
+        it 'is invalid when address format is invalid' do
+          validator = instance_double(CryptocurrencyAddressValidator)
+          allow(CryptocurrencyAddressValidator).to receive(:new)
+            .and_return(validator)
+          allow(validator).to receive(:valid?).and_return(false)
+
+          withdrawal.coin_layer = 'erc20'
+          expect(withdrawal).to be_invalid
+          expect(withdrawal.errors[:coin_address]).to include('has invalid format')
+        end
+
+        it 'handles ArgumentError from validator for unsupported layer' do
+          allow(CryptocurrencyAddressValidator).to receive(:new)
+            .and_raise(ArgumentError, "Layer 'unsupported' is not supported")
+
+          withdrawal.coin_layer = 'unsupported'
+          expect(withdrawal).to be_invalid
+          expect(withdrawal.errors[:coin_layer]).to include("Layer 'unsupported' is not supported")
+        end
+      end
+
+      context 'when internal transfer' do
+        it 'skips address format validation' do
+          withdrawal.receiver_email = 'receiver@example.com'
+          withdrawal.coin_address = 'invalid_address'
+
+          allow(User).to receive(:find_by).with(email: 'receiver@example.com').and_return(create(:user))
+          expect(CryptocurrencyAddressValidator).not_to receive(:new)
+
+          withdrawal.valid?
+        end
+      end
+    end
+
     describe '#validate_receiver_internal' do
       let(:user) { create(:user) }
       let(:receiver) { create(:user) }
@@ -503,7 +553,7 @@ RSpec.describe CoinWithdrawal, type: :model do
     end
 
     it 'returns false when none of the receiver identifiers are present' do
-      withdrawal = build(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_layer: 'erc20', coin_address: '0x123')
+      withdrawal = build(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_layer: 'erc20', coin_address: '0xde709f2102306220921060314715629080e2fb77')
       expect(withdrawal.internal_transfer?).to be false
     end
   end
@@ -558,7 +608,7 @@ RSpec.describe CoinWithdrawal, type: :model do
         # Get the actual coin_fee value to check
         allow_any_instance_of(described_class).to receive(:calculate_coin_fee).and_return(1)
 
-        withdrawal = create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_amount: 10, coin_fee: 1, coin_layer: 'erc20', coin_address: '0x123')
+        withdrawal = create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_amount: 10, coin_fee: 1, coin_layer: 'erc20', coin_address: '0xde709f2102306220921060314715629080e2fb77')
         expect(withdrawal.coin_withdrawal_operation).to be_present
         expect(withdrawal.coin_withdrawal_operation.coin_amount).to eq(10)
         expect(withdrawal.coin_withdrawal_operation.coin_fee).to eq(1)
@@ -791,7 +841,7 @@ RSpec.describe CoinWithdrawal, type: :model do
           user: sender,
           coin_currency: 'usdt',
           coin_layer: 'erc20',
-          coin_address: '0xexternaladdress',
+          coin_address: '0xde709f2102306220921060314715629080e2fb77',
           coin_amount: 10.0
         )
 

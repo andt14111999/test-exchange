@@ -180,7 +180,7 @@ RSpec.describe CoinPortalController, type: :controller do
 
     describe 'withdrawal handling' do
       let(:user) { create(:user) }
-      let(:coin_withdrawal) { create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_layer: 'trc20') }
+      let(:coin_withdrawal) { create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_layer: 'trc20', coin_address: 'TQi6duE6msVsWnMRovcK8YcMD1pd3auDCj') }
       let(:coin_withdrawal_operation) do
         create(:coin_withdrawal_operation,
           coin_withdrawal: coin_withdrawal,
