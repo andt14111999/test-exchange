@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe CoinWithdrawal, type: :model do
+RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
   describe 'associations' do
     let(:user) { create(:user) }
     let(:coin_account) { create(:coin_account, :usdt_main, user: user, balance: 100.0) }
@@ -337,7 +337,7 @@ RSpec.describe CoinWithdrawal, type: :model do
                           receiver_email: receiver.email)
 
         # Stub create_operations to prevent after_create callbacks from executing auto_process!
-        allow(withdrawal).to receive(:create_operations)
+        allow(withdrawal).to receive(:create_operations_later)
 
         # Setup expectation for the create method with recipient_account_key
         expect(withdrawal_service).to receive(:create).with(
@@ -382,7 +382,7 @@ RSpec.describe CoinWithdrawal, type: :model do
                           receiver_username: receiver.username)
 
         # Stub create_operations to prevent after_create callbacks from executing auto_process!
-        allow(withdrawal).to receive(:create_operations)
+        allow(withdrawal).to receive(:create_operations_later)
 
         # Setup expectation for the create method with recipient_account_key
         expect(withdrawal_service).to receive(:create).with(
@@ -429,7 +429,7 @@ RSpec.describe CoinWithdrawal, type: :model do
                           receiver_phone_number: '0987654321')
 
         # Stub create_operations to prevent after_create callbacks from executing auto_process!
-        allow(withdrawal).to receive(:create_operations)
+        allow(withdrawal).to receive(:create_operations_later)
 
         # Setup expectation for the create method with recipient_account_key
         expect(withdrawal_service).to receive(:create).with(

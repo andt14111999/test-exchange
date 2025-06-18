@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe V1::CoinWithdrawals::Api, type: :request do
+RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
   let(:user) { create(:user) }
   let(:other_user) { create(:user) }
   let(:coin_currency) { 'usdt' }

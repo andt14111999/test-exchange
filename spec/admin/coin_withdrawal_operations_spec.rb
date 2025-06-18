@@ -20,7 +20,7 @@ RSpec.describe 'Admin::CoinWithdrawalOperations', type: :system do
   end
 
   describe '#index' do
-    it 'displays withdrawal operations list' do
+    it 'displays withdrawal operations list', sidekiq: :inline do
       visit admin_coin_withdrawal_operations_path
 
       expect(page).to have_content(coin_withdrawal_operation.id)

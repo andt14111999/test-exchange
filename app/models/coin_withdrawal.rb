@@ -26,8 +26,7 @@ class CoinWithdrawal < ApplicationRecord
   before_validation :assign_coin_layer
   before_validation :calculate_coin_fee, on: :create
   after_create :send_event_withdrawal_to_kafka
-  # create_operations need to be called after send_event_withdrawal_to_kafka
-  after_create :create_operations
+  after_create :create_operations_later
 
   scope :sorted, -> { order(created_at: :desc) }
 
@@ -181,6 +180,10 @@ class CoinWithdrawal < ApplicationRecord
         frozen_balance: coin_account.frozen_balance - (coin_amount + coin_fee)
       )
     end
+  end
+
+  def create_operations_later
+    SidekiqMethod.enqueue_to('critical', self, :create_operations)
   end
 
   def create_operations
