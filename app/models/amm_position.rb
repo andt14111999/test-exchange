@@ -72,6 +72,7 @@ class AmmPosition < ApplicationRecord
   end
 
   after_create :send_event_create_amm_position
+  after_update :broadcast_amm_position_update, if: :saved_change_to_status?
 
   def pool_pair
     pair
@@ -257,6 +258,14 @@ class AmmPosition < ApplicationRecord
     rescue StandardError => e
       Rails.logger.error("Failed to notify exchange engine about AmmPosition creation: #{e.message}")
       fail(e.message)
+    end
+  end
+
+  def broadcast_amm_position_update
+    begin
+      AmmPositionBroadcastService.call(user)
+    rescue StandardError => e
+      Rails.logger.error("Failed to broadcast AMM position update: #{e.message}")
     end
   end
 end

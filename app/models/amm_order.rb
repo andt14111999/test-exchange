@@ -54,6 +54,7 @@ class AmmOrder < ApplicationRecord
   end
 
   after_create :process_order
+  after_update :broadcast_amm_order_update, if: :saved_change_to_status?
 
   def account_key0
     user.main_account(token0)&.account_key
@@ -116,6 +117,14 @@ class AmmOrder < ApplicationRecord
     rescue StandardError => e
       Rails.logger.error("Failed to notify exchange engine about AmmOrder creation: #{e.message}")
       fail(e.message)
+    end
+  end
+
+  def broadcast_amm_order_update
+    begin
+      AmmOrderBroadcastService.call(user)
+    rescue StandardError => e
+      Rails.logger.error("Failed to broadcast AMM order update: #{e.message}")
     end
   end
 end

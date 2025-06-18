@@ -588,6 +588,44 @@ describe AmmPosition, type: :model do
     end
   end
 
+  describe 'after_update callback' do
+    it 'calls broadcast_amm_position_update when status changes' do
+      position = create(:amm_position, status: 'pending')
+
+      expect(position).to receive(:broadcast_amm_position_update)
+
+      position.update(status: 'open')
+    end
+
+    it 'does not call broadcast_amm_position_update when status does not change' do
+      position = create(:amm_position, status: 'pending')
+
+      expect(position).not_to receive(:broadcast_amm_position_update)
+
+      position.update(liquidity: 100)
+    end
+  end
+
+  describe '#broadcast_amm_position_update' do
+    let(:user) { create(:user) }
+    let(:position) { create(:amm_position, user: user) }
+
+    it 'calls AmmPositionBroadcastService with user' do
+      expect(AmmPositionBroadcastService).to receive(:call).with(user)
+
+      position.send(:broadcast_amm_position_update)
+    end
+
+    it 'logs error when broadcast fails' do
+      error = StandardError.new('Broadcast failed')
+      allow(AmmPositionBroadcastService).to receive(:call).and_raise(error)
+
+      expect(Rails.logger).to receive(:error).with('Failed to broadcast AMM position update: Broadcast failed')
+
+      position.send(:broadcast_amm_position_update)
+    end
+  end
+
   describe '#send_event_create_amm_position' do
     let(:user) { create(:user) }
     let(:pool) { create(:amm_pool, token0: 'USDT', token1: 'VND', pair: 'USDT/VND') }
