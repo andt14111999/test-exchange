@@ -121,31 +121,55 @@ describe CryptocurrencyAddressValidator do
         expect { validator.valid? }.to raise_error(ArgumentError, /Layer 'unsupported_layer' is not supported/)
       end
 
-      it 'logs warning for supported but unimplemented layer' do
-        # Add a layer to CoinAccount::SUPPORTED_NETWORKS that we don't handle in the service
-        # For now, let's test with a valid layer but assume it's not implemented
+      it 'logs warning and returns true for supported but unimplemented layer' do
+        # Mock SUPPORTED_LAYERS to include a layer not in the case statement
         address = 'some_address'
-        validator = described_class.new(address, 'bitcoin')
+        validator = described_class.new(address, 'new_unsupported_layer')
 
-        # Mock to simulate unimplemented layer
-        allow(validator).to receive(:valid_crypto_address_with_gem?).and_return(true)
+        # Add the layer to supported layers temporarily
+        stub_const('CryptocurrencyAddressValidator::SUPPORTED_LAYERS', [ 'erc20', 'bep20', 'trc20', 'bitcoin', 'solana', 'new_unsupported_layer' ])
         allow(Rails.logger).to receive(:warn)
 
         result = validator.valid?
+
         expect(result).to be true
+        expect(Rails.logger).to have_received(:warn).with("Address validation not implemented for layer: new_unsupported_layer")
       end
     end
 
     context 'when handling errors' do
       it 'returns false and logs error when gem raises exception' do
-        address = 'some_address'
+        address = '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa'
         validator = described_class.new(address, 'bitcoin')
 
         allow(AdequateCryptoAddress).to receive(:valid?).and_raise(StandardError.new('Test error'))
         allow(Rails.logger).to receive(:error)
 
         expect(validator.valid?).to be false
-        expect(Rails.logger).to have_received(:error)
+        expect(Rails.logger).to have_received(:error).with("Gem validation error for bitcoin address #{address}: Test error")
+      end
+
+      it 'returns false and logs error when gem raises exception for ERC20' do
+        address = '0xde709f2102306220921060314715629080e2fb77'
+        validator = described_class.new(address, 'erc20')
+
+        allow(AdequateCryptoAddress).to receive(:valid?).and_raise(StandardError.new('Gem error'))
+        allow(Rails.logger).to receive(:error)
+
+        expect(validator.valid?).to be false
+        expect(Rails.logger).to have_received(:error).with("Gem validation error for ethereum address #{address}: Gem error")
+      end
+
+      it 'returns false and logs error when any other method raises exception' do
+        address = 'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE'
+        validator = described_class.new(address, 'trc20')
+
+        # Mock valid_tron_address? to raise exception
+        allow(validator).to receive(:valid_tron_address?).and_raise(StandardError.new('TRON validation error'))
+        allow(Rails.logger).to receive(:error)
+
+        expect(validator.valid?).to be false
+        expect(Rails.logger).to have_received(:error).with("Error validating trc20 address #{address}: TRON validation error")
       end
     end
 
