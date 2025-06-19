@@ -52,12 +52,7 @@ ActiveAdmin.register CoinSetting do
   controller do
     def edit
       @coin_setting = CoinSetting.find(params[:id])
-      @coin_setting.define_singleton_method(:fake_layers) do
-        @fake_layers ||= (layers || []).map { |l| OpenStruct.new(l) }
-      end
-      @coin_setting.define_singleton_method(:fake_layers_attributes=) do |attrs|
-        @fake_layers = attrs.values.map { |v| OpenStruct.new(v) }
-      end
+      define_fake_layers_methods(@coin_setting)
     end
 
     def update
@@ -78,6 +73,17 @@ ActiveAdmin.register CoinSetting do
         end
       end
       super
+    end
+
+    private
+
+    def define_fake_layers_methods(coin_setting)
+      coin_setting.define_singleton_method(:fake_layers) do
+        @fake_layers ||= (layers || []).map { |l| OpenStruct.new(l) }
+      end
+      coin_setting.define_singleton_method(:fake_layers_attributes=) do |attrs|
+        @fake_layers = attrs.values.map { |v| OpenStruct.new(v) }
+      end
     end
   end
 end
