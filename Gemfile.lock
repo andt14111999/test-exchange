@@ -377,7 +377,7 @@ GEM
       redic
     net-http (0.6.0)
       uri
-    net-imap (0.5.8)
+    net-imap (0.5.9)
       date
       net-protocol
     net-pop (0.1.2)
@@ -776,7 +776,7 @@ DEPENDENCIES
   koala
   letter_opener
   nest
-  net-imap (~> 0.5.8)
+  net-imap (~> 0.5.9)
   nokogiri (>= 1.18.8)
   oj
   omniauth
