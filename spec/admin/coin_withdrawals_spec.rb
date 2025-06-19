@@ -156,9 +156,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
 
       page.driver.submit :put, cancel_admin_coin_withdrawal_path(withdrawal), {}
 
-      expect(page).to have_content('Withdrawal was successfully cancelled')
-      withdrawal.reload
-      expect(withdrawal.status).to eq('cancelled')
+      expect(page).to have_content('Withdrawal was sent cancel event to Exchange Engine')
     end
 
     it 'shows error when cancellation fails' do
@@ -194,7 +192,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
         coin_layer: 'bitcoin',
         status: 'pending')
 
-      allow(withdrawal).to receive(:cancel!).and_raise(StandardError.new('Some error'))
+      allow(withdrawal).to receive(:send_event_cancel_withdrawal_to_kafka).and_raise(StandardError.new('Some error'))
       allow(CoinWithdrawal).to receive(:find).with(withdrawal.id.to_s).and_return(withdrawal)
 
       login_as(admin_user, scope: :admin_user)

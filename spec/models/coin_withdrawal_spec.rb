@@ -301,10 +301,6 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
         )
         withdrawal = create(:coin_withdrawal, id: 10000, user:, coin_currency: 'usdt', coin_amount: 10, coin_layer: 'erc20')
 
-        expect(withdrawal_service).to receive(:update_status).with(
-          identifier: withdrawal.id,
-          operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_RELEASING
-        )
         withdrawal.process!
         withdrawal.complete!
         expect(withdrawal).to be_completed
@@ -663,11 +659,14 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
         withdrawal.send(:send_event_fail_withdrawal_to_kafka)
       end
 
-      it 'does not send event if not failed' do
-        withdrawal = build_stubbed(:coin_withdrawal)
+      it 'sends event even if not failed' do
+        withdrawal = build_stubbed(:coin_withdrawal, id: 1003)
         allow(withdrawal).to receive(:failed?).and_return(false)
 
-        expect(withdrawal_service).not_to receive(:update_status)
+        expect(withdrawal_service).to receive(:update_status).with(
+          identifier: 1003,
+          operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_FAILED
+        )
         withdrawal.send(:send_event_fail_withdrawal_to_kafka)
       end
     end
@@ -692,11 +691,14 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
         withdrawal.send(:send_event_cancel_withdrawal_to_kafka)
       end
 
-      it 'does not send event if not cancelled' do
-        withdrawal = build_stubbed(:coin_withdrawal)
+      it 'sends event even if not cancelled' do
+        withdrawal = build_stubbed(:coin_withdrawal, id: 1006)
         allow(withdrawal).to receive(:cancelled?).and_return(false)
 
-        expect(withdrawal_service).not_to receive(:update_status)
+        expect(withdrawal_service).to receive(:update_status).with(
+          identifier: 1006,
+          operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_CANCELLED
+        )
         withdrawal.send(:send_event_cancel_withdrawal_to_kafka)
       end
     end

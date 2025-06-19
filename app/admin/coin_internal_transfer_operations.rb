@@ -76,7 +76,7 @@ ActiveAdmin.register CoinInternalTransferOperation do
 
   sidebar 'State Actions', only: :show do
     div id: 'state_actions' do
-      if resource.pending?
+      if resource.may_process?
         button_to 'Process Transfer',
           process_transfer_admin_coin_internal_transfer_operation_path(resource),
           method: :put,

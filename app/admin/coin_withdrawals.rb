@@ -110,8 +110,8 @@ ActiveAdmin.register CoinWithdrawal do
   member_action :cancel, method: :put do
     withdrawal = resource
     begin
-      withdrawal.cancel!
-      redirect_to resource_path, notice: 'Withdrawal was successfully cancelled'
+      withdrawal.send_event_cancel_withdrawal_to_kafka
+      redirect_to resource_path, notice: 'Withdrawal was sent cancel event to Exchange Engine'
     rescue StandardError => e
       redirect_to resource_path, alert: 'Could not cancel withdrawal'
     end

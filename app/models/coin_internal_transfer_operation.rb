@@ -85,8 +85,7 @@ class CoinInternalTransferOperation < ApplicationRecord
   def complete_withdrawal
     # Mark withdrawal as processing and then completed
     withdrawal = coin_withdrawal
-    withdrawal.process! if withdrawal.may_process?
-    withdrawal.complete! if withdrawal.may_complete?
+    withdrawal.send_event_complete_withdrawal_to_kafka if withdrawal.may_complete?
   end
 
   def create_coin_transactions
