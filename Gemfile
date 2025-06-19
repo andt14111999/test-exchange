@@ -67,6 +67,7 @@ gem 'solid_queue'
 gem 'activeadmin'
 gem 'activeadmin_addons', github: 'platanus/activeadmin_addons'
 gem 'kaminari' # Pagination
+gem 'activeadmin_json_editor'
 
 ################################################################################
 # Security & Encryption

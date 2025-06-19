@@ -351,4 +351,8 @@ ActiveAdmin.setup do |config|
   # You can switch to using Webpacker here.
   #
   # config.use_webpacker = true
+
+  config.register_stylesheet 'active_admin/json_editor.css'
+  config.register_javascript 'active_admin/json_editor.js'
+  config.register_stylesheet 'active_admin/checkbox_custom.css'
 end

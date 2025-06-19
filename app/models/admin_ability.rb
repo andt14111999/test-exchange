@@ -36,6 +36,7 @@ class AdminAbility
     can :manage, CoinTransaction
     can :manage, BalanceLock
     can :manage, BalanceLockOperation
+    can :manage, CoinSetting
 
     # Fiat Management
     can :manage, FiatDeposit

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register_page 'Settings' do
-  menu priority: 1, label: 'Settings'
+  menu priority: 1, parent: 'Settings', label: 'Basic Settings'
 
   content do
     panel 'Settings' do

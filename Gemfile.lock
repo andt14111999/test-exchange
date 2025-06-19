@@ -21,6 +21,7 @@ GEM
   specs:
     aasm (5.5.1)
       concurrent-ruby (~> 1.0)
+    ace-rails-ap (4.5)
     actioncable (8.0.2)
       actionpack (= 8.0.2)
       activesupport (= 8.0.2)
@@ -79,6 +80,9 @@ GEM
       kaminari (>= 1.2.1)
       railties (>= 6.1)
       ransack (>= 4.0)
+    activeadmin_json_editor (0.0.10)
+      ace-rails-ap
+      railties (>= 3.0)
     activejob (8.0.2)
       activesupport (= 8.0.2)
       globalid (>= 0.3.6)
@@ -742,6 +746,7 @@ DEPENDENCIES
   aasm
   activeadmin
   activeadmin_addons!
+  activeadmin_json_editor
   adequate_crypto_address
   attr_encrypted (~> 4.2.0)
   bootsnap
