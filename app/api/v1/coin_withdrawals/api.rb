@@ -56,9 +56,13 @@ module V1
         end
 
         get :check_receiver do
-          user_exists = User.exists?(username: params[:receiver_username])
-
-          body(user_exists.to_json)
+          # If receiver is the current user, return false
+          if current_user.username == params[:receiver_username]
+            body(false.to_json)
+          else
+            user_exists = User.exists?(username: params[:receiver_username])
+            body(user_exists.to_json)
+          end
         end
 
         desc 'Get coin withdrawal details by ID'
