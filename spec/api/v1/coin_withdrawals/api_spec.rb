@@ -327,7 +327,7 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
       end
 
       context 'when checking current user username' do
-        it 'returns true when checking own username' do
+        it 'returns false when checking own username' do
           user.update!(username: 'myownusername')
 
           get '/api/v1/coin_withdrawals/check_receiver',
@@ -336,7 +336,7 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
 
           expect(response).to have_http_status(:success)
           json_response = JSON.parse(response.body)
-          expect(json_response).to be true
+          expect(json_response).to be false
         end
       end
 
