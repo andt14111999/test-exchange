@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe CoinWithdrawal, type: :model do
+RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
   describe 'associations' do
     let(:user) { create(:user) }
     let(:coin_account) { create(:coin_account, :usdt_main, user: user, balance: 100.0) }
@@ -301,10 +301,6 @@ RSpec.describe CoinWithdrawal, type: :model do
         )
         withdrawal = create(:coin_withdrawal, id: 10000, user:, coin_currency: 'usdt', coin_amount: 10, coin_layer: 'erc20')
 
-        expect(withdrawal_service).to receive(:update_status).with(
-          identifier: withdrawal.id,
-          operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_RELEASING
-        )
         withdrawal.process!
         withdrawal.complete!
         expect(withdrawal).to be_completed
@@ -337,7 +333,7 @@ RSpec.describe CoinWithdrawal, type: :model do
                           receiver_email: receiver.email)
 
         # Stub create_operations to prevent after_create callbacks from executing auto_process!
-        allow(withdrawal).to receive(:create_operations)
+        allow(withdrawal).to receive(:create_operations_later)
 
         # Setup expectation for the create method with recipient_account_key
         expect(withdrawal_service).to receive(:create).with(
@@ -382,7 +378,7 @@ RSpec.describe CoinWithdrawal, type: :model do
                           receiver_username: receiver.username)
 
         # Stub create_operations to prevent after_create callbacks from executing auto_process!
-        allow(withdrawal).to receive(:create_operations)
+        allow(withdrawal).to receive(:create_operations_later)
 
         # Setup expectation for the create method with recipient_account_key
         expect(withdrawal_service).to receive(:create).with(
@@ -429,7 +425,7 @@ RSpec.describe CoinWithdrawal, type: :model do
                           receiver_phone_number: '0987654321')
 
         # Stub create_operations to prevent after_create callbacks from executing auto_process!
-        allow(withdrawal).to receive(:create_operations)
+        allow(withdrawal).to receive(:create_operations_later)
 
         # Setup expectation for the create method with recipient_account_key
         expect(withdrawal_service).to receive(:create).with(
@@ -514,7 +510,7 @@ RSpec.describe CoinWithdrawal, type: :model do
   describe '.ransackable_attributes' do
     it 'returns allowed attributes for ransack' do
       expect(described_class.ransackable_attributes).to match_array(
-        %w[id user_id coin_currency coin_amount coin_fee coin_address coin_layer status tx_hash created_at updated_at]
+        %w[id user_id coin_currency coin_amount coin_fee coin_address coin_layer status tx_hash created_at updated_at receiver_email receiver_username receiver_phone_number]
       )
     end
   end
@@ -663,11 +659,14 @@ RSpec.describe CoinWithdrawal, type: :model do
         withdrawal.send(:send_event_fail_withdrawal_to_kafka)
       end
 
-      it 'does not send event if not failed' do
-        withdrawal = build_stubbed(:coin_withdrawal)
+      it 'sends event even if not failed' do
+        withdrawal = build_stubbed(:coin_withdrawal, id: 1003)
         allow(withdrawal).to receive(:failed?).and_return(false)
 
-        expect(withdrawal_service).not_to receive(:update_status)
+        expect(withdrawal_service).to receive(:update_status).with(
+          identifier: 1003,
+          operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_FAILED
+        )
         withdrawal.send(:send_event_fail_withdrawal_to_kafka)
       end
     end
@@ -692,11 +691,14 @@ RSpec.describe CoinWithdrawal, type: :model do
         withdrawal.send(:send_event_cancel_withdrawal_to_kafka)
       end
 
-      it 'does not send event if not cancelled' do
-        withdrawal = build_stubbed(:coin_withdrawal)
+      it 'sends event even if not cancelled' do
+        withdrawal = build_stubbed(:coin_withdrawal, id: 1006)
         allow(withdrawal).to receive(:cancelled?).and_return(false)
 
-        expect(withdrawal_service).not_to receive(:update_status)
+        expect(withdrawal_service).to receive(:update_status).with(
+          identifier: 1006,
+          operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_CANCELLED
+        )
         withdrawal.send(:send_event_cancel_withdrawal_to_kafka)
       end
     end

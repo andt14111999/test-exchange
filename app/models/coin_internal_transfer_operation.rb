@@ -54,6 +54,17 @@ class CoinInternalTransferOperation < ApplicationRecord
     self.status_explanation = value
   end
 
+  def self.ransackable_attributes(_auth_object = nil)
+    %w[
+      id coin_withdrawal_id sender_id receiver_id coin_currency coin_amount
+      coin_fee status status_explanation created_at updated_at
+    ]
+  end
+
+  def self.ransackable_associations(_auth_object = nil)
+    %w[coin_withdrawal sender receiver coin_transactions]
+  end
+
   # Process the internal transfer automatically
   def auto_process!
     begin
@@ -74,8 +85,7 @@ class CoinInternalTransferOperation < ApplicationRecord
   def complete_withdrawal
     # Mark withdrawal as processing and then completed
     withdrawal = coin_withdrawal
-    withdrawal.process! if withdrawal.may_process?
-    withdrawal.complete! if withdrawal.may_complete?
+    withdrawal.send_event_complete_withdrawal_to_kafka if withdrawal.may_complete?
   end
 
   def create_coin_transactions

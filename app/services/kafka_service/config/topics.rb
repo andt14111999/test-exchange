@@ -16,6 +16,7 @@ module KafkaService
 
       # Output topics
       COIN_ACCOUNT_UPDATE = 'EE.O.coin_account_update'
+      COIN_WITHDRAWAL_UPDATE = 'EE.O.coin_withdrawal_update'
       TRANSACTION_RESPONSE = 'EE.O.transaction_response'
       MERCHANT_ESCROW_UPDATE = 'EE.O.merchant_escrow_update'
       TRADE_UPDATE = 'EE.O.trade_update'

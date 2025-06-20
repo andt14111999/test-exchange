@@ -52,7 +52,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
   end
 
   describe 'show page' do
-    it 'displays withdrawal details' do
+    it 'displays withdrawal details', sidekiq: :inline do
       admin_user = create(:admin_user, :superadmin)
       user = create(:user)
       create(:coin_account, :btc_main, user:, balance: 100.0)
@@ -117,7 +117,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
       create(:coin_account, :btc_main, user:, balance: 100.0)
 
       withdrawal = nil
-      CoinWithdrawal.skip_callback(:create, :after, :create_operations)
+      CoinWithdrawal.skip_callback(:create, :after, :create_operations_later)
       withdrawal = create(:coin_withdrawal,
         user:,
         coin_currency: 'btc',
@@ -126,7 +126,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
         coin_address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
         coin_layer: 'bitcoin',
         status: 'pending')
-      CoinWithdrawal.set_callback(:create, :after, :create_operations)
+      CoinWithdrawal.set_callback(:create, :after, :create_operations_later)
 
       login_as(admin_user, scope: :admin_user)
       visit admin_coin_withdrawal_path(withdrawal)
@@ -156,9 +156,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
 
       page.driver.submit :put, cancel_admin_coin_withdrawal_path(withdrawal), {}
 
-      expect(page).to have_content('Withdrawal was successfully cancelled')
-      withdrawal.reload
-      expect(withdrawal.status).to eq('cancelled')
+      expect(page).to have_content('Withdrawal was sent cancel event to Exchange Engine')
     end
 
     it 'shows error when cancellation fails' do
@@ -194,7 +192,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
         coin_layer: 'bitcoin',
         status: 'pending')
 
-      allow(withdrawal).to receive(:cancel!).and_raise(StandardError.new('Some error'))
+      allow(withdrawal).to receive(:send_event_cancel_withdrawal_to_kafka).and_raise(StandardError.new('Some error'))
       allow(CoinWithdrawal).to receive(:find).with(withdrawal.id.to_s).and_return(withdrawal)
 
       login_as(admin_user, scope: :admin_user)

@@ -26,17 +26,16 @@ class CoinWithdrawal < ApplicationRecord
   before_validation :assign_coin_layer
   before_validation :calculate_coin_fee, on: :create
   after_create :send_event_withdrawal_to_kafka
-  # create_operations need to be called after send_event_withdrawal_to_kafka
-  after_create :create_operations
+  after_create :create_operations_later
 
   scope :sorted, -> { order(created_at: :desc) }
 
   aasm column: 'status', whiny_transitions: false do
     state :pending, initial: true
     state :processing
-    state :completed, after_enter: :send_event_complete_withdrawal_to_kafka
-    state :failed, after_enter: :send_event_fail_withdrawal_to_kafka
-    state :cancelled, after_enter: :send_event_cancel_withdrawal_to_kafka
+    state :completed
+    state :failed
+    state :cancelled
 
     event :process do
       transitions from: [ :pending ], to: :processing
@@ -47,11 +46,15 @@ class CoinWithdrawal < ApplicationRecord
     end
 
     event :fail do
+      before do |status_explanation|
+        self.explanation = "#{explanation}; #{status_explanation}" if status_explanation.present?
+      end
+
       transitions from: [ :processing ], to: :failed
     end
 
     event :cancel do
-      transitions from: [ :pending, :processing ], to: :cancelled
+      transitions from: [ :pending, :processing, :failed ], to: :cancelled
     end
   end
 
@@ -65,7 +68,7 @@ class CoinWithdrawal < ApplicationRecord
 
   def self.ransackable_attributes(_auth_object = nil)
     %w[
-      id user_id coin_currency coin_amount
+      id user_id coin_currency coin_amount receiver_email receiver_username receiver_phone_number
       coin_fee coin_address coin_layer status
       tx_hash created_at updated_at
     ]
@@ -81,6 +84,71 @@ class CoinWithdrawal < ApplicationRecord
 
   def internal_transfer?
     receiver_email.present? || receiver_phone_number.present? || receiver_username.present?
+  end
+
+  def send_event_complete_withdrawal_to_kafka
+    KafkaService::Services::Coin::CoinWithdrawalService.new.update_status(
+      identifier: id,
+      operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_RELEASING
+    )
+  end
+
+  def send_event_withdrawal_to_kafka
+    account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
+      user_id: user_id,
+      account_id: main_coin_account.id
+    )
+
+    params = {
+      identifier: id,
+      status: pending? || processing? ? 'verified' : status,
+      user_id: user_id,
+      coin: coin_currency,
+      account_key: account_key,
+      amount: coin_amount,
+      fee: coin_fee
+    }
+
+    # Add recipient_account_key for internal transfers
+    recipient = nil
+    if internal_transfer?
+      if receiver_email.present?
+        recipient = User.find_by(email: receiver_email)
+      elsif receiver_username.present?
+        recipient = User.find_by(username: receiver_username)
+      elsif receiver_phone_number.present?
+        recipient = User.find_by(phone_number: receiver_phone_number)
+      end
+
+      if recipient.present?
+        recipient_account = recipient.coin_accounts.of_coin(coin_currency).main
+        if recipient_account.present?
+          recipient_account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
+            user_id: recipient.id,
+            account_id: recipient_account.id
+          )
+          params[:recipient_account_key] = recipient_account_key
+        end
+      end
+    end
+
+    KafkaService::Services::Coin::CoinWithdrawalService.new.create(**params)
+  rescue StandardError => e
+    Rails.logger.error("Failed to send withdrawal event to Kafka: #{e.message}")
+  end
+
+  def send_event_fail_withdrawal_to_kafka
+    KafkaService::Services::Coin::CoinWithdrawalService.new.update_status(
+      identifier: id,
+      operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_FAILED
+    )
+  end
+
+  def send_event_cancel_withdrawal_to_kafka
+    KafkaService::Services::Coin::CoinWithdrawalService.new.update_status(
+      identifier: id,
+      operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_CANCELLED
+    )
   end
 
   private
@@ -183,6 +251,10 @@ class CoinWithdrawal < ApplicationRecord
     end
   end
 
+  def create_operations_later
+    SidekiqMethod.enqueue_to('critical', self, :create_operations)
+  end
+
   def create_operations
     if internal_transfer?
       receiver = nil
@@ -210,77 +282,6 @@ class CoinWithdrawal < ApplicationRecord
         coin_currency: coin_currency
       )
     end
-  end
-
-  def send_event_withdrawal_to_kafka
-    account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
-      user_id: user_id,
-      account_id: main_coin_account.id
-    )
-
-    params = {
-      identifier: id,
-      status: pending? || processing? ? 'verified' : status,
-      user_id: user_id,
-      coin: coin_currency,
-      account_key: account_key,
-      amount: coin_amount,
-      fee: coin_fee
-    }
-
-    # Add recipient_account_key for internal transfers
-    recipient = nil
-    if internal_transfer?
-      if receiver_email.present?
-        recipient = User.find_by(email: receiver_email)
-      elsif receiver_username.present?
-        recipient = User.find_by(username: receiver_username)
-      elsif receiver_phone_number.present?
-        recipient = User.find_by(phone_number: receiver_phone_number)
-      end
-
-      if recipient.present?
-        recipient_account = recipient.coin_accounts.of_coin(coin_currency).main
-        if recipient_account.present?
-          recipient_account_key = KafkaService::Services::AccountKeyBuilderService.build_coin_account_key(
-            user_id: recipient.id,
-            account_id: recipient_account.id
-          )
-          params[:recipient_account_key] = recipient_account_key
-        end
-      end
-    end
-
-    KafkaService::Services::Coin::CoinWithdrawalService.new.create(**params)
-  rescue StandardError => e
-    Rails.logger.error("Failed to send withdrawal event to Kafka: #{e.message}")
-  end
-
-  def send_event_complete_withdrawal_to_kafka
-    return unless completed?
-
-    KafkaService::Services::Coin::CoinWithdrawalService.new.update_status(
-      identifier: id,
-      operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_RELEASING
-    )
-  end
-
-  def send_event_fail_withdrawal_to_kafka
-    return unless failed?
-
-    KafkaService::Services::Coin::CoinWithdrawalService.new.update_status(
-      identifier: id,
-      operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_FAILED
-    )
-  end
-
-  def send_event_cancel_withdrawal_to_kafka
-    return unless cancelled?
-
-    KafkaService::Services::Coin::CoinWithdrawalService.new.update_status(
-      identifier: id,
-      operation_type: KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_CANCELLED
-    )
   end
 
   def main_coin_account

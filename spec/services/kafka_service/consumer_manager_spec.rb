@@ -30,6 +30,7 @@ RSpec.describe KafkaService::ConsumerManager, type: :service do
         KafkaService::Config::Topics::AMM_ORDER_UPDATE_TOPIC => KafkaService::Handlers::AmmOrderHandler,
         KafkaService::Config::Topics::TICK_UPDATE_TOPIC => KafkaService::Handlers::TickHandler,
         KafkaService::Config::Topics::BALANCES_LOCK_UPDATE => KafkaService::Handlers::BalanceLockHandler,
+        KafkaService::Config::Topics::COIN_WITHDRAWAL_UPDATE => KafkaService::Handlers::CoinWithdrawalHandler,
         KafkaService::Config::Topics::TRANSACTION_RESPONSE => KafkaService::Handlers::TransactionResponseHandler
       }
       actual_handlers = described_class.new.instance_variable_get(:@handlers)

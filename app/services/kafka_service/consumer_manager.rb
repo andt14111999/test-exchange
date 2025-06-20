@@ -14,6 +14,7 @@ module KafkaService
         KafkaService::Config::Topics::AMM_ORDER_UPDATE_TOPIC => KafkaService::Handlers::AmmOrderHandler.new,
         KafkaService::Config::Topics::TICK_UPDATE_TOPIC => KafkaService::Handlers::TickHandler.new,
         KafkaService::Config::Topics::BALANCES_LOCK_UPDATE => KafkaService::Handlers::BalanceLockHandler.new,
+        KafkaService::Config::Topics::COIN_WITHDRAWAL_UPDATE => KafkaService::Handlers::CoinWithdrawalHandler.new,
         KafkaService::Config::Topics::TRANSACTION_RESPONSE => KafkaService::Handlers::TransactionResponseHandler.new
       }
       @consumers = []
