@@ -79,7 +79,10 @@ module KafkaService
 
       # Get event ID from payload
       event_id = payload['inputEventId'] || payload['eventId'] || payload['messageId']
-      return if event_id.blank?
+      if event_id.blank?
+        Rails.logger.error("No event ID found in payload: #{payload}")
+        return
+      end
 
       Rails.logger.info("Processing event: #{event_id} for topic: #{topic}")
 

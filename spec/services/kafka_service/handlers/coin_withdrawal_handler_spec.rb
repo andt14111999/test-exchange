@@ -35,18 +35,6 @@ RSpec.describe KafkaService::Handlers::CoinWithdrawalHandler, type: :service do
         handler.handle(payload)
       end
     end
-
-    context 'when payload uses legacy format' do
-      it 'calls handle_legacy_format' do
-        payload = {
-          'operationType' => KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_CREATE,
-          'identifier' => coin_withdrawal.id.to_s
-        }
-
-        expect(handler).to receive(:handle_legacy_format).with(payload)
-        handler.handle(payload)
-      end
-    end
   end
 
   describe '#process_transaction_response' do
@@ -268,107 +256,7 @@ RSpec.describe KafkaService::Handlers::CoinWithdrawalHandler, type: :service do
     end
   end
 
-  describe 'legacy format handling' do
-    let(:identifier) { SecureRandom.uuid }
-    let(:payload) do
-      {
-        'operationType' => KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_CREATE,
-        'identifier' => identifier,
-        'amount' => '100.0',
-        'currency' => 'BTC',
-        'address' => '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa'
-      }
-    end
 
-    context 'when operation type is COIN_WITHDRAWAL_CREATE' do
-      it 'processes withdrawal creation' do
-        expect(handler).to receive(:process_withdrawal_create).with(payload)
-        handler.send(:handle_legacy_format, payload)
-      end
-
-      it 'logs the operation' do
-        expect(Rails.logger).to receive(:info).with("Processing withdrawal create: #{identifier}")
-        handler.send(:handle_legacy_format, payload)
-      end
-    end
-
-    context 'when operation type is COIN_WITHDRAWAL_RELEASING' do
-      let(:payload) do
-        {
-          'operationType' => KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_RELEASING,
-          'identifier' => identifier,
-          'amount' => '100.0',
-          'currency' => 'BTC',
-          'address' => '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa'
-        }
-      end
-
-      it 'processes withdrawal releasing' do
-        expect(handler).to receive(:process_withdrawal_releasing).with(payload)
-        handler.send(:handle_legacy_format, payload)
-      end
-
-      it 'logs the operation' do
-        expect(Rails.logger).to receive(:info).with("Processing withdrawal releasing: #{identifier}")
-        handler.send(:handle_legacy_format, payload)
-      end
-    end
-
-    context 'when operation type is COIN_WITHDRAWAL_FAILED' do
-      let(:payload) do
-        {
-          'operationType' => KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_FAILED,
-          'identifier' => identifier,
-          'amount' => '100.0',
-          'currency' => 'BTC',
-          'address' => '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
-          'error' => 'Insufficient funds'
-        }
-      end
-
-      it 'processes withdrawal failure' do
-        expect(handler).to receive(:process_withdrawal_failed).with(payload)
-        handler.send(:handle_legacy_format, payload)
-      end
-
-      it 'logs the operation' do
-        expect(Rails.logger).to receive(:info).with("Processing withdrawal failed: #{identifier}")
-        handler.send(:handle_legacy_format, payload)
-      end
-    end
-
-    context 'when operation type is unknown' do
-      let(:payload) do
-        {
-          'operationType' => 'UNKNOWN_OPERATION',
-          'identifier' => identifier
-        }
-      end
-
-      it 'does not process anything' do
-        expect(handler).not_to receive(:process_withdrawal_create)
-        expect(handler).not_to receive(:process_withdrawal_releasing)
-        expect(handler).not_to receive(:process_withdrawal_failed)
-        expect(Rails.logger).not_to receive(:info)
-        handler.send(:handle_legacy_format, payload)
-      end
-    end
-
-    context 'when payload is missing identifier' do
-      let(:payload) do
-        {
-          'operationType' => KafkaService::Config::OperationTypes::COIN_WITHDRAWAL_CREATE,
-          'amount' => '100.0',
-          'currency' => 'BTC'
-        }
-      end
-
-      it 'logs with empty identifier' do
-        expect(Rails.logger).to receive(:info).with('Processing withdrawal create: ')
-        handler.send(:handle_legacy_format, payload)
-      end
-    end
-  end
 
   describe 'inheritance' do
     it 'inherits from BaseHandler' do

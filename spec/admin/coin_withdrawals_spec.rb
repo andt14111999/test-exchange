@@ -65,21 +65,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
         coin_layer: 'bitcoin',
         status: 'pending')
 
-      operation = create(:coin_withdrawal_operation,
-        coin_withdrawal: withdrawal,
-        status: 'pending',
-        withdrawal_status: 'pending',
-        tx_hash: nil,
-        scheduled_at: Time.zone.now,
-        withdrawal_data: { amount: 1.0 })
-
-      _transaction = create(:coin_transaction,
-        operation:,
-        amount: -1.0,
-        coin_currency: 'btc',
-        transaction_type: 'transfer')
-
-      login_as(admin_user, scope: :admin_user)
+            login_as(admin_user, scope: :admin_user)
       visit admin_coin_withdrawal_path(withdrawal)
 
       # Withdrawal details
@@ -92,11 +78,32 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
       expect(page).to have_content('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa')
       expect(page).to have_content('Pending')
 
+      # Cancel button for pending withdrawal (should be visible while still pending)
+      expect(page).to have_button('Cancel Withdrawal')
+
+      # Now trigger processing state to create operation
+      withdrawal.process!
+
+      # Reload the page to see the operation that was created
+      visit admin_coin_withdrawal_path(withdrawal)
+
+      # Get the operation that was created
+      operation = withdrawal.coin_withdrawal_operation
+
+      # Create transaction for the operation
+      _transaction = create(:coin_transaction,
+        operation:,
+        amount: -1.0,
+        coin_currency: 'btc',
+        transaction_type: 'transfer')
+
+      # Refresh page to see transaction details
+      visit admin_coin_withdrawal_path(withdrawal)
+
       # Operation details
       within('div#withdrawal-operation') do
         expect(page).to have_content('Status')
         expect(page).to have_content('Pending')
-        expect(page).to have_content('Empty')
       end
 
       # Transaction details
@@ -106,9 +113,6 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
         expect(page).to have_content('Btc')
         expect(page).to have_content('Transfer')
       end
-
-      # Cancel button for pending withdrawal
-      expect(page).to have_button('Cancel Withdrawal')
     end
 
     it 'displays "No withdrawal operation found" when there is no operation' do
@@ -116,8 +120,6 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
       user = create(:user)
       create(:coin_account, :btc_main, user:, balance: 100.0)
 
-      withdrawal = nil
-      CoinWithdrawal.skip_callback(:create, :after, :create_operations_later)
       withdrawal = create(:coin_withdrawal,
         user:,
         coin_currency: 'btc',
@@ -126,7 +128,7 @@ RSpec.describe 'Admin::CoinWithdrawals', type: :system do
         coin_address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
         coin_layer: 'bitcoin',
         status: 'pending')
-      CoinWithdrawal.set_callback(:create, :after, :create_operations_later)
+      # Don't call process! to ensure no operation is created
 
       login_as(admin_user, scope: :admin_user)
       visit admin_coin_withdrawal_path(withdrawal)
