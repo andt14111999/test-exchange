@@ -235,10 +235,12 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
       end
     end
 
-    describe 'after_create callbacks' do
-      it 'creates withdrawal operation' do
+    describe 'after_enter :processing callbacks' do
+      it 'creates withdrawal operation when entering processing state' do
         withdrawal.coin_layer = 'erc20'
-        expect { withdrawal.save }.to change(CoinWithdrawalOperation, :count).by(1)
+        withdrawal.save
+
+        expect { withdrawal.process! }.to change(CoinWithdrawalOperation, :count).by(1)
         expect(withdrawal.coin_withdrawal_operation).to have_attributes(
           coin_amount: withdrawal.coin_amount,
           coin_fee: withdrawal.coin_fee,
@@ -332,7 +334,7 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
                           coin_fee: 0,
                           receiver_email: receiver.email)
 
-        # Stub create_operations to prevent after_create callbacks from executing auto_process!
+        # Stub create_operations to prevent after_enter :processing callbacks from executing
         allow(withdrawal).to receive(:create_operations_later)
 
         # Setup expectation for the create method with recipient_account_key
@@ -377,7 +379,7 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
                           coin_fee: 0,
                           receiver_username: receiver.username)
 
-        # Stub create_operations to prevent after_create callbacks from executing auto_process!
+        # Stub create_operations to prevent after_enter :processing callbacks from executing
         allow(withdrawal).to receive(:create_operations_later)
 
         # Setup expectation for the create method with recipient_account_key
@@ -424,7 +426,7 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
                           coin_fee: 0,
                           receiver_phone_number: '0987654321')
 
-        # Stub create_operations to prevent after_create callbacks from executing auto_process!
+        # Stub create_operations to prevent after_enter :processing callbacks from executing
         allow(withdrawal).to receive(:create_operations_later)
 
         # Setup expectation for the create method with recipient_account_key
@@ -470,12 +472,13 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
     end
 
     it 'transitions to processing when withdrawal operation starts relaying' do
-      withdrawal.coin_withdrawal_operation.start_relaying!
+      withdrawal.process! # This will create the operation and transition to processing
       expect(withdrawal.reload.status).to eq('processing')
+      expect(withdrawal.coin_withdrawal_operation).to be_present
     end
 
     it 'transitions from processing to completed' do
-      withdrawal.coin_withdrawal_operation.start_relaying!
+      withdrawal.process! # This will create the operation and transition to processing
       expect(withdrawal.reload.status).to eq('processing')
       withdrawal.coin_withdrawal_operation.update!(withdrawal_status: 'processed', tx_hash: 'tx_123')
       withdrawal.coin_withdrawal_operation.relay!
@@ -483,7 +486,7 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
     end
 
     it 'transitions from processing to cancelled' do
-      withdrawal.coin_withdrawal_operation.start_relaying!
+      withdrawal.process! # This will create the operation and transition to processing
       expect(withdrawal.reload.status).to eq('processing')
       withdrawal.cancel!
       expect(withdrawal.reload.status).to eq('cancelled')
@@ -566,6 +569,7 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
     context 'with internal transfer' do
       it 'creates a coin_internal_transfer_operation when receiver is found by email' do
         withdrawal = create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_amount: 10, receiver_email: receiver.email)
+        withdrawal.process! # Trigger processing state to create operations
         expect(withdrawal.coin_internal_transfer_operation).to be_present
         expect(withdrawal.coin_internal_transfer_operation.sender).to eq(user)
         expect(withdrawal.coin_internal_transfer_operation.receiver).to eq(receiver)
@@ -577,6 +581,7 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
       it 'creates a coin_internal_transfer_operation when receiver is found by username' do
         receiver.update!(username: 'testuser')
         withdrawal = create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_amount: 10, receiver_username: 'testuser')
+        withdrawal.process! # Trigger processing state to create operations
         expect(withdrawal.coin_internal_transfer_operation).to be_present
         expect(withdrawal.coin_internal_transfer_operation.sender).to eq(user)
         expect(withdrawal.coin_internal_transfer_operation.receiver).to eq(receiver)
@@ -590,6 +595,7 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
         allow(User).to receive(:find_by).with(phone_number: '0987654321').and_return(receiver)
 
         withdrawal = create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_amount: 10, receiver_phone_number: '0987654321')
+        withdrawal.process! # Trigger processing state to create operations
         expect(withdrawal.coin_internal_transfer_operation).to be_present
         expect(withdrawal.coin_internal_transfer_operation.sender).to eq(user)
         expect(withdrawal.coin_internal_transfer_operation.receiver).to eq(receiver)
@@ -605,6 +611,7 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
         allow_any_instance_of(described_class).to receive(:calculate_coin_fee).and_return(1)
 
         withdrawal = create(:coin_withdrawal, user: user, coin_currency: 'usdt', coin_amount: 10, coin_fee: 1, coin_layer: 'erc20', coin_address: '0xde709f2102306220921060314715629080e2fb77')
+        withdrawal.process! # Trigger processing state to create operations
         expect(withdrawal.coin_withdrawal_operation).to be_present
         expect(withdrawal.coin_withdrawal_operation.coin_amount).to eq(10)
         expect(withdrawal.coin_withdrawal_operation.coin_fee).to eq(1)
@@ -826,6 +833,7 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
           coin_address: '0x1234567890abcdef',
           coin_amount: 10.0
         )
+        withdrawal.process! # Trigger processing state to create operations
 
         expect(withdrawal.coin_internal_transfer_operation).to be_present
         expect(withdrawal.coin_internal_transfer_operation.sender).to eq(sender)
@@ -846,6 +854,7 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
           coin_address: '0xde709f2102306220921060314715629080e2fb77',
           coin_amount: 10.0
         )
+        withdrawal.process! # Trigger processing state to create operations
 
         expect(withdrawal.coin_withdrawal_operation).to be_present
         expect(withdrawal.coin_internal_transfer_operation).to be_nil

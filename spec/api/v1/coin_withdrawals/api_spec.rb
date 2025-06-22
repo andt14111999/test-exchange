@@ -146,6 +146,7 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
           # Verify internal transfer operation was created
           withdrawal_id = JSON.parse(response.body)['data']['id']
           withdrawal = CoinWithdrawal.find(withdrawal_id)
+          withdrawal.process! # Trigger processing state to create operations
           expect(withdrawal.coin_internal_transfer_operation).to be_present
           expect(withdrawal.coin_internal_transfer_operation.receiver.email).to eq receiver.email
         end
@@ -175,6 +176,7 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
           # Verify internal transfer operation was created
           withdrawal_id = JSON.parse(response.body)['data']['id']
           withdrawal = CoinWithdrawal.find(withdrawal_id)
+          withdrawal.process! # Trigger processing state to create operations
           expect(withdrawal.coin_internal_transfer_operation).to be_present
           expect(withdrawal.coin_internal_transfer_operation.receiver.username).to eq receiver.username
         end
@@ -484,6 +486,7 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
             status: 'pending',
             receiver_email: receiver.email
           )
+          withdrawal.process! # Trigger processing state to create operations
 
           get "/api/v1/coin_withdrawals/#{withdrawal.id}", headers: auth_headers(sender)
 

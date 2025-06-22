@@ -31,6 +31,7 @@ class AdminAbility
 
     # Coin Management
     can :manage, CoinDeposit
+    can :manage, CoinDepositOperation
     can :manage, CoinWithdrawal
     can :manage, CoinWithdrawalOperation
     can :manage, CoinTransaction

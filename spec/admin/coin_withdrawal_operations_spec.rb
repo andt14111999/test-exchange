@@ -16,6 +16,8 @@ RSpec.describe 'Admin::CoinWithdrawalOperations', type: :system do
 
   before do
     sign_in admin, scope: :admin_user
+    # Trigger processing state to ensure operation is created
+    coin_withdrawal.process!
     coin_withdrawal_operation
   end
 
