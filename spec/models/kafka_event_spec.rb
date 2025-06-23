@@ -234,4 +234,29 @@ RSpec.describe KafkaEvent, type: :model do
       expect(described_class.ransackable_associations).to eq([])
     end
   end
+
+  describe '#reprocess!' do
+    let(:kafka_event) { create(:kafka_event, status: 'failed') }
+    let(:reprocess_service) { instance_double(KafkaService::ReprocessService) }
+
+    it 'calls the reprocess service with itself' do
+      allow(KafkaService::ReprocessService).to receive(:new).and_return(reprocess_service)
+      allow(reprocess_service).to receive(:reprocess).and_return(true)
+
+      result = kafka_event.reprocess!
+
+      expect(KafkaService::ReprocessService).to have_received(:new)
+      expect(reprocess_service).to have_received(:reprocess).with(kafka_event)
+      expect(result).to be true
+    end
+
+    it 'returns false when reprocessing fails' do
+      allow(KafkaService::ReprocessService).to receive(:new).and_return(reprocess_service)
+      allow(reprocess_service).to receive(:reprocess).and_return(false)
+
+      result = kafka_event.reprocess!
+
+      expect(result).to be false
+    end
+  end
 end
