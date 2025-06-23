@@ -3,6 +3,10 @@
 class User < ApplicationRecord
   acts_as_paranoid
 
+  # 2FA functionality
+  encrypts :authenticator_key
+  delegate :verify_otp, to: :otp_verifier
+
   has_many :social_accounts, dependent: :destroy
   has_many :coin_accounts, dependent: :destroy
   has_many :fiat_accounts, dependent: :destroy
@@ -59,6 +63,7 @@ class User < ApplicationRecord
       status
       updated_at
       username
+      authenticator_enabled
     ]
   end
 
@@ -136,6 +141,25 @@ class User < ApplicationRecord
     phone_verified || document_verified || kyc_level > 0
   end
 
+  # 2FA methods
+  def assign_authenticator_key
+    self.authenticator_key = ROTP::Base32.random_base32
+  end
+
+  def generate_provisioning_uri
+    return '' if authenticator_key.blank?
+
+    account_name = username.present? ? username : email
+    return '' if account_name.blank?
+
+    ROTP::TOTP.new(authenticator_key, issuer: 'Snowfox Exchange').provisioning_uri(account_name)
+  end
+
+  def disable_authenticator!
+    self.authenticator_enabled = false
+    self.authenticator_key = nil
+  end
+
   private
 
   def create_default_accounts
@@ -144,5 +168,9 @@ class User < ApplicationRecord
 
   def username_not_changed
     errors.add(:username, 'cannot be changed once set')
+  end
+
+  def otp_verifier
+    @otp_verifier ||= OtpVerifier.new(self)
   end
 end

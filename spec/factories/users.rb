@@ -52,5 +52,10 @@ FactoryBot.define do
     trait :document_verified do
       document_verified_at { Time.current }
     end
+
+    trait :with_2fa do
+      authenticator_enabled { true }
+      authenticator_key { ROTP::Base32.random_base32 }
+    end
   end
 end

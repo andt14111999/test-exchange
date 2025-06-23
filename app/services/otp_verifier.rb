@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 class OtpVerifier
-  attr_reader :admin_user
+  attr_reader :user_model
 
-  delegate :id, :authenticator_key, to: :admin_user
+  delegate :id, :authenticator_key, to: :user_model
 
-  def initialize(admin_user)
-    @admin_user = admin_user
+  def initialize(user_model)
+    @user_model = user_model
   end
 
   def verify_otp(code)
