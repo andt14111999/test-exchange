@@ -38,6 +38,7 @@ module KafkaService
         when 'CANCELLED'
           process_cancelled_response(coin_withdrawal)
         end
+        Rails.logger.info("Coin withdrawal handler processed for withdrawal_id=#{coin_withdrawal.id} with status=#{coin_withdrawal.reload.status}")
       end
 
       def process_completed_response(coin_withdrawal)
