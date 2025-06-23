@@ -26,12 +26,13 @@ class CoinWithdrawal < ApplicationRecord
   before_validation :assign_coin_layer
   before_validation :calculate_coin_fee, on: :create
   after_create :send_event_withdrawal_to_kafka
+  after_commit :create_operations_later, if: -> { saved_change_to_status? && processing? }
 
   scope :sorted, -> { order(created_at: :desc) }
 
   aasm column: 'status', whiny_transitions: false do
     state :pending, initial: true
-    state :processing, after_enter: :create_operations_later
+    state :processing
     state :completed
     state :failed
     state :cancelled

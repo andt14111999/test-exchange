@@ -235,17 +235,25 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
       end
     end
 
-    describe 'after_enter :processing callbacks' do
-      it 'creates withdrawal operation when entering processing state' do
+    describe 'after_commit :create_operations_later callbacks' do
+      it 'creates withdrawal operation when status changes to processing and commits' do
         withdrawal.coin_layer = 'erc20'
         withdrawal.save
 
-        expect { withdrawal.process! }.to change(CoinWithdrawalOperation, :count).by(1)
+        expect { withdrawal.update!(status: 'processing') }.to change(CoinWithdrawalOperation, :count).by(1)
         expect(withdrawal.coin_withdrawal_operation).to have_attributes(
           coin_amount: withdrawal.coin_amount,
           coin_fee: withdrawal.coin_fee,
           coin_currency: withdrawal.coin_currency
         )
+      end
+
+      it 'does not create operation when status is not processing' do
+        withdrawal.coin_layer = 'erc20'
+        withdrawal.save
+
+        expect { withdrawal.update!(status: 'completed') }.not_to change(CoinWithdrawalOperation, :count)
+        expect(withdrawal.coin_withdrawal_operation).to be_nil
       end
     end
 

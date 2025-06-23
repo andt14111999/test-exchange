@@ -20,11 +20,10 @@ RSpec.describe KafkaService::Handlers::CoinWithdrawalHandler, type: :service do
       end
     end
 
-    context 'when payload contains object with COIN_TRANSACTION actionType' do
+    context 'when payload contains valid object' do
       it 'calls process_transaction_response' do
         payload = {
           'object' => {
-            'actionType' => 'COIN_TRANSACTION',
             'identifier' => coin_withdrawal.id.to_s,
             'status' => 'COMPLETED'
           },
@@ -74,8 +73,7 @@ RSpec.describe KafkaService::Handlers::CoinWithdrawalHandler, type: :service do
     end
 
     context 'when request is not successful' do
-      it 'fails the withdrawal' do
-        coin_withdrawal.update_column(:status, 'processing')
+      it 'updates withdrawal status to failed' do
         payload = {
           'object' => {
             'identifier' => coin_withdrawal.id.to_s,
@@ -86,15 +84,17 @@ RSpec.describe KafkaService::Handlers::CoinWithdrawalHandler, type: :service do
         }
 
         allow(CoinWithdrawal).to receive(:find_by).with(id: coin_withdrawal.id.to_s).and_return(coin_withdrawal)
+        expect(Rails.logger).to receive(:info).twice
 
         expect { handler.send(:process_transaction_response, payload) }
-          .to change { coin_withdrawal.reload.status }.from('processing').to('failed')
+          .to change { coin_withdrawal.reload.status }.from('pending').to('failed')
+
+        expect(coin_withdrawal.reload.explanation).to eq('Network error')
       end
     end
 
     context 'when status is COMPLETED' do
-      it 'processes completed response' do
-        coin_withdrawal.update_column(:status, 'processing')
+      it 'updates withdrawal status to completed' do
         payload = {
           'object' => {
             'identifier' => coin_withdrawal.id.to_s,
@@ -104,34 +104,36 @@ RSpec.describe KafkaService::Handlers::CoinWithdrawalHandler, type: :service do
         }
 
         allow(CoinWithdrawal).to receive(:find_by).with(id: coin_withdrawal.id.to_s).and_return(coin_withdrawal)
-        expect(handler).to receive(:process_completed_response).with(coin_withdrawal)
+        expect(Rails.logger).to receive(:info).twice
 
-        handler.send(:process_transaction_response, payload)
+        expect { handler.send(:process_transaction_response, payload) }
+          .to change { coin_withdrawal.reload.status }.from('pending').to('completed')
       end
     end
 
     context 'when status is FAILED' do
-      it 'processes failed response' do
-        coin_withdrawal.update_column(:status, 'processing')
+      it 'updates withdrawal status to failed with explanation' do
         payload = {
           'object' => {
             'identifier' => coin_withdrawal.id.to_s,
             'status' => 'FAILED',
             'statusExplanation' => 'Transaction failed'
           },
-          'isSuccess' => true,
-          'errorMessage' => 'Transaction failed'
+          'isSuccess' => true
         }
 
         allow(CoinWithdrawal).to receive(:find_by).with(id: coin_withdrawal.id.to_s).and_return(coin_withdrawal)
-        expect(handler).to receive(:process_failed_response).with(coin_withdrawal, 'Transaction failed')
+        expect(Rails.logger).to receive(:info).twice
 
-        handler.send(:process_transaction_response, payload)
+        expect { handler.send(:process_transaction_response, payload) }
+          .to change { coin_withdrawal.reload.status }.from('pending').to('failed')
+
+        expect(coin_withdrawal.reload.explanation).to eq('Transaction failed')
       end
     end
 
     context 'when status is PROCESSING' do
-      it 'processes processing response' do
+      it 'updates withdrawal status to processing' do
         payload = {
           'object' => {
             'identifier' => coin_withdrawal.id.to_s,
@@ -141,15 +143,15 @@ RSpec.describe KafkaService::Handlers::CoinWithdrawalHandler, type: :service do
         }
 
         allow(CoinWithdrawal).to receive(:find_by).with(id: coin_withdrawal.id.to_s).and_return(coin_withdrawal)
-        expect(handler).to receive(:process_processing_response).with(coin_withdrawal)
+        expect(Rails.logger).to receive(:info).twice
 
-        handler.send(:process_transaction_response, payload)
+        expect { handler.send(:process_transaction_response, payload) }
+          .to change { coin_withdrawal.reload.status }.from('pending').to('processing')
       end
     end
 
     context 'when status is CANCELLED' do
-      it 'processes cancelled response' do
-        coin_withdrawal.update_column(:status, 'processing')
+      it 'updates withdrawal status to cancelled' do
         payload = {
           'object' => {
             'identifier' => coin_withdrawal.id.to_s,
@@ -159,104 +161,57 @@ RSpec.describe KafkaService::Handlers::CoinWithdrawalHandler, type: :service do
         }
 
         allow(CoinWithdrawal).to receive(:find_by).with(id: coin_withdrawal.id.to_s).and_return(coin_withdrawal)
-        expect(handler).to receive(:process_cancelled_response).with(coin_withdrawal)
+        expect(Rails.logger).to receive(:info).twice
+
+        expect { handler.send(:process_transaction_response, payload) }
+          .to change { coin_withdrawal.reload.status }.from('pending').to('cancelled')
+      end
+    end
+
+    context 'when status explanation is provided but status is not FAILED' do
+      it 'does not include explanation in update' do
+        payload = {
+          'object' => {
+            'identifier' => coin_withdrawal.id.to_s,
+            'status' => 'COMPLETED',
+            'statusExplanation' => 'Some explanation'
+          },
+          'isSuccess' => true
+        }
+
+        allow(CoinWithdrawal).to receive(:find_by).with(id: coin_withdrawal.id.to_s).and_return(coin_withdrawal)
+        expect(Rails.logger).to receive(:info).twice
+
+        expect { handler.send(:process_transaction_response, payload) }
+          .to change { coin_withdrawal.reload.status }.from('pending').to('completed')
+
+        expect(coin_withdrawal.reload.explanation).to be_nil
+      end
+    end
+
+    context 'logging' do
+      it 'logs processing information' do
+        payload = {
+          'object' => {
+            'identifier' => coin_withdrawal.id.to_s,
+            'status' => 'PROCESSING'
+          },
+          'isSuccess' => true
+        }
+
+        allow(CoinWithdrawal).to receive(:find_by).with(id: coin_withdrawal.id.to_s).and_return(coin_withdrawal)
+
+        expect(Rails.logger).to receive(:info).with(
+          "Processing Kafka event for withdrawal_id=#{coin_withdrawal.id}, current status: pending, kafka status: PROCESSING, isSuccess: true"
+        )
+        expect(Rails.logger).to receive(:info).with(
+          "Coin withdrawal status updated for withdrawal_id=#{coin_withdrawal.id} from pending to processing"
+        )
 
         handler.send(:process_transaction_response, payload)
       end
     end
   end
-
-  describe '#process_completed_response' do
-    it 'completes the withdrawal when transition is allowed' do
-      coin_withdrawal.update_column(:status, 'processing')
-
-      expect(Rails.logger).to receive(:info).with(/Coin withdrawal completed/)
-
-      expect { handler.send(:process_completed_response, coin_withdrawal) }
-        .to change { coin_withdrawal.reload.status }.from('processing').to('completed')
-    end
-
-    it 'does not complete when transition is not allowed' do
-      coin_withdrawal.update_column(:status, 'completed')
-
-      expect(Rails.logger).to receive(:info).with("Coin withdrawal cannot complete for withdrawal_id=#{coin_withdrawal.id}")
-
-      expect { handler.send(:process_completed_response, coin_withdrawal) }
-        .not_to change { coin_withdrawal.reload.status }
-    end
-  end
-
-  describe '#process_failed_response' do
-    it 'fails the withdrawal when transition is allowed' do
-      coin_withdrawal.update_column(:status, 'processing')
-      error_message = 'Network timeout'
-
-      expect(Rails.logger).to receive(:info).with(/Coin withdrawal failed/)
-
-      expect { handler.send(:process_failed_response, coin_withdrawal, error_message) }
-        .to change { coin_withdrawal.reload.status }.from('processing').to('failed')
-
-      expect(coin_withdrawal.reload.explanation).to eq("; #{error_message}")
-    end
-
-    it 'does not fail when transition is not allowed' do
-      coin_withdrawal.update_column(:status, 'completed')
-
-      expect(Rails.logger).to receive(:info).with("Coin withdrawal cannot fail for withdrawal_id=#{coin_withdrawal.id}")
-
-      expect { handler.send(:process_failed_response, coin_withdrawal, 'Error') }
-        .not_to change { coin_withdrawal.reload.status }
-    end
-
-    it 'fails without error message' do
-      coin_withdrawal.update_column(:status, 'processing')
-
-      expect(Rails.logger).to receive(:info).with(/Coin withdrawal failed/)
-
-      expect { handler.send(:process_failed_response, coin_withdrawal, nil) }
-        .to change { coin_withdrawal.reload.status }.from('processing').to('failed')
-
-      expect(coin_withdrawal.reload.explanation).to be_nil
-    end
-  end
-
-  describe '#process_processing_response' do
-    it 'processes the withdrawal when transition is allowed' do
-      expect(Rails.logger).to receive(:info).with(/Coin withdrawal processing/)
-
-      expect { handler.send(:process_processing_response, coin_withdrawal) }
-        .to change { coin_withdrawal.reload.status }.from('pending').to('processing')
-    end
-
-    it 'does not process when transition is not allowed' do
-      coin_withdrawal.update_column(:status, 'completed')
-
-      expect(Rails.logger).to receive(:info).with("Coin withdrawal cannot process for withdrawal_id=#{coin_withdrawal.id}")
-
-      expect { handler.send(:process_processing_response, coin_withdrawal) }
-        .not_to change { coin_withdrawal.reload.status }
-    end
-  end
-
-  describe '#process_cancelled_response' do
-    it 'cancels the withdrawal when transition is allowed' do
-      expect(Rails.logger).to receive(:info).with(/Coin withdrawal cancelled/)
-
-      expect { handler.send(:process_cancelled_response, coin_withdrawal) }
-        .to change { coin_withdrawal.reload.status }.from('pending').to('cancelled')
-    end
-
-    it 'does not cancel when transition is not allowed' do
-      coin_withdrawal.update_column(:status, 'completed')
-
-      expect(Rails.logger).to receive(:info).with("Coin withdrawal cannot cancel for withdrawal_id=#{coin_withdrawal.id}")
-
-      expect { handler.send(:process_cancelled_response, coin_withdrawal) }
-        .not_to change { coin_withdrawal.reload.status }
-    end
-  end
-
-
 
   describe 'inheritance' do
     it 'inherits from BaseHandler' do
