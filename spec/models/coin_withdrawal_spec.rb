@@ -42,6 +42,15 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
     end
 
     describe '#validate_coin_amount' do
+      it 'still valid after update balance less than coin_amount' do
+        withdrawal.coin_layer = 'erc20'
+        withdrawal.coin_amount = 90.0
+        withdrawal.save
+        coin_account.lock_amount!(90)
+        coin_account.save!
+        expect(withdrawal.reload).to be_valid
+      end
+
       it 'is valid when amount + fee is less than available balance' do
         withdrawal.coin_layer = 'erc20'
         expect(withdrawal).to be_valid
