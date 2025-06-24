@@ -104,6 +104,7 @@ gem 'rollbar'
 gem 'aasm'                    # State machines
 gem 'faker'                   # Fake data generation
 gem 'figaro'                  # Environment variables
+gem 'geocoder'                # IP geolocation
 gem 'httparty' # HTTP client
 gem 'rails-settings-cached'   # Settings management
 gem 'strong_migrations'       # Safe database migrations

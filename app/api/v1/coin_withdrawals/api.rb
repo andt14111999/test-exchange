@@ -4,6 +4,8 @@ module V1
   module CoinWithdrawals
     class Api < Grape::API
       helpers Api::V1::Helpers::AuthHelper
+      helpers V1::Helpers::DeviceHelper
+      helpers V1::Helpers::TwoFactorHelper
 
       before { authenticate_user! }
 
@@ -16,6 +18,7 @@ module V1
           optional :coin_layer, type: String, desc: 'Network layer (e.g. erc20, bep20, required for external withdrawals)'
           optional :receiver_email, type: String, desc: 'Email of recipient for internal transfers'
           optional :receiver_username, type: String, desc: 'Username of recipient for internal transfers'
+          optional :two_factor_code, type: String, desc: '2FA code (required if 2FA enabled and device not trusted)'
 
           mutually_exclusive :coin_address, :receiver_email, :receiver_username
           at_least_one_of :coin_address, :receiver_email, :receiver_username
@@ -26,6 +29,8 @@ module V1
         end
 
         post do
+          # Verify 2FA if required
+          verify_2fa_if_required!
           # Create withdrawal with the params
           withdrawal = CoinWithdrawal.new(
             user: current_user,

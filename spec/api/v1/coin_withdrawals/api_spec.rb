@@ -3,6 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
+  include ApiHelpers
+
   let(:user) { create(:user) }
   let(:other_user) { create(:user) }
   let(:coin_currency) { 'usdt' }
@@ -13,9 +15,10 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
   let(:deposit_coin_account) { create(:coin_account, :usdt_erc20, user: user) }
   let(:other_user_main_account) { create(:coin_account, :usdt_main, user: other_user, balance: 200.0) }
   let(:auth_header) { auth_headers(user) }
+  let(:device_uuid) { SecureRandom.uuid }
   let(:valid_params) do
     {
-      coin_address: coin_address,
+      coin_address: '0x1234567890abcdef1234567890abcdef12345678',
       coin_amount: coin_amount,
       coin_currency: coin_currency,
       coin_layer: coin_layer
@@ -254,6 +257,132 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
           expect(response.status).to eq 422
           expect(JSON.parse(response.body)['status']).to eq 'error'
           expect(JSON.parse(response.body)['message']).to match(/cannot_transfer_to_self/)
+        end
+      end
+
+      context 'when user has 2FA disabled' do
+        it 'creates withdrawal without 2FA requirement' do
+          user_no_2fa = create(:user)
+          create(:coin_account, :usdt_main, user: user_no_2fa, balance: 200.0)
+
+          withdrawal_params = {
+            coin_address: coin_address,
+            coin_amount: coin_amount,
+            coin_currency: coin_currency,
+            coin_layer: coin_layer
+          }
+
+          post '/api/v1/coin_withdrawals', params: withdrawal_params, headers: auth_headers(user_no_2fa)
+
+          expect(response).to have_http_status(:success)
+          expect(JSON.parse(response.body)['status']).to eq('success')
+        end
+      end
+
+      context 'when user has 2FA enabled without trusted device' do
+        it 'requires 2FA code' do
+          user_with_2fa = create(:user, :with_2fa)
+          create(:coin_account, :usdt_main, user: user_with_2fa, balance: 200.0)
+
+          withdrawal_params = {
+            coin_address: coin_address,
+            coin_amount: coin_amount,
+            coin_currency: coin_currency,
+            coin_layer: coin_layer
+          }
+
+          post '/api/v1/coin_withdrawals', params: withdrawal_params, headers: auth_headers(user_with_2fa)
+
+          expect(response).to have_http_status(:bad_request)
+          json_response = JSON.parse(response.body)
+          expect(json_response['message']).to eq('2FA code is required for this action')
+          expect(json_response['requires_2fa']).to be true
+          expect(json_response['device_trusted']).to be false
+        end
+
+        it 'rejects invalid 2FA code' do
+          user_with_2fa = create(:user, :with_2fa)
+          create(:coin_account, :usdt_main, user: user_with_2fa, balance: 200.0)
+
+          withdrawal_params = {
+            coin_address: coin_address,
+            coin_amount: coin_amount,
+            coin_currency: coin_currency,
+            coin_layer: coin_layer,
+            two_factor_code: '000000'
+          }
+
+          post '/api/v1/coin_withdrawals', params: withdrawal_params, headers: auth_headers(user_with_2fa)
+
+          expect(response).to have_http_status(:bad_request)
+          json_response = JSON.parse(response.body)
+          expect(json_response['message']).to eq('Invalid 2FA code')
+        end
+
+        it 'accepts valid 2FA code and creates withdrawal' do
+          user_with_2fa = create(:user, :with_2fa)
+          create(:coin_account, :usdt_main, user: user_with_2fa, balance: 200.0)
+          allow_any_instance_of(User).to receive(:verify_otp).and_return(true)
+
+          withdrawal_params = {
+            coin_address: coin_address,
+            coin_amount: coin_amount,
+            coin_currency: coin_currency,
+            coin_layer: coin_layer,
+            two_factor_code: '123456'
+          }
+          headers = auth_headers(user_with_2fa).merge('Device-Uuid' => device_uuid)
+
+          post '/api/v1/coin_withdrawals', params: withdrawal_params, headers: headers
+
+          expect(response).to have_http_status(:success)
+          json_response = JSON.parse(response.body)
+          expect(json_response['status']).to eq('success')
+
+          # Should create access device after successful 2FA
+          expect(user_with_2fa.access_devices.count).to eq(1)
+        end
+      end
+
+      context 'when user has 2FA enabled with trusted device' do
+        it 'allows withdrawal without 2FA code for first device' do
+          user_with_2fa = create(:user, :with_2fa)
+          create(:coin_account, :usdt_main, user: user_with_2fa, balance: 200.0)
+          create(:access_device, user: user_with_2fa, device_uuid_hash: AccessDevice.digest(device_uuid), first_device: true)
+
+          withdrawal_params = {
+            coin_address: coin_address,
+            coin_amount: coin_amount,
+            coin_currency: coin_currency,
+            coin_layer: coin_layer
+          }
+          headers = auth_headers(user_with_2fa).merge('Device-Uuid' => device_uuid)
+
+          post '/api/v1/coin_withdrawals', params: withdrawal_params, headers: headers
+
+          expect(response).to have_http_status(:success)
+          json_response = JSON.parse(response.body)
+          expect(json_response['status']).to eq('success')
+        end
+
+        it 'allows withdrawal without 2FA code for aged device (72+ hours)' do
+          user_with_2fa = create(:user, :with_2fa)
+          create(:coin_account, :usdt_main, user: user_with_2fa, balance: 200.0)
+          create(:access_device, :aged_trusted, user: user_with_2fa, device_uuid_hash: AccessDevice.digest(device_uuid))
+
+          withdrawal_params = {
+            coin_address: coin_address,
+            coin_amount: coin_amount,
+            coin_currency: coin_currency,
+            coin_layer: coin_layer
+          }
+          headers = auth_headers(user_with_2fa).merge('Device-Uuid' => device_uuid)
+
+          post '/api/v1/coin_withdrawals', params: withdrawal_params, headers: headers
+
+          expect(response).to have_http_status(:success)
+          json_response = JSON.parse(response.body)
+          expect(json_response['status']).to eq('success')
         end
       end
     end
