@@ -71,4 +71,14 @@ ActiveAdmin.register KafkaEvent do
       super
     end
   end
+
+  member_action :reprocess, method: :post do
+    kafka_event = KafkaEvent.find(params[:id])
+    kafka_event.reprocess!
+    redirect_to admin_kafka_event_path(kafka_event), notice: 'Event reprocessed successfully'
+  end
+
+  action_item :reprocess, only: :show do
+    link_to 'Reprocess Event!', reprocess_admin_kafka_event_path(resource), method: :post
+  end
 end

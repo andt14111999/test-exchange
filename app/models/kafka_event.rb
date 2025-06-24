@@ -31,6 +31,10 @@ class KafkaEvent < ApplicationRecord
     payload&.dig('object', 'identifier') || payload&.dig('object', 'key') || payload&.dig('key')
   end
 
+  def reprocess!
+    KafkaService::ReprocessService.new.reprocess(self)
+  end
+
   def self.ransackable_attributes(auth_object = nil)
     %w[
       created_at

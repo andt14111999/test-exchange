@@ -25,56 +25,22 @@ module KafkaService
         status_explanation = object['statusExplanation']
         is_success = payload['isSuccess']
         error_message = payload['errorMessage']
+        current_status = coin_withdrawal.status
 
-        return coin_withdrawal.fail!(error_message) unless is_success
+        Rails.logger.info("Processing Kafka event for withdrawal_id=#{coin_withdrawal.id}, current status: #{current_status}, kafka status: #{status}, isSuccess: #{is_success}")
 
-        case status.upcase
-        when 'COMPLETED'
-          process_completed_response(coin_withdrawal)
-        when 'FAILED'
-          process_failed_response(coin_withdrawal, status_explanation)
-        when 'PROCESSING'
-          process_processing_response(coin_withdrawal)
-        when 'CANCELLED'
-          process_cancelled_response(coin_withdrawal)
+        unless is_success
+          coin_withdrawal.update(status: 'failed', explanation: error_message)
+          Rails.logger.info("Coin withdrawal failed for withdrawal_id=#{coin_withdrawal.id}, error: #{error_message}")
+          return
         end
-        Rails.logger.info("Coin withdrawal handler processed for withdrawal_id=#{coin_withdrawal.id} with status=#{coin_withdrawal.reload.status}")
-      end
 
-      def process_completed_response(coin_withdrawal)
-        if coin_withdrawal.may_complete?
-          coin_withdrawal.complete!
-          Rails.logger.info("Coin withdrawal completed for withdrawal_id=#{coin_withdrawal.id} with status=#{coin_withdrawal.reload.status}")
-        else
-          Rails.logger.info("Coin withdrawal cannot complete for withdrawal_id=#{coin_withdrawal.id}")
-        end
-      end
+        # Update status directly from Kafka
+        update_params = { status: status.downcase }
+        update_params[:explanation] = status_explanation if status_explanation.present? && status.upcase == 'FAILED'
 
-      def process_failed_response(coin_withdrawal, status_explanation = nil)
-        if coin_withdrawal.may_fail?
-          coin_withdrawal.fail!(status_explanation)
-          Rails.logger.info("Coin withdrawal failed for withdrawal_id=#{coin_withdrawal.id} with status=#{coin_withdrawal.reload.status}")
-        else
-          Rails.logger.info("Coin withdrawal cannot fail for withdrawal_id=#{coin_withdrawal.id}")
-        end
-      end
-
-      def process_processing_response(coin_withdrawal)
-        if coin_withdrawal.may_process?
-          coin_withdrawal.process!
-          Rails.logger.info("Coin withdrawal processing for withdrawal_id=#{coin_withdrawal.id} with status=#{coin_withdrawal.reload.status}")
-        else
-          Rails.logger.info("Coin withdrawal cannot process for withdrawal_id=#{coin_withdrawal.id}")
-        end
-      end
-
-      def process_cancelled_response(coin_withdrawal)
-        if coin_withdrawal.may_cancel?
-          coin_withdrawal.cancel!
-          Rails.logger.info("Coin withdrawal cancelled for withdrawal_id=#{coin_withdrawal.id} with status=#{coin_withdrawal.reload.status}")
-        else
-          Rails.logger.info("Coin withdrawal cannot cancel for withdrawal_id=#{coin_withdrawal.id}")
-        end
+        coin_withdrawal.update(update_params)
+        Rails.logger.info("Coin withdrawal status updated for withdrawal_id=#{coin_withdrawal.id} from #{current_status} to #{status.downcase}")
       end
     end
   end
