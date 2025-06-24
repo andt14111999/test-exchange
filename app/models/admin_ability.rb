@@ -30,6 +30,7 @@ class AdminAbility
     can :manage, ApiKey
 
     # Coin Management
+    can :manage, CoinAccount
     can :manage, CoinDeposit
     can :manage, CoinDepositOperation
     can :manage, CoinWithdrawal
