@@ -220,6 +220,7 @@ RSpec.describe KafkaEvent, type: :model do
         event_id
         id
         payload
+        process_message
         processed_at
         status
         topic_name

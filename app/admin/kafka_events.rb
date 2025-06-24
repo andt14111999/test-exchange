@@ -10,6 +10,7 @@ ActiveAdmin.register KafkaEvent do
   filter :status, as: :select, collection: %w[pending processed failed]
   filter :operation_type
   filter :object_identifier
+  filter :process_message
   filter :created_at
   filter :processed_at
 
@@ -24,6 +25,9 @@ ActiveAdmin.register KafkaEvent do
     end
     column :operation_type
     column :object_identifier
+    column :process_message do |event|
+      event.process_message.present? ? truncate(event.process_message, length: 50) : '-'
+    end
     column :processing_time do |event|
       event.processing_time ? "#{event.processing_time}s" : '-'
     end
@@ -47,6 +51,7 @@ ActiveAdmin.register KafkaEvent do
         event.processing_time ? "#{event.processing_time}s" : '-'
       end
       row :error_message
+      row :process_message
       row :created_at
       row :processed_at
       row :updated_at

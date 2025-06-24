@@ -213,6 +213,172 @@ RSpec.describe KafkaService::Handlers::CoinWithdrawalHandler, type: :service do
     end
   end
 
+  describe '#update_kafka_event_message' do
+    let(:kafka_event) do
+      create(
+        :kafka_event,
+        event_id: 'test-event-123',
+        topic_name: KafkaService::Config::Topics::COIN_WITHDRAWAL_UPDATE,
+        process_message: nil
+      )
+    end
+
+    context 'when event_id is found in payload' do
+      let(:payload) do
+        {
+          'eventId' => 'test-event-123',
+          'object' => {
+            'identifier' => coin_withdrawal.id.to_s,
+            'status' => 'COMPLETED'
+          },
+          'isSuccess' => true
+        }
+      end
+
+      it 'adds process message to existing kafka event' do
+        kafka_event # Create the event
+        message = 'Coin withdrawal status updated from pending to completed'
+
+        handler.send(:update_kafka_event_message, payload, message)
+
+        kafka_event.reload
+        expect(kafka_event.process_message).to include(message)
+        expect(kafka_event.process_message).to match(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]/)
+      end
+
+      it 'appends to existing process message' do
+        kafka_event.update(process_message: '[2025-01-01 12:00:00] Previous message')
+        message = 'New message'
+
+        handler.send(:update_kafka_event_message, payload, message)
+
+        kafka_event.reload
+        expect(kafka_event.process_message).to include('Previous message')
+        expect(kafka_event.process_message).to include('New message')
+        expect(kafka_event.process_message.lines.count).to eq(2)
+      end
+    end
+
+    context 'when event_id is not found in payload' do
+      let(:payload) do
+        {
+          'object' => {
+            'identifier' => coin_withdrawal.id.to_s,
+            'status' => 'COMPLETED'
+          },
+          'isSuccess' => true
+        }
+      end
+
+      it 'returns early without updating' do
+        kafka_event # Create the event
+        message = 'Test message'
+
+        handler.send(:update_kafka_event_message, payload, message)
+
+        kafka_event.reload
+        expect(kafka_event.process_message).to be_nil
+      end
+    end
+
+    context 'when kafka event is not found' do
+      let(:payload) do
+        {
+          'eventId' => 'non-existent-event',
+          'object' => {
+            'identifier' => coin_withdrawal.id.to_s,
+            'status' => 'COMPLETED'
+          },
+          'isSuccess' => true
+        }
+      end
+
+      it 'returns early without error' do
+        message = 'Test message'
+
+        expect { handler.send(:update_kafka_event_message, payload, message) }.not_to raise_error
+      end
+    end
+
+    context 'when update fails' do
+      let(:payload) do
+        {
+          'eventId' => 'test-event-123',
+          'object' => {
+            'identifier' => coin_withdrawal.id.to_s,
+            'status' => 'COMPLETED'
+          },
+          'isSuccess' => true
+        }
+      end
+
+      it 'logs error and continues' do
+        kafka_event # Create the event
+        allow(kafka_event).to receive(:update).and_raise(StandardError.new('Update failed'))
+        allow(KafkaEvent).to receive(:find_by).and_return(kafka_event)
+
+        expect(Rails.logger).to receive(:error).with('Failed to update KafkaEvent process_message: Update failed')
+
+        handler.send(:update_kafka_event_message, payload, 'Test message')
+      end
+    end
+  end
+
+  describe 'process_message integration' do
+    let(:kafka_event) do
+      create(
+        :kafka_event,
+        event_id: 'test-event-123',
+        topic_name: KafkaService::Config::Topics::COIN_WITHDRAWAL_UPDATE
+      )
+    end
+
+    context 'when withdrawal succeeds' do
+      it 'updates kafka event with success message' do
+        payload = {
+          'eventId' => 'test-event-123',
+          'object' => {
+            'identifier' => coin_withdrawal.id.to_s,
+            'status' => 'COMPLETED'
+          },
+          'isSuccess' => true
+        }
+
+        kafka_event # Create the event
+        allow(CoinWithdrawal).to receive(:find_by).with(id: coin_withdrawal.id.to_s).and_return(coin_withdrawal)
+        allow(Rails.logger).to receive(:info)
+
+        handler.send(:process_transaction_response, payload)
+
+        kafka_event.reload
+        expect(kafka_event.process_message).to include('Coin withdrawal status updated from pending to completed')
+      end
+    end
+
+    context 'when withdrawal fails' do
+      it 'updates kafka event with failure message' do
+        payload = {
+          'eventId' => 'test-event-123',
+          'object' => {
+            'identifier' => coin_withdrawal.id.to_s,
+            'status' => 'FAILED'
+          },
+          'isSuccess' => false,
+          'errorMessage' => 'Network error'
+        }
+
+        kafka_event # Create the event
+        allow(CoinWithdrawal).to receive(:find_by).with(id: coin_withdrawal.id.to_s).and_return(coin_withdrawal)
+        allow(Rails.logger).to receive(:info)
+
+        handler.send(:process_transaction_response, payload)
+
+        kafka_event.reload
+        expect(kafka_event.process_message).to include('Coin withdrawal failed: Network error')
+      end
+    end
+  end
+
   describe 'inheritance' do
     it 'inherits from BaseHandler' do
       expect(described_class.superclass).to eq(KafkaService::Handlers::BaseHandler)
