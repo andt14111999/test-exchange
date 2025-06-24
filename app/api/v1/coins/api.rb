@@ -20,7 +20,7 @@ module V1
       resource :coin_settings do
         desc 'Get all coin settings'
         get do
-          settings = CoinSetting.all
+          settings = CoinSetting.order(:currency)
           present settings, with: V1::CoinSettings::CoinSettingEntity
         end
       end

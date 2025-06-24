@@ -450,6 +450,26 @@ RSpec.describe V1::Trades::Api, type: :request do
         expect(response).to have_http_status(:ok)
       end
 
+      it 'marks trade as paid with file upload' do
+        file = fixture_file_upload(
+          Rails.root.join('spec', 'fixtures', 'files', 'test.jpg'),
+          'image/jpeg'
+        )
+
+        # Stub the trade methods properly
+        allow(trade_to_mark_paid).to receive_messages(unpaid?: true, can_be_marked_paid_by?: true, mark_as_paid!: true, save: true, add_payment_proof_with_file!: true)
+
+        put "/api/v1/trades/#{trade_to_mark_paid.id}/mark_paid", params: {
+          payment_receipt_details: {
+            receipt_id: '123',
+            amount: '500',
+            file: file
+          }
+        }, headers: auth_headers(user)
+
+        expect(response).to have_http_status(:ok)
+      end
+
       it 'returns 422 when save fails with validation errors' do
         # Fix receive_message_chain
         errors = double("Errors", full_messages: [ "Payment details are invalid" ])

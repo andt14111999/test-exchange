@@ -155,7 +155,11 @@ module V1
         desc 'Mark trade as paid'
         params do
           requires :id, type: String, desc: 'Trade ID'
-          requires :payment_receipt_details, type: Hash, desc: 'Payment receipt details'
+          # Cho phép payment_receipt_details có thể trống ban đầu
+          optional :payment_receipt_details, type: Hash, default: {} do
+            optional :file, type: File, desc: 'Payment receipt file'
+            optional :description, type: String, desc: 'Payment receipt description'
+          end
         end
         put ':id/mark_paid' do
           trade = Trade.where('buyer_id = ? OR seller_id = ?', current_user.id, current_user.id).find_by(id: params[:id])
@@ -172,15 +176,27 @@ module V1
             error!({ error: 'You are not authorized to mark this trade as paid' }, 403)
           end
 
-          # Update payment details
-          trade.payment_receipt_details = params[:payment_receipt_details]
-          trade.has_payment_proof = true
+          # Logic xử lý file upload đã được đơn giản hóa
+          receipt_details = params[:payment_receipt_details].except(:file)
+          file = params[:payment_receipt_details][:file]
 
-          # Mark as paid
-          if trade.mark_as_paid! && trade.save
-            present trade, with: V1::Trades::TradeDetail
-          else
-            error!({ error: trade.errors.full_messages.join(', ') }, 422)
+          # Handle file upload and payment details
+          begin
+            if file.present?
+              trade.add_payment_proof_with_file!(receipt_details, file)
+            else
+              trade.payment_receipt_details = receipt_details
+              trade.has_payment_proof = true
+            end
+
+            # Mark as paid
+            if trade.mark_as_paid! && trade.save
+              present trade, with: V1::Trades::TradeDetail
+            else
+              error!({ error: trade.errors.full_messages.join(', ') }, 422)
+            end
+          rescue StandardError => e
+            error!({ error: "File processing error: #{e.message}" }, 422)
           end
         end
 

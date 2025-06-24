@@ -14,6 +14,9 @@ class Trade < ApplicationRecord
   has_one :fiat_deposit, as: :payable, dependent: :nullify
   has_one :fiat_withdrawal, as: :withdrawable, dependent: :nullify
 
+  # File attachments
+  has_one_attached :payment_receipt_file
+
   TAKER_SIDES = %w[buy sell].freeze
   STATUSES = %w[awaiting unpaid paid disputed released cancelled cancelled_automatically transaction_error].freeze
   PAYMENT_PROOF_STATUSES = %w[legit fake spam].freeze
@@ -244,6 +247,11 @@ class Trade < ApplicationRecord
       payment_receipt_details: receipt_details,
       has_payment_proof: true
     )
+  end
+
+  def add_payment_proof_with_file!(receipt_details, file = nil)
+    service = PaymentReceiptService.new(self)
+    service.process_payment_receipt(receipt_details, file)
   end
 
   def set_payment_proof_status!(status)

@@ -33,11 +33,16 @@ describe 'Coins API', type: :request do
       expect(json).to be_an(Array)
       expect(json.size).to eq(2)
       expect(json[0].keys).to include('id', 'currency', 'deposit_enabled', 'withdraw_enabled', 'swap_enabled', 'layers', 'created_at', 'updated_at')
-      expect(json[0]['currency']).to eq('usdt')
-      expect(json[1]['currency']).to eq('btc')
-      expect(json[0]['layers']).to be_an(Array)
-      expect(json[0]['layers'][0]['layer']).to eq('erc20')
-      expect(json[1]['layers'][0]['layer']).to eq('native')
+
+      # Find settings by currency instead of relying on array order
+      usdt_setting = json.find { |s| s['currency'] == 'usdt' }
+      btc_setting = json.find { |s| s['currency'] == 'btc' }
+
+      expect(usdt_setting).to be_present
+      expect(btc_setting).to be_present
+      expect(usdt_setting['layers']).to be_an(Array)
+      expect(usdt_setting['layers'][0]['layer']).to eq('erc20')
+      expect(btc_setting['layers'][0]['layer']).to eq('native')
     end
   end
 end
