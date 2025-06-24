@@ -227,8 +227,9 @@ RSpec.describe 'Admin::BankAccounts', type: :request do
 
       get admin_bank_accounts_path(q: { bank_name_cont: 'combank' })
 
-      expect(response.body).to include(account1.account_name)
-      expect(response.body).not_to include(account2.account_name)
+      # Use more specific matchers for Active Admin's HTML structure
+      expect(response.body).to include('td class="col col-bank_name">Vietcombank</td>')
+      expect(response.body).not_to include('td class="col col-bank_name">BIDV</td>')
     end
 
     it 'filters by account name' do

@@ -71,7 +71,8 @@ RSpec.describe TradeBroadcastService do
           released_at: trade.released_at,
           cancelled_at: trade.cancelled_at,
           disputed_at: trade.disputed_at,
-          expired_at: trade.expired_at
+          expired_at: trade.expired_at,
+          payment_receipt_details: trade.payment_receipt_details
         }
       )
     end
