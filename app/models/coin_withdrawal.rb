@@ -17,13 +17,13 @@ class CoinWithdrawal < ApplicationRecord
   validates :coin_layer, presence: true, unless: :internal_transfer?
   validates :status, presence: true
 
-  validate :validate_coin_amount
+  validate :validate_coin_amount, on: :create
   validate :validate_coin_address_and_layer
   validate :validate_coin_address_format, unless: :internal_transfer?
   validate :validate_receiver_internal, if: :internal_transfer?
 
   before_validation :detect_internal_transfer_by_address
-  before_validation :assign_coin_layer
+  before_validation :assign_coin_layer, on: :create
   before_validation :calculate_coin_fee, on: :create
   after_create :send_event_withdrawal_to_kafka
   after_commit :create_operations_later, if: -> { saved_change_to_status? && processing? }
