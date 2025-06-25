@@ -41,18 +41,21 @@ module Exchange
           methods: %i[get post put patch delete options],
           expose: [ 'Authorization' ]
 
-        # Thêm cấu hình cho Active Storage trong development
+        # Thêm cấu hình cho Active Storage
+        # Proxy routes cần thiết cho cả development và production
+        resource '/rails/active_storage/blobs/proxy/*',
+          headers: :any,
+          methods: [ :get, :options ]
+        resource '/rails/active_storage/representations/proxy/*',
+          headers: :any,
+          methods: [ :get, :options ]
+
+        # Redirect routes chỉ cần trong development
         if Rails.env.development?
           resource '/rails/active_storage/blobs/redirect/*',
             headers: :any,
             methods: [ :get, :options ]
-          resource '/rails/active_storage/blobs/proxy/*',
-            headers: :any,
-            methods: [ :get, :options ]
           resource '/rails/active_storage/representations/redirect/*',
-            headers: :any,
-            methods: [ :get, :options ]
-          resource '/rails/active_storage/representations/proxy/*',
             headers: :any,
             methods: [ :get, :options ]
         end

@@ -39,6 +39,29 @@ ActiveAdmin.register Trade do
     column :created_at
     actions
 
+    column 'Receipt' do |trade|
+      if trade.payment_receipt_file.attached?
+        if trade.payment_receipt_file.image?
+          image_tag(
+            rails_representation_path(
+              trade.payment_receipt_file.variant(resize_to_limit: [ 80, 80 ]),
+              only_path: true
+            ),
+            alt: 'Receipt',
+            title: 'Click to view full size',
+            style: 'max-width: 80px; max-height: 80px; border: 1px solid #ddd; cursor: pointer;',
+            onclick: "openImageModal('#{url_for(trade.payment_receipt_file)}')"
+          )
+        else
+          span '📄', title: 'File Receipt Available', style: 'font-size: 20px;'
+        end
+      elsif trade.has_payment_proof
+        span '✅', title: 'Payment Details Available', style: 'font-size: 16px; color: green;'
+      else
+        span '❌', title: 'No Payment Proof', style: 'font-size: 16px; color: #ccc;'
+      end
+    end
+
     column 'Admin Actions' do |trade|
       if trade.disputed?
         span { link_to 'Cancel Trade', cancel_trade_admin_trade_path(trade), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to cancel this trade?' } }
@@ -76,6 +99,77 @@ ActiveAdmin.register Trade do
       row :error_message
       row :created_at
       row :updated_at
+    end
+
+    # Payment Receipt Panel
+    panel 'Payment Receipt' do
+      if resource.has_payment_proof
+        div do
+          if resource.payment_receipt_details.present?
+            h4 'Receipt Details:'
+            ul do
+              resource.payment_receipt_details.each do |key, value|
+                li "#{key.humanize}: #{value}" unless key == 'file_url'
+              end
+            end
+          end
+
+          if resource.payment_receipt_file.attached?
+            h4 'Receipt File:'
+            div do
+              begin
+                if resource.payment_receipt_file.image?
+                  # Display image with thumbnail and zoom functionality
+                  div style: 'position: relative;' do
+                    image_tag(
+                      url_for(resource.payment_receipt_file),
+                      alt: 'Payment Receipt',
+                      style: 'max-width: 600px; max-height: 400px; border: 1px solid #ddd; margin: 10px 0; cursor: pointer;',
+                      onclick: "openImageModal('#{url_for(resource.payment_receipt_file)}')",
+                      title: 'Click to view full size'
+                    )
+                  end
+                else
+                  # Display file info for non-images (like PDFs)
+                  div do
+                    strong "File: #{resource.payment_receipt_file.filename}"
+                    br
+                    small "Size: #{number_to_human_size(resource.payment_receipt_file.byte_size)}"
+                    br
+                    small "Type: #{resource.payment_receipt_file.content_type}"
+                  end
+                end
+              rescue => e
+                div do
+                  strong "Error loading file: #{e.message}"
+                  br
+                  small "File: #{resource.payment_receipt_file.filename}"
+                  br
+                  small "Content Type: #{resource.payment_receipt_file.content_type}"
+                end
+              end
+
+              div style: 'margin-top: 10px;' do
+                link_to(
+                  'Download Receipt',
+                  url_for(resource.payment_receipt_file.attachment),
+                  class: 'button',
+                  target: '_blank'
+                )
+                span ' | '
+                link_to(
+                  'View Full Size',
+                  url_for(resource.payment_receipt_file),
+                  class: 'button',
+                  target: '_blank'
+                )
+              end
+            end
+          end
+        end
+      else
+        div { 'No payment receipt uploaded' }
+      end
     end
 
     panel 'Fiat Token Details' do

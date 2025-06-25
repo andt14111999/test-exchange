@@ -50,21 +50,25 @@ class PaymentReceiptService
   def get_file_url
     return nil unless @trade.payment_receipt_file.attached?
 
-    if Rails.env.production?
-      @trade.payment_receipt_file.url
-    else
-      # Trong test/development, sử dụng default_url_options
-      Rails.application.routes.url_helpers.rails_blob_url(
-        @trade.payment_receipt_file,
-        only_path: false,
-        host: Rails.application.config.action_mailer.default_url_options[:host],
-        port: Rails.application.config.action_mailer.default_url_options[:port]
-      )
-    end
+    # Luôn sử dụng proxy URL qua backend để bảo mật
+    # Thay vì direct S3 URLs, Rails sẽ serve files qua backend
+    Rails.application.routes.url_helpers.rails_blob_url(
+      @trade.payment_receipt_file,
+      only_path: false,
+      host: get_host_for_environment
+    )
   rescue ArgumentError => e
     # Fallback nếu không có host config
     Rails.logger.warn "Could not generate file URL: #{e.message}"
     nil
+  end
+
+  def get_host_for_environment
+    if Rails.env.production?
+      ENV.fetch('EXCHANGE_BACKEND_DOMAIN', 'snow.exchange')
+    else
+      Rails.application.config.action_mailer.default_url_options[:host] || 'localhost:3969'
+    end
   end
 
   def sanitize_filename(filename)
