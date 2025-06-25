@@ -97,35 +97,6 @@ RSpec.describe V1::Users::Api, type: :request do
   end
 
   describe '2FA endpoints' do
-    describe 'GET /api/v1/users/two_factor_auth/status' do
-      context 'when user is authenticated and 2FA is disabled' do
-        it 'returns 2FA status false' do
-          get '/api/v1/users/two_factor_auth/status', headers: auth_headers(user)
-
-          expect(response).to have_http_status(:ok)
-          expect(json_response).to include('enabled' => false)
-        end
-      end
-
-      context 'when user is authenticated and 2FA is enabled' do
-        it 'returns 2FA status true' do
-          user.update(authenticator_enabled: true, authenticator_key: ROTP::Base32.random_base32)
-          get '/api/v1/users/two_factor_auth/status', headers: auth_headers(user)
-
-          expect(response).to have_http_status(:ok)
-          expect(json_response).to include('enabled' => true)
-        end
-      end
-
-      context 'when user is not authenticated' do
-        it 'returns unauthorized error' do
-          get '/api/v1/users/two_factor_auth/status'
-
-          expect(response).to have_http_status(:unauthorized)
-        end
-      end
-    end
-
     describe 'POST /api/v1/users/two_factor_auth/enable' do
       context 'when user is authenticated and 2FA is not enabled' do
         it 'generates QR code URI' do
@@ -168,14 +139,27 @@ RSpec.describe V1::Users::Api, type: :request do
           user.save
           totp = ROTP::TOTP.new(user.authenticator_key)
           valid_code = totp.now
+          device_uuid = SecureRandom.uuid
+          device_headers = {
+            'Device-Uuid' => device_uuid,
+            'Device-Type' => 'web',
+            'Browser' => 'Chrome',
+            'Os' => 'macOS'
+          }
 
           post '/api/v1/users/two_factor_auth/verify',
                params: { code: valid_code },
-               headers: auth_headers(user)
+               headers: auth_headers(user).merge(device_headers)
 
           expect(response).to have_http_status(:ok)
           expect(json_response).to include('message' => '2FA has been successfully enabled')
           expect(user.reload.authenticator_enabled).to be true
+
+          # Check that device is created and marked as trusted
+          device = user.access_devices.first
+          expect(device).to be_present
+          expect(device.trusted).to be true
+          expect(device.first_device).to be true
         end
       end
 

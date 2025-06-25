@@ -26,11 +26,6 @@ module V1
 
         # 2FA endpoints
         namespace :two_factor_auth do
-          desc 'Get 2FA status'
-          get :status do
-            { enabled: current_user.authenticator_enabled }
-          end
-
           desc 'Enable 2FA - Generate QR code'
           post :enable do
             if current_user.authenticator_enabled
@@ -64,6 +59,10 @@ module V1
 
             if current_user.verify_otp(params[:code])
               current_user.update!(authenticator_enabled: true)
+              # Mark current device as trusted after first 2FA setup
+              device = create_or_find_access_device
+              device&.mark_as_trusted!
+
               status 200
               { message: '2FA has been successfully enabled' }
             else
@@ -86,56 +85,6 @@ module V1
               { message: '2FA has been successfully disabled' }
             else
               error!({ message: 'Invalid verification code' }, 400)
-            end
-          end
-        end
-
-        # Access Devices Management
-        namespace :access_devices do
-          desc 'Get list of trusted devices'
-          get do
-            devices = current_user.access_devices.order(created_at: :desc)
-            present devices, with: V1::Users::AccessDeviceEntity
-          end
-
-          desc 'Get current device info'
-          get :current do
-            device = create_or_find_access_device
-            if device
-              present device, with: V1::Users::AccessDeviceEntity
-            else
-              error!({ message: 'Device UUID header missing' }, 400)
-            end
-          end
-
-          desc 'Remove a trusted device'
-          params do
-            requires :id, type: Integer, desc: 'Device ID to remove'
-          end
-          delete ':id' do
-            device = current_user.access_devices.find_by(id: params[:id])
-
-            unless device
-              error!({ message: 'Device not found' }, 404)
-            end
-
-            # Don't allow removing the current device if it's the only first device
-            if device.first_device && current_user.access_devices.where(first_device: true).count == 1
-              error!({ message: 'Cannot remove the only first device' }, 400)
-            end
-
-            device.destroy
-            { message: 'Device removed successfully' }
-          end
-
-          desc 'Mark current device as trusted'
-          post :trust do
-            device = create_or_find_access_device
-            if device
-              device.update(first_device: true)
-              present device, with: V1::Users::AccessDeviceEntity
-            else
-              error!({ message: 'Device UUID header missing' }, 400)
             end
           end
         end

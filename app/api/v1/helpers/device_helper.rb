@@ -16,6 +16,10 @@ module V1
         get_header('Device-Type') || 'web'
       end
 
+      def device_trusted_header
+        get_header('Device-Trusted')&.downcase == 'true'
+      end
+
       def client_request_info
         @client_request_info ||=
           begin
@@ -42,12 +46,23 @@ module V1
       def create_or_find_access_device
         return nil unless device_uuid.present?
 
-        current_access_device || create_access_device
+        device = current_access_device
+        return device if device
+
+        # Create new device with trusted = false by default
+        device = create_access_device
+
+        # Check if client wants to mark device as trusted
+        if device && device_trusted_header
+          device.mark_as_trusted!
+        end
+
+        device
       end
 
       def device_trusted?
         device = current_access_device
-        device&.trusted? || false
+        device&.trusted || false
       end
 
       def require_2fa_for_action?
@@ -65,7 +80,8 @@ module V1
         current_user.access_devices.create(
           device_uuid: device_uuid,
           details: client_request_info,
-          first_device: is_first_device
+          first_device: is_first_device,
+          trusted: false
         )
       end
 

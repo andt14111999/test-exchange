@@ -33,7 +33,7 @@ class AccessDevice < ApplicationRecord
     find_by_device_uuid_hash(digest(uuid))
   end
 
-  def trusted?
-    first_device || 72.hours.since(created_at).past?
+  def mark_as_trusted!
+    update!(trusted: true)
   end
 end

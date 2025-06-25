@@ -19,6 +19,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_24_031236) do
     t.string "device_uuid_hash", null: false
     t.jsonb "details", null: false
     t.boolean "first_device", default: false, null: false
+    t.boolean "trusted", default: false, null: false
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.index ["user_id", "device_uuid_hash"], name: "index_access_devices_on_user_id_and_device_uuid_hash", unique: true

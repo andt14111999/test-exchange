@@ -74,7 +74,27 @@ RSpec.describe V1::Helpers::DeviceHelper do
     end
   end
 
+  describe '#device_trusted_header' do
+    it 'returns true when Device-Trusted header is "true"' do
+      helper = build_helper(user, { 'Device-Trusted' => 'true' })
+      expect(helper.device_trusted_header).to be true
+    end
 
+    it 'returns true when Device-Trusted header is "TRUE"' do
+      helper = build_helper(user, { 'Device-Trusted' => 'TRUE' })
+      expect(helper.device_trusted_header).to be true
+    end
+
+    it 'returns false when Device-Trusted header is "false"' do
+      helper = build_helper(user, { 'Device-Trusted' => 'false' })
+      expect(helper.device_trusted_header).to be false
+    end
+
+    it 'returns false when no Device-Trusted header' do
+      helper = build_helper(user, {})
+      expect(helper.device_trusted_header).to be false
+    end
+  end
 
   describe '#client_request_info' do
     it 'returns client info hash' do
@@ -133,6 +153,21 @@ RSpec.describe V1::Helpers::DeviceHelper do
         expect {
           helper.create_or_find_access_device
         }.to change(AccessDevice, :count).by(1)
+      end
+
+      it 'creates device with trusted = false by default' do
+        helper = build_helper(user, { 'Device-Uuid' => device_uuid })
+        device = helper.create_or_find_access_device
+        expect(device.trusted).to be false
+      end
+
+      it 'marks device as trusted when Device-Trusted header is true' do
+        helper = build_helper(user, {
+          'Device-Uuid' => device_uuid,
+          'Device-Trusted' => 'true'
+        })
+        device = helper.create_or_find_access_device
+        expect(device.trusted).to be true
       end
 
       it 'marks as first device when user has no devices' do

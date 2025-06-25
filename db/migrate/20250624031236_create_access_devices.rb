@@ -5,6 +5,7 @@ class CreateAccessDevices < ActiveRecord::Migration[8.0]
       t.string :device_uuid_hash, null: false
       t.jsonb :details, null: false
       t.boolean :first_device, default: false, null: false
+      t.boolean :trusted, default: false, null: false
 
       t.timestamps precision: nil, null: false
 

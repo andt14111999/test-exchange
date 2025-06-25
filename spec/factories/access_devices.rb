@@ -5,6 +5,7 @@ FactoryBot.define do
     user
     device_uuid_hash { Digest::MD5.hexdigest(SecureRandom.uuid) }
     first_device { false }
+    trusted { false }
     details do
       {
         device_type: 'web',
@@ -16,12 +17,23 @@ FactoryBot.define do
       }
     end
 
-    trait :trusted do
-      first_device { true }
+    # Helper method to set device_uuid directly
+    transient do
+      device_uuid { nil }
     end
 
-    trait :aged_trusted do
-      created_at { 3.days.ago }
+    after(:build) do |access_device, evaluator|
+      if evaluator.device_uuid
+        access_device.device_uuid = evaluator.device_uuid
+      end
+    end
+
+    trait :trusted do
+      trusted { true }
+    end
+
+    trait :first_device do
+      first_device { true }
     end
 
     trait :mobile do

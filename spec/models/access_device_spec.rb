@@ -86,26 +86,25 @@ RSpec.describe AccessDevice, type: :model do
     end
   end
 
-  describe '#trusted?' do
-    context 'when first_device is true' do
-      it 'returns true' do
-        device = create(:access_device, :trusted)
-        expect(device.trusted?).to be true
-      end
+  describe '#trusted' do
+    it 'defaults to false' do
+      device = create(:access_device)
+      expect(device.trusted).to be false
     end
 
-    context 'when device is older than 72 hours' do
-      it 'returns true' do
-        device = create(:access_device, :aged_trusted)
-        expect(device.trusted?).to be true
-      end
+    it 'can be set to true' do
+      device = create(:access_device, :trusted)
+      expect(device.trusted).to be true
     end
+  end
 
-    context 'when device is new and not first_device' do
-      it 'returns false' do
-        device = create(:access_device)
-        expect(device.trusted?).to be false
-      end
+  describe '#mark_as_trusted!' do
+    it 'updates trusted field to true' do
+      device = create(:access_device)
+      expect(device.trusted).to be false
+
+      device.mark_as_trusted!
+      expect(device.reload.trusted).to be true
     end
   end
 end
