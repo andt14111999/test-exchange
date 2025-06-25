@@ -24,6 +24,56 @@ module V1
           end
         end
 
+        # Access devices endpoints
+        namespace :access_devices do
+          desc 'Get list of trusted devices'
+          get do
+            devices = current_user.access_devices.order(created_at: :desc)
+            present devices, with: V1::AccessDevices::Entity
+          end
+
+          desc 'Get current device info'
+          get :current do
+            device = create_or_find_access_device
+            if device
+              present device, with: V1::AccessDevices::Entity
+            else
+              error!({ message: 'Device UUID header missing' }, 400)
+            end
+          end
+
+          desc 'Remove a trusted device'
+          params do
+            requires :id, type: Integer, desc: 'Device ID to remove'
+          end
+          delete ':id' do
+            device = current_user.access_devices.find_by(id: params[:id])
+
+            unless device
+              error!({ message: 'Device not found' }, 404)
+            end
+
+            # Don't allow removing the current device if it's the only first device
+            if device.first_device && current_user.access_devices.where(first_device: true).count == 1
+              error!({ message: 'Cannot remove the only first device' }, 400)
+            end
+
+            device.destroy
+            { message: 'Device removed successfully' }
+          end
+
+          desc 'Trust current device'
+          post :trust do
+            device = create_or_find_access_device
+            if device
+              device.update!(first_device: true, trusted: true)
+              present device, with: V1::AccessDevices::Entity
+            else
+              error!({ message: 'Device UUID header missing' }, 400)
+            end
+          end
+        end
+
         # 2FA endpoints
         namespace :two_factor_auth do
           desc 'Enable 2FA - Generate QR code'
@@ -54,15 +104,12 @@ module V1
             end
 
             if current_user.authenticator_key.blank?
-              error!({ message: 'Please enable 2FA first' }, 400)
+              error!({ message: 'Please re-enable 2FA first' }, 400)
             end
 
             if current_user.verify_otp(params[:code])
               current_user.update!(authenticator_enabled: true)
-              # Mark current device as trusted after first 2FA setup
-              device = create_or_find_access_device
-              device&.mark_as_trusted!
-
+              create_or_find_access_device
               status 200
               { message: '2FA has been successfully enabled' }
             else

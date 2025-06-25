@@ -348,7 +348,7 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
         it 'allows withdrawal without 2FA code for first device' do
           user_with_2fa = create(:user, :with_2fa)
           create(:coin_account, :usdt_main, user: user_with_2fa, balance: 200.0)
-          create(:access_device, user: user_with_2fa, device_uuid_hash: AccessDevice.digest(device_uuid), first_device: true)
+          create(:access_device, :trusted, user: user_with_2fa, device_uuid_hash: AccessDevice.digest(device_uuid), first_device: true)
 
           withdrawal_params = {
             coin_address: coin_address,

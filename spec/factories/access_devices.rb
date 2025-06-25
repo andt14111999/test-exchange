@@ -3,7 +3,7 @@
 FactoryBot.define do
   factory :access_device do
     user
-    device_uuid_hash { Digest::MD5.hexdigest(SecureRandom.uuid) }
+    device_uuid_hash { Digest::SHA256.hexdigest(SecureRandom.uuid) }
     first_device { false }
     trusted { false }
     details do
@@ -34,6 +34,11 @@ FactoryBot.define do
 
     trait :first_device do
       first_device { true }
+    end
+
+    trait :aged_trusted do
+      trusted { true }
+      created_at { 73.hours.ago }
     end
 
     trait :mobile do

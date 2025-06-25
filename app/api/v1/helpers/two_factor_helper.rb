@@ -22,9 +22,8 @@ module V1
           }, 400)
         end
 
-        # Mark device as trusted after successful 2FA
-        device = create_or_find_access_device
-        device&.mark_as_trusted!
+        # Record this 2FA verification
+        create_or_find_access_device
 
         true
       end

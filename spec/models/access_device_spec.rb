@@ -36,12 +36,12 @@ RSpec.describe AccessDevice, type: :model do
   end
 
   describe '#device_uuid=' do
-    it 'sets device_uuid_hash as MD5 digest of device_uuid' do
+    it 'sets device_uuid_hash as SHA256 digest of device_uuid' do
       device = described_class.new
       uuid = SecureRandom.uuid
       device.device_uuid = uuid
 
-      expect(device.device_uuid_hash).to eq(Digest::MD5.hexdigest(uuid))
+      expect(device.device_uuid_hash).to eq(Digest::SHA256.hexdigest(uuid))
     end
   end
 
@@ -62,9 +62,9 @@ RSpec.describe AccessDevice, type: :model do
   end
 
   describe '.digest' do
-    it 'returns MD5 hexdigest of the key' do
+    it 'returns SHA256 hexdigest of the key' do
       key = 'test-key'
-      expected = Digest::MD5.hexdigest(key)
+      expected = Digest::SHA256.hexdigest(key)
       expect(described_class.digest(key)).to eq(expected)
     end
 

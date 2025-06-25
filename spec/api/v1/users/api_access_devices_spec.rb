@@ -70,7 +70,8 @@ RSpec.describe V1::Users::Api, type: :request do
           expect(response).to have_http_status(:success)
           json_response = JSON.parse(response.body)
           expect(json_response['device_type']).to be_present
-          expect(json_response['trusted']).to be true # first device
+          expect(json_response['first_device']).to be true # first device
+          expect(json_response['trusted']).to be false # devices start as untrusted
         end
 
         it 'returns existing device' do

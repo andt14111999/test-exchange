@@ -26,7 +26,7 @@ class AccessDevice < ApplicationRecord
   end
 
   def self.digest(key)
-    Digest::MD5.hexdigest key if key.present?
+    Digest::SHA256.hexdigest key if key.present?
   end
 
   def self.find_by_device_uuid(uuid)

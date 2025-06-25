@@ -155,7 +155,36 @@ RSpec.describe V1::Users::Api, type: :request do
           expect(json_response).to include('message' => '2FA has been successfully enabled')
           expect(user.reload.authenticator_enabled).to be true
 
-          # Check that device is created and marked as trusted
+          # Check that device is created but not automatically trusted
+          device = user.access_devices.first
+          expect(device).to be_present
+          expect(device.trusted).to be false
+          expect(device.first_device).to be true
+        end
+
+        it 'enables 2FA and marks device as trusted when Device-Trusted header is true' do
+          user.assign_authenticator_key
+          user.save
+          totp = ROTP::TOTP.new(user.authenticator_key)
+          valid_code = totp.now
+          device_uuid = SecureRandom.uuid
+          device_headers = {
+            'Device-Uuid' => device_uuid,
+            'Device-Type' => 'web',
+            'Browser' => 'Chrome',
+            'Os' => 'macOS',
+            'Device-Trusted' => 'true'
+          }
+
+          post '/api/v1/users/two_factor_auth/verify',
+               params: { code: valid_code },
+               headers: auth_headers(user).merge(device_headers)
+
+          expect(response).to have_http_status(:ok)
+          expect(json_response).to include('message' => '2FA has been successfully enabled')
+          expect(user.reload.authenticator_enabled).to be true
+
+          # Check that device is created and marked as trusted due to header
           device = user.access_devices.first
           expect(device).to be_present
           expect(device.trusted).to be true
@@ -197,7 +226,7 @@ RSpec.describe V1::Users::Api, type: :request do
                headers: auth_headers(user)
 
           expect(response).to have_http_status(:bad_request)
-          expect(json_response).to include('message' => 'Please enable 2FA first')
+          expect(json_response).to include('message' => 'Please re-enable 2FA first')
         end
       end
 

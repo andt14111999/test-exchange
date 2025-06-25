@@ -46,14 +46,10 @@ module V1
       def create_or_find_access_device
         return nil unless device_uuid.present?
 
-        device = current_access_device
-        return device if device
+        device = current_access_device || create_access_device
 
-        # Create new device with trusted = false by default
-        device = create_access_device
-
-        # Check if client wants to mark device as trusted
-        if device && device_trusted_header
+        # Check if client wants to mark device as trusted (for both existing and new devices)
+        if device && device_trusted_header && !device.trusted
           device.mark_as_trusted!
         end
 

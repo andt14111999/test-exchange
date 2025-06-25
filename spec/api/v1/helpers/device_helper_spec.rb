@@ -145,6 +145,32 @@ RSpec.describe V1::Helpers::DeviceHelper do
         device = create(:access_device, user: user, device_uuid_hash: AccessDevice.digest(device_uuid))
         expect(helper.create_or_find_access_device).to eq(device)
       end
+
+      it 'marks existing untrusted device as trusted when Device-Trusted header is true' do
+        helper = build_helper(user, {
+          'Device-Uuid' => device_uuid,
+          'Device-Trusted' => 'true'
+        })
+        device = create(:access_device, user: user, device_uuid_hash: AccessDevice.digest(device_uuid), trusted: false)
+
+        result = helper.create_or_find_access_device
+
+        expect(result).to eq(device)
+        expect(device.reload.trusted).to be true
+      end
+
+      it 'does not modify existing trusted device when Device-Trusted header is true' do
+        helper = build_helper(user, {
+          'Device-Uuid' => device_uuid,
+          'Device-Trusted' => 'true'
+        })
+        device = create(:access_device, user: user, device_uuid_hash: AccessDevice.digest(device_uuid), trusted: true)
+
+        result = helper.create_or_find_access_device
+
+        expect(result).to eq(device)
+        expect(device.reload.trusted).to be true
+      end
     end
 
     context 'when device does not exist' do
