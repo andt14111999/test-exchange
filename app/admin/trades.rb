@@ -44,12 +44,13 @@ ActiveAdmin.register Trade do
         if trade.payment_receipt_file.image?
           image_tag(
             rails_representation_path(
-              trade.payment_receipt_file.variant(resize_to_limit: [ 50, 50 ]),
+              trade.payment_receipt_file.variant(resize_to_limit: [ 80, 80 ]),
               only_path: true
             ),
             alt: 'Receipt',
-            title: 'Payment Receipt Available',
-            style: 'max-width: 50px; max-height: 50px; border: 1px solid #ddd;'
+            title: 'Click to view full size',
+            style: 'max-width: 80px; max-height: 80px; border: 1px solid #ddd; cursor: pointer;',
+            onclick: "openImageModal('#{url_for(trade.payment_receipt_file)}')"
           )
         else
           span '📄', title: 'File Receipt Available', style: 'font-size: 20px;'
@@ -116,35 +117,49 @@ ActiveAdmin.register Trade do
           if resource.payment_receipt_file.attached?
             h4 'Receipt File:'
             div do
-              if resource.payment_receipt_file.image?
-                # Display image with thumbnail
-                image_tag(
-                  rails_blob_path(resource.payment_receipt_file, only_path: true),
-                  alt: 'Payment Receipt',
-                  style: 'max-width: 400px; max-height: 300px; border: 1px solid #ddd; margin: 10px 0;'
-                )
-              else
-                # Display file info for non-images (like PDFs)
+              begin
+                if resource.payment_receipt_file.image?
+                  # Display image with thumbnail and zoom functionality
+                  div style: 'position: relative;' do
+                    image_tag(
+                      url_for(resource.payment_receipt_file),
+                      alt: 'Payment Receipt',
+                      style: 'max-width: 600px; max-height: 400px; border: 1px solid #ddd; margin: 10px 0; cursor: pointer;',
+                      onclick: "openImageModal('#{url_for(resource.payment_receipt_file)}')",
+                      title: 'Click to view full size'
+                    )
+                  end
+                else
+                  # Display file info for non-images (like PDFs)
+                  div do
+                    strong "File: #{resource.payment_receipt_file.filename}"
+                    br
+                    small "Size: #{number_to_human_size(resource.payment_receipt_file.byte_size)}"
+                    br
+                    small "Type: #{resource.payment_receipt_file.content_type}"
+                  end
+                end
+              rescue => e
                 div do
-                  strong "File: #{resource.payment_receipt_file.filename}"
+                  strong "Error loading file: #{e.message}"
                   br
-                  small "Size: #{number_to_human_size(resource.payment_receipt_file.byte_size)}"
+                  small "File: #{resource.payment_receipt_file.filename}"
                   br
-                  small "Type: #{resource.payment_receipt_file.content_type}"
+                  small "Content Type: #{resource.payment_receipt_file.content_type}"
                 end
               end
 
               div style: 'margin-top: 10px;' do
                 link_to(
                   'Download Receipt',
-                  rails_blob_path(resource.payment_receipt_file, disposition: 'attachment'),
+                  url_for(resource.payment_receipt_file.attachment),
                   class: 'button',
                   target: '_blank'
                 )
                 span ' | '
                 link_to(
                   'View Full Size',
-                  rails_blob_path(resource.payment_receipt_file),
+                  url_for(resource.payment_receipt_file),
                   class: 'button',
                   target: '_blank'
                 )
