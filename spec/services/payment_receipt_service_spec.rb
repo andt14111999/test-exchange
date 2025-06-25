@@ -8,6 +8,13 @@ RSpec.describe PaymentReceiptService, type: :service do
     let(:service) { described_class.new(trade) }
     let(:receipt_details) { { 'transaction_id' => 'TX12345', 'amount' => '500' } }
 
+    # Mock ENV variables to avoid Kafka configuration issues
+    before do
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with('KAFKA_SSL_ENABLED', 'false').and_return('false')
+      allow(ENV).to receive(:fetch).with('EXCHANGE_BACKEND_DOMAIN', 'snow.exchange').and_return('snow.exchange')
+    end
+
     context 'with valid file' do
       let(:file) do
         file = fixture_file_upload(
@@ -33,25 +40,25 @@ RSpec.describe PaymentReceiptService, type: :service do
       end
 
       it 'generates correct URL in development environment' do
-        allow(Rails.env).to receive(:production?).and_return(false)
-        host = Rails.application.config.action_mailer.default_url_options[:host]
         service.process_payment_receipt(receipt_details, file)
 
-        expect(trade.payment_receipt_details['file_url']).to include("http://#{host}/rails/active_storage")
+        expect(trade.payment_receipt_details['file_url']).to include('/rails/active_storage/blobs/')
+        expect(trade.payment_receipt_details['file_url']).to include('example.com')
       end
 
       it 'generates correct URL in production environment' do
         allow(Rails.env).to receive(:production?).and_return(true)
-        allow_any_instance_of(ActiveStorage::Blob).to receive(:url).and_return('https://storage.example.com/file.jpg')
 
         service.process_payment_receipt(receipt_details, file)
 
-        expect(trade.payment_receipt_details['file_url']).to eq('https://storage.example.com/file.jpg')
+        expect(trade.payment_receipt_details['file_url']).to include('/rails/active_storage/blobs/')
+        expect(trade.payment_receipt_details['file_url']).to include('snow.exchange')
       end
 
       it 'handles missing host configuration gracefully' do
-        allow(Rails.env).to receive(:production?).and_return(false)
-        allow(Rails.application.config.action_mailer).to receive(:default_url_options).and_return({})
+        # Test by making rails_blob_url fail
+        allow(Rails.application.routes.url_helpers).to receive(:rails_blob_url)
+          .and_raise(ArgumentError, 'Missing host configuration')
         allow(Rails.logger).to receive(:warn)
 
         service.process_payment_receipt(receipt_details, file)

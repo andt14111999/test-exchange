@@ -39,6 +39,28 @@ ActiveAdmin.register Trade do
     column :created_at
     actions
 
+    column 'Receipt' do |trade|
+      if trade.payment_receipt_file.attached?
+        if trade.payment_receipt_file.image?
+          image_tag(
+            rails_representation_path(
+              trade.payment_receipt_file.variant(resize_to_limit: [ 50, 50 ]),
+              only_path: true
+            ),
+            alt: 'Receipt',
+            title: 'Payment Receipt Available',
+            style: 'max-width: 50px; max-height: 50px; border: 1px solid #ddd;'
+          )
+        else
+          span '📄', title: 'File Receipt Available', style: 'font-size: 20px;'
+        end
+      elsif trade.has_payment_proof
+        span '✅', title: 'Payment Details Available', style: 'font-size: 16px; color: green;'
+      else
+        span '❌', title: 'No Payment Proof', style: 'font-size: 16px; color: #ccc;'
+      end
+    end
+
     column 'Admin Actions' do |trade|
       if trade.disputed?
         span { link_to 'Cancel Trade', cancel_trade_admin_trade_path(trade), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to cancel this trade?' } }
@@ -76,6 +98,63 @@ ActiveAdmin.register Trade do
       row :error_message
       row :created_at
       row :updated_at
+    end
+
+    # Payment Receipt Panel
+    panel 'Payment Receipt' do
+      if resource.has_payment_proof
+        div do
+          if resource.payment_receipt_details.present?
+            h4 'Receipt Details:'
+            ul do
+              resource.payment_receipt_details.each do |key, value|
+                li "#{key.humanize}: #{value}" unless key == 'file_url'
+              end
+            end
+          end
+
+          if resource.payment_receipt_file.attached?
+            h4 'Receipt File:'
+            div do
+              if resource.payment_receipt_file.image?
+                # Display image with thumbnail
+                image_tag(
+                  rails_blob_path(resource.payment_receipt_file, only_path: true),
+                  alt: 'Payment Receipt',
+                  style: 'max-width: 400px; max-height: 300px; border: 1px solid #ddd; margin: 10px 0;'
+                )
+              else
+                # Display file info for non-images (like PDFs)
+                div do
+                  strong "File: #{resource.payment_receipt_file.filename}"
+                  br
+                  small "Size: #{number_to_human_size(resource.payment_receipt_file.byte_size)}"
+                  br
+                  small "Type: #{resource.payment_receipt_file.content_type}"
+                end
+              end
+
+              div style: 'margin-top: 10px;' do
+                link_to(
+                  'Download Receipt',
+                  rails_blob_path(resource.payment_receipt_file, disposition: 'attachment'),
+                  class: 'button',
+                  target: '_blank'
+                )
+                span ' | '
+                link_to(
+                  'View Full Size',
+                  rails_blob_path(resource.payment_receipt_file),
+                  class: 'button',
+                  target: '_blank'
+                )
+              end
+            end
+          end
+        end
+      else
+        div { 'No payment receipt uploaded' }
+      end
     end
 
     panel 'Fiat Token Details' do

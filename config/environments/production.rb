@@ -26,6 +26,12 @@ Rails.application.configure do
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :amazon
 
+  # Force Active Storage to use proxy URLs instead of direct S3 URLs
+  config.active_storage.resolve_model_to_route = :rails_storage_proxy
+
+  # Configure Active Storage to use backend domain for URL generation
+  config.active_storage.variant_processor = :mini_magick
+
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
   config.assume_ssl = true
 
