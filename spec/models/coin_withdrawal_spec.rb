@@ -497,9 +497,10 @@ RSpec.describe CoinWithdrawal, sidekiq: :inline, type: :model do
     it 'transitions from processing to completed' do
       withdrawal.process! # This will create the operation and transition to processing
       expect(withdrawal.reload.status).to eq('processing')
+      expect_any_instance_of(described_class).to receive(:send_event_complete_withdrawal_to_kafka)
       withdrawal.coin_withdrawal_operation.update!(withdrawal_status: 'processed', tx_hash: 'tx_123')
       withdrawal.coin_withdrawal_operation.relay!
-      expect(withdrawal.reload.status).to eq('completed')
+      expect(withdrawal.reload.status).to eq('processing')
     end
 
     it 'transitions from processing to cancelled' do

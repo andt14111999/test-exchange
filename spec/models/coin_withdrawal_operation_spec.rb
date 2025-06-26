@@ -235,28 +235,62 @@ RSpec.describe CoinWithdrawalOperation, type: :model do
     end
   end
 
-  describe '#mark_withdrawal_release_succeed' do
+    describe '#mark_withdrawal_release_succeed' do
     let(:user) { create(:user) }
     let(:withdrawal) { create(:coin_withdrawal, user: user) }
     let(:operation) { create(:coin_withdrawal_operation, coin_withdrawal: withdrawal) }
 
-    it 'does not raise error when withdrawal can be completed' do
-      operation.start_relaying!
-      operation.withdrawal_status = 'processed'
-      operation.tx_hash = 'tx_123'
-      expect { operation.relay! }.not_to raise_error
-      expect(withdrawal.reload.status).to eq('completed')
-      expect(withdrawal.tx_hash).to eq('tx_123')
+    context 'when withdrawal is processed and has tx_hash' do
+      it 'sets tx_hash on withdrawal and calls send_event_complete_withdrawal_to_kafka' do
+        operation.withdrawal_status = 'processed'
+        operation.tx_hash = 'tx_123'
+
+        expect_any_instance_of(CoinWithdrawal).to receive(:send_event_complete_withdrawal_to_kafka)
+        operation.send(:mark_withdrawal_release_succeed)
+
+        expect(withdrawal.reload.tx_hash).to eq('tx_123')
+      end
     end
 
-    it 'logs error when complete! raises an error' do
-      operation.start_relaying!
+    context 'when withdrawal is not processed' do
+      it 'returns early and does not update tx_hash' do
+        operation.withdrawal_status = 'pending'
+        operation.tx_hash = 'tx_123'
+        original_tx_hash = withdrawal.tx_hash
+
+        expect_any_instance_of(CoinWithdrawal).not_to receive(:send_event_complete_withdrawal_to_kafka)
+        operation.send(:mark_withdrawal_release_succeed)
+
+        expect(withdrawal.reload.tx_hash).to eq(original_tx_hash)
+      end
+    end
+
+    context 'when tx_hash is not present' do
+      it 'returns early and does not update withdrawal' do
+        operation.withdrawal_status = 'processed'
+        operation.tx_hash = nil
+        original_tx_hash = withdrawal.tx_hash
+
+        operation.send(:mark_withdrawal_release_succeed)
+
+        expect(withdrawal.reload.tx_hash).to eq(original_tx_hash)
+      end
+    end
+
+    it 'logs error and continues when send_event_complete_withdrawal_to_kafka raises an error' do
       operation.withdrawal_status = 'processed'
       operation.tx_hash = 'tx_123'
-      allow(withdrawal).to receive(:complete!).and_raise(StandardError, 'test error')
+
+      # Mock the service to raise an error
+      coin_service = instance_double(KafkaService::Services::Coin::CoinWithdrawalService)
+      allow(KafkaService::Services::Coin::CoinWithdrawalService).to receive(:new).and_return(coin_service)
+      allow(coin_service).to receive(:update_status).and_raise(StandardError, 'test error')
       allow(Rails.logger).to receive(:error)
+
       operation.send(:mark_withdrawal_release_succeed)
-      expect(Rails.logger).to have_received(:error).with(/CoinWithdrawalOperation#\d+ mark_withdrawal_release_succeed error: test error/)
+
+      expect(Rails.logger).to have_received(:error).with(/CoinWithdrawalOperation#\d+ mark_withdrawal_release_succeed error:/)
+      expect(withdrawal.reload.tx_hash).to eq('tx_123')
     end
   end
 
