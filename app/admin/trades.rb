@@ -64,8 +64,38 @@ ActiveAdmin.register Trade do
 
     column 'Admin Actions' do |trade|
       if trade.disputed?
-        span { link_to 'Cancel Trade', cancel_trade_admin_trade_path(trade), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to cancel this trade?' } }
-        span { link_to 'Release Trade', release_trade_admin_trade_path(trade), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to release this trade?' } }
+        span do
+          link_to 'Cancel Trade', '#',
+                  class: 'button',
+                  onclick: "showTradeConfirm('cancel', #{trade.id}, {
+                    ref: '#{trade.ref}',
+                    buyer_name: '#{trade.buyer.display_name || trade.buyer.username || trade.buyer.email}',
+                    seller_name: '#{trade.seller.display_name || trade.seller.username || trade.seller.email}',
+                    status: '#{trade.status}',
+                    coin_amount: '#{trade.coin_amount}',
+                    coin_currency: '#{trade.coin_currency}',
+                    fiat_amount: '#{trade.fiat_amount}',
+                    fiat_currency: '#{trade.fiat_currency}',
+                    fiat_token_deposit: #{trade.is_fiat_token_deposit_trade?},
+                    fiat_token_withdrawal: #{trade.is_fiat_token_withdrawal_trade?}
+                  }); return false;"
+        end
+        span do
+          link_to 'Release Trade', '#',
+                  class: 'button',
+                  onclick: "showTradeConfirm('release', #{trade.id}, {
+                    ref: '#{trade.ref}',
+                    buyer_name: '#{trade.buyer.display_name || trade.buyer.username || trade.buyer.email}',
+                    seller_name: '#{trade.seller.display_name || trade.seller.username || trade.seller.email}',
+                    status: '#{trade.status}',
+                    coin_amount: '#{trade.coin_amount}',
+                    coin_currency: '#{trade.coin_currency}',
+                    fiat_amount: '#{trade.fiat_amount}',
+                    fiat_currency: '#{trade.fiat_currency}',
+                    fiat_token_deposit: #{trade.is_fiat_token_deposit_trade?},
+                    fiat_token_withdrawal: #{trade.is_fiat_token_withdrawal_trade?}
+                  }); return false;"
+        end
       end
       span { link_to 'Add Admin Message', new_admin_message_path(trade_id: trade.id), class: 'button' }
     end
@@ -215,8 +245,38 @@ ActiveAdmin.register Trade do
     panel 'Admin Actions' do
       div do
         if resource.disputed?
-          span { link_to 'Cancel Trade', cancel_trade_admin_trade_path(resource), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to cancel this trade?' } }
-          span { link_to 'Release Trade', release_trade_admin_trade_path(resource), method: :post, class: 'button', data: { turbo_confirm: 'Are you sure you want to release this trade?' } }
+          span do
+            link_to 'Cancel Trade', '#',
+                    class: 'button',
+                    onclick: "showTradeConfirm('cancel', #{resource.id}, {
+                      ref: '#{resource.ref}',
+                      buyer_name: '#{resource.buyer.display_name || resource.buyer.username || resource.buyer.email}',
+                      seller_name: '#{resource.seller.display_name || resource.seller.username || resource.seller.email}',
+                      status: '#{resource.status}',
+                      coin_amount: '#{resource.coin_amount}',
+                      coin_currency: '#{resource.coin_currency}',
+                      fiat_amount: '#{resource.fiat_amount}',
+                      fiat_currency: '#{resource.fiat_currency}',
+                      fiat_token_deposit: #{resource.is_fiat_token_deposit_trade?},
+                      fiat_token_withdrawal: #{resource.is_fiat_token_withdrawal_trade?}
+                    }); return false;"
+          end
+          span do
+            link_to 'Release Trade', '#',
+                    class: 'button',
+                    onclick: "showTradeConfirm('release', #{resource.id}, {
+                      ref: '#{resource.ref}',
+                      buyer_name: '#{resource.buyer.display_name || resource.buyer.username || resource.buyer.email}',
+                      seller_name: '#{resource.seller.display_name || resource.seller.username || resource.seller.email}',
+                      status: '#{resource.status}',
+                      coin_amount: '#{resource.coin_amount}',
+                      coin_currency: '#{resource.coin_currency}',
+                      fiat_amount: '#{resource.fiat_amount}',
+                      fiat_currency: '#{resource.fiat_currency}',
+                      fiat_token_deposit: #{resource.is_fiat_token_deposit_trade?},
+                      fiat_token_withdrawal: #{resource.is_fiat_token_withdrawal_trade?}
+                    }); return false;"
+          end
         end
         span { link_to 'Add Admin Message', new_admin_message_path(trade_id: resource.id), class: 'button' }
       end
