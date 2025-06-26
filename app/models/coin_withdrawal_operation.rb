@@ -170,7 +170,8 @@ class CoinWithdrawalOperation < Operation
     return if !withdrawal_status_processed? || !tx_hash.present?
 
     coin_withdrawal.tx_hash = tx_hash
-    coin_withdrawal.complete!
+    coin_withdrawal.save
+    coin_withdrawal.send_event_complete_withdrawal_to_kafka
   rescue StandardError => e
     Rails.logger.error("CoinWithdrawalOperation##{id} mark_withdrawal_release_succeed error: #{e.message}")
   end
