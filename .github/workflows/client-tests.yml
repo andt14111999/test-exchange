@@ -6,6 +6,7 @@ on:
   pull_request:
     branches: [main, master]
   workflow_dispatch:
+  workflow_call:
 
 # Add permissions configuration
 permissions:
@@ -21,26 +22,26 @@ jobs:
     defaults:
       run:
         working-directory: ./client
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          
+
       - name: Install pnpm
         uses: pnpm/action-setup@v3
         with:
           version: "8.15.4"
           run_install: false
-          
+
       - name: Get pnpm store directory
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-          
+
       - name: Setup pnpm cache
         uses: actions/cache@v4
         with:
@@ -48,35 +49,35 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-            
+
       - name: Install dependencies
         run: pnpm install
-        
+
       - name: Type check
         run: pnpm type-check
-        
+
       - name: Format check
         run: pnpm format:check
-        
+
       - name: Lint
         run: pnpm lint
-        
+
       - name: Check translations
         run: pnpm check-translations
-        
+
       - name: Install required system packages
         run: sudo apt-get update && sudo apt-get install -y bc
-        
+
       - name: Build the app
         run: pnpm build
         env:
           CI: true
-        
+
       - name: Run unit tests with coverage
         run: pnpm test:coverage:ci
         env:
           CI: true
-        
+
       - name: Check coverage threshold
         run: |
           # Check if the coverage/lcov.info file exists, which is standard for Jest
@@ -98,21 +99,21 @@ jobs:
           fi
 
           echo "::notice::Test coverage meets the 80% threshold (actual: $COVERAGE%)"
-        
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: client-unittests
           directory: ./client
-          
+
       - name: Archive code coverage results
         uses: actions/upload-artifact@v4
         with:
           name: client-code-coverage-report
           path: client/coverage/
           retention-days: 30
-          
+
       - name: Publish Coverage Report as PR Comment
         if: github.event_name == 'pull_request'
         uses: romeovs/lcov-reporter-action@v0.3.1
@@ -128,7 +129,7 @@ jobs:
     defaults:
       run:
         working-directory: ./client
-        
+
     env:
       RAILS_ENV: test
       POSTGRES_HOST: localhost
@@ -139,7 +140,7 @@ jobs:
       REDIS_URL: redis://localhost:6379/0
       EXCHANGE_SIGNING_KEY: "dummy_signing_key_for_ci_testing_only_123456789"
       COIN_PORTAL_VERIFYING_KEY: "dummy_verifying_key_for_ci_testing_only_123456789"
-      
+
     services:
       postgres:
         image: postgres:14
@@ -163,26 +164,26 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
+
     steps:
       - uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          
+
       - name: Install pnpm
         uses: pnpm/action-setup@v3
         with:
           version: "8.15.4"
           run_install: false
-          
+
       - name: Get pnpm store directory
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-          
+
       - name: Setup pnpm cache
         uses: actions/cache@v4
         with:
@@ -190,57 +191,57 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-            
+
       - name: Install client dependencies
         run: pnpm install
-        
+
       - name: Set up Ruby (for backend API)
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.2"
           bundler-cache: true
           working-directory: .
-          
+
       - name: Install backend dependencies
         run: bundle install
         working-directory: .
-        
+
       - name: Setup Database
         run: |
           cp config/database.yml.ci config/database.yml
           bundle exec rails db:create db:schema:load
         working-directory: .
-        
+
       - name: Install serve and wait-on
         run: npm install -g wait-on
-        
+
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps
-        
+
       - name: Build the app
         run: pnpm build
         env:
           CI: true
-        
+
       - name: Start Next.js app in background
         run: pnpm start &
         env:
           CI: true
           PORT: 3000
-        
+
       - name: Wait for Next.js server
         run: npx wait-on http://localhost:3000 -t 60000
-        
+
       - name: Run E2E tests
         run: pnpm test:e2e
         env:
           CI: true
           BASE_URL: http://localhost:3000
-        
+
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report
           path: client/playwright-report/
-          retention-days: 30 
+          retention-days: 30

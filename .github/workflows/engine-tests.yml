@@ -10,6 +10,7 @@ on:
     paths:
       - "engine/**"
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   checks: write
@@ -86,4 +87,4 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            core.setFailed('One or more changed Java files in engine do not meet coverage threshold (90%)!') 
+            core.setFailed('One or more changed Java files in engine do not meet coverage threshold (90%)!')

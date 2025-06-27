@@ -10,6 +10,7 @@ on:
     paths:
       - "client/**"
   workflow_dispatch:
+  workflow_call:
 
 # Add permissions configuration
 permissions:
@@ -25,7 +26,7 @@ jobs:
     defaults:
       run:
         working-directory: ./client
-        
+
     steps:
       - uses: actions/checkout@v4
 
@@ -104,4 +105,4 @@ jobs:
         with:
           lcov-file: ./client/coverage/lcov.info
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          title: "Test Coverage Report" 
+          title: "Test Coverage Report"
