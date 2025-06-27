@@ -173,12 +173,6 @@ export default function ProfilePage() {
           </div>
 
           <div className="pt-4 flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => router.push("/profile/edit")}
-            >
-              {t("profile.editProfile")}
-            </Button>
             {!user?.username && (
               <Button onClick={() => router.push("/profile/update")}>
                 {t("profile.setUsername")}
