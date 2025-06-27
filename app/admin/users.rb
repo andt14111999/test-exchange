@@ -8,7 +8,7 @@ ActiveAdmin.register User do
 
   actions :all, except: [ :destroy ]
 
-  before_action :ensure_superadmin_user, only: %i[create update destroy]
+  before_action :ensure_superadmin_user, only: %i[create update]
 
   filter :id
   filter :email
