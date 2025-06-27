@@ -256,6 +256,44 @@ RSpec.describe V1::Users::Api, type: :request do
           expect(user.reload.authenticator_enabled).to be false
           expect(user.authenticator_key).to be_nil
         end
+
+        it 'resets all device trusted status to false when disabling 2FA' do
+          user.assign_authenticator_key
+          user.update(authenticator_enabled: true)
+
+          # Create trusted devices
+          device1 = create(:access_device, :trusted, user: user)
+          device2 = create(:access_device, :trusted, user: user)
+          device3 = create(:access_device, user: user, trusted: false)
+
+          # Store original updated_at times
+          original_updated_at_1 = device1.updated_at
+          original_updated_at_2 = device2.updated_at
+          original_updated_at_3 = device3.updated_at
+
+          # Sleep to ensure time difference
+          sleep(0.1)
+
+          totp = ROTP::TOTP.new(user.authenticator_key)
+          valid_code = totp.now
+
+          delete '/api/v1/users/two_factor_auth/disable',
+                 params: { code: valid_code },
+                 headers: auth_headers(user)
+
+          expect(response).to have_http_status(:ok)
+          expect(json_response).to include('message' => '2FA has been successfully disabled')
+
+          # Check all devices are now untrusted
+          expect(device1.reload.trusted).to be false
+          expect(device2.reload.trusted).to be false
+          expect(device3.reload.trusted).to be false
+
+          # Check updated_at timestamps were updated
+          expect(device1.updated_at).to be > original_updated_at_1
+          expect(device2.updated_at).to be > original_updated_at_2
+          expect(device3.updated_at).to be > original_updated_at_3
+        end
       end
 
       context 'when user is authenticated and provides invalid code' do

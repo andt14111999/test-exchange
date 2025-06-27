@@ -219,24 +219,48 @@ RSpec.describe V1::Helpers::DeviceHelper do
   end
 
   describe '#device_trusted?' do
-    context 'when device exists and is trusted' do
-      it 'returns true' do
-        helper = build_helper(user, { 'Device-Uuid' => device_uuid })
-        create(:access_device, :trusted, user: user, device_uuid_hash: AccessDevice.digest(device_uuid))
-        expect(helper.device_trusted?).to be true
+    context 'when user has 2FA enabled' do
+      context 'when device exists and is trusted' do
+        it 'returns true' do
+          user.update!(authenticator_enabled: true)
+          helper = build_helper(user, { 'Device-Uuid' => device_uuid })
+          create(:access_device, :trusted, user: user, device_uuid_hash: AccessDevice.digest(device_uuid))
+          expect(helper.device_trusted?).to be true
+        end
+      end
+
+      context 'when device exists but is not trusted' do
+        it 'returns false' do
+          user.update!(authenticator_enabled: true)
+          helper = build_helper(user, { 'Device-Uuid' => device_uuid })
+          create(:access_device, user: user, device_uuid_hash: AccessDevice.digest(device_uuid))
+          expect(helper.device_trusted?).to be false
+        end
+      end
+
+      context 'when device does not exist' do
+        it 'returns false' do
+          user.update!(authenticator_enabled: true)
+          helper = build_helper(user, { 'Device-Uuid' => device_uuid })
+          expect(helper.device_trusted?).to be false
+        end
       end
     end
 
-    context 'when device exists but is not trusted' do
-      it 'returns false' do
+    context 'when user has no 2FA enabled' do
+      it 'returns false even when device is trusted' do
+        helper = build_helper(user, { 'Device-Uuid' => device_uuid })
+        create(:access_device, :trusted, user: user, device_uuid_hash: AccessDevice.digest(device_uuid))
+        expect(helper.device_trusted?).to be false
+      end
+
+      it 'returns false when device is not trusted' do
         helper = build_helper(user, { 'Device-Uuid' => device_uuid })
         create(:access_device, user: user, device_uuid_hash: AccessDevice.digest(device_uuid))
         expect(helper.device_trusted?).to be false
       end
-    end
 
-    context 'when device does not exist' do
-      it 'returns false' do
+      it 'returns false when device does not exist' do
         helper = build_helper(user, { 'Device-Uuid' => device_uuid })
         expect(helper.device_trusted?).to be false
       end
@@ -244,25 +268,32 @@ RSpec.describe V1::Helpers::DeviceHelper do
   end
 
   describe '#require_2fa_for_action?' do
-    context 'when user has no 2FA' do
+    context 'when device is trusted and user has 2FA enabled' do
       it 'returns false' do
-        helper = build_helper(user, {})
-        expect(helper.require_2fa_for_action?).to be false
-      end
-    end
-
-    context 'when user has 2FA enabled' do
-      it 'returns true when device is not trusted' do
-        user.update!(authenticator_enabled: true)
-        helper = build_helper(user, { 'Device-Uuid' => device_uuid })
-        expect(helper.require_2fa_for_action?).to be true
-      end
-
-      it 'returns false when device is trusted' do
         user.update!(authenticator_enabled: true)
         helper = build_helper(user, { 'Device-Uuid' => device_uuid })
         create(:access_device, :trusted, user: user, device_uuid_hash: AccessDevice.digest(device_uuid))
         expect(helper.require_2fa_for_action?).to be false
+      end
+    end
+
+    context 'when device is not trusted or user has no 2FA' do
+      it 'returns true when user has no 2FA enabled even with trusted device' do
+        helper = build_helper(user, { 'Device-Uuid' => device_uuid })
+        create(:access_device, :trusted, user: user, device_uuid_hash: AccessDevice.digest(device_uuid))
+        expect(helper.require_2fa_for_action?).to be true
+      end
+
+      it 'returns true when user has 2FA enabled but device is not trusted' do
+        user.update!(authenticator_enabled: true)
+        helper = build_helper(user, { 'Device-Uuid' => device_uuid })
+        create(:access_device, user: user, device_uuid_hash: AccessDevice.digest(device_uuid))
+        expect(helper.require_2fa_for_action?).to be true
+      end
+
+      it 'returns true when no device exists' do
+        helper = build_helper(user, { 'Device-Uuid' => device_uuid })
+        expect(helper.require_2fa_for_action?).to be true
       end
     end
   end

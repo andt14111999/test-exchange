@@ -28,12 +28,6 @@ RSpec.describe V1::Helpers::TwoFactorHelper do
 
   describe '#verify_2fa_if_required!' do
     context 'when 2FA is not required' do
-      it 'returns true without checking 2FA code' do
-        user_without_2fa = create(:user)
-        helper = build_helper(user_without_2fa, {}, {})
-        expect(helper.verify_2fa_if_required!).to be true
-      end
-
       it 'returns true when device is trusted' do
         helper = build_helper(user, {}, { 'Device-Uuid' => device_uuid })
         create(:access_device, :trusted, user: user, device_uuid_hash: AccessDevice.digest(device_uuid))
@@ -108,27 +102,4 @@ RSpec.describe V1::Helpers::TwoFactorHelper do
        end
      end
    end
-
-   describe '#require_2fa_for_sensitive_action?' do
-     context 'when user has no 2FA enabled' do
-       it 'returns false' do
-         user_without_2fa = create(:user)
-         helper = build_helper(user_without_2fa, {}, {})
-         expect(helper.require_2fa_for_sensitive_action?).to be false
-       end
-     end
-
-     context 'when user has 2FA enabled' do
-       it 'returns true when device is not trusted' do
-         helper = build_helper(user, {}, { 'Device-Uuid' => device_uuid })
-         expect(helper.require_2fa_for_sensitive_action?).to be true
-       end
-
-       it 'returns false when device is trusted' do
-         helper = build_helper(user, {}, { 'Device-Uuid' => device_uuid })
-         create(:access_device, :trusted, user: user, device_uuid_hash: AccessDevice.digest(device_uuid))
-         expect(helper.require_2fa_for_sensitive_action?).to be false
-       end
-     end
-  end
 end

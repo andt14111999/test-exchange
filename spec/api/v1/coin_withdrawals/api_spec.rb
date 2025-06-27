@@ -43,8 +43,13 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
     context 'when user is authenticated' do
       context 'with valid parameters' do
         it 'creates a new withdrawal' do
+          # Enable 2FA for user and create trusted device
+          user.update!(authenticator_enabled: true)
+          create(:access_device, :trusted, user: user, device_uuid_hash: AccessDevice.digest(device_uuid))
+          headers = auth_header.merge('Device-Uuid' => device_uuid)
+
           expect {
-            post '/api/v1/coin_withdrawals', params: valid_params, headers: auth_header
+            post '/api/v1/coin_withdrawals', params: valid_params, headers: headers
           }.to change(CoinWithdrawal, :count).by(1)
 
           expect(response).to have_http_status(:success)
@@ -59,6 +64,10 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
         end
 
         it 'creates a new withdrawal with API key authentication' do
+          # Enable 2FA for user and create trusted device
+          user.update!(authenticator_enabled: true)
+          create(:access_device, :trusted, user: user, device_uuid_hash: AccessDevice.digest(device_uuid))
+
           api_key = create(:api_key, user: user)
           timestamp = Time.current.to_i.to_s
           path = '/api/v1/coin_withdrawals'
@@ -72,7 +81,8 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
           headers = {
             'X-Access-Key' => api_key.access_key,
             'X-Signature' => signature,
-            'X-Timestamp' => timestamp
+            'X-Timestamp' => timestamp,
+            'Device-Uuid' => device_uuid
           }
 
           expect {
@@ -95,6 +105,9 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
         let(:coin_amount) { 300.0 }
 
         it 'returns a validation error' do
+          # Mock 2FA check to bypass authentication
+          allow_any_instance_of(V1::Helpers::DeviceHelper).to receive(:require_2fa_for_action?).and_return(false)
+
           post '/api/v1/coin_withdrawals', params: valid_params, headers: auth_header
 
           expect(response).to have_http_status(:unprocessable_entity)
@@ -106,14 +119,19 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
 
       context 'when creating a regular coin withdrawal' do
         it 'creates a new coin withdrawal' do
+          # Enable 2FA for user and create trusted device
+          user.update!(authenticator_enabled: true)
+          create(:access_device, :trusted, user: user, device_uuid_hash: AccessDevice.digest(device_uuid))
+
           params = {
             coin_address: '0x1234567890123456789012345678901234567890',
             coin_amount: 10.0,
             coin_currency: 'usdt',
             coin_layer: 'erc20'
           }
+          headers = auth_headers(user).merge('Device-Uuid' => device_uuid)
 
-          post '/api/v1/coin_withdrawals', params: params, headers: auth_headers(user)
+          post '/api/v1/coin_withdrawals', params: params, headers: headers
 
           expect(response.status).to eq 201
           expect(JSON.parse(response.body)['status']).to eq 'success'
@@ -129,6 +147,10 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
           receiver = create(:user)
           create(:coin_account, user: sender, coin_currency: 'usdt', layer: 'erc20', balance: 100)
 
+          # Enable 2FA for sender and create trusted device
+          sender.update!(authenticator_enabled: true)
+          create(:access_device, :trusted, user: sender, device_uuid_hash: AccessDevice.digest(device_uuid))
+
           # Stub validation to allow the internal transfer to proceed
           allow_any_instance_of(CoinWithdrawal).to receive(:validate_coin_amount).and_return(true)
 
@@ -137,8 +159,9 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
             coin_currency: 'usdt',
             receiver_email: receiver.email
           }
+          headers = auth_headers(sender).merge('Device-Uuid' => device_uuid)
 
-          post '/api/v1/coin_withdrawals', params: params, headers: auth_headers(sender)
+          post '/api/v1/coin_withdrawals', params: params, headers: headers
 
           expect(response.status).to eq 201
           expect(JSON.parse(response.body)['status']).to eq 'success'
@@ -160,6 +183,10 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
           receiver.update!(username: 'testuser123')
           create(:coin_account, user: sender, coin_currency: 'usdt', layer: 'erc20', balance: 100)
 
+          # Enable 2FA for sender and create trusted device
+          sender.update!(authenticator_enabled: true)
+          create(:access_device, :trusted, user: sender, device_uuid_hash: AccessDevice.digest(device_uuid))
+
           # Stub validation to allow the internal transfer to proceed
           allow_any_instance_of(CoinWithdrawal).to receive(:validate_coin_amount).and_return(true)
 
@@ -168,8 +195,9 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
             coin_currency: 'usdt',
             receiver_username: receiver.username
           }
+          headers = auth_headers(sender).merge('Device-Uuid' => device_uuid)
 
-          post '/api/v1/coin_withdrawals', params: params, headers: auth_headers(sender)
+          post '/api/v1/coin_withdrawals', params: params, headers: headers
 
           expect(response.status).to eq 201
           expect(JSON.parse(response.body)['status']).to eq 'success'
@@ -188,6 +216,9 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
           user = create(:user)
           create(:coin_account, user: user, coin_currency: 'usdt', layer: 'erc20', balance: 100)
 
+          # Mock 2FA check to bypass authentication
+          allow_any_instance_of(V1::Helpers::DeviceHelper).to receive(:require_2fa_for_action?).and_return(false)
+
           params = {
             coin_amount: 10.0,
             coin_currency: 'usdt',
@@ -205,6 +236,9 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
           user = create(:user)
           create(:coin_account, user: user, coin_currency: 'usdt', layer: 'erc20', balance: 100)
 
+          # Mock 2FA check to bypass authentication
+          allow_any_instance_of(V1::Helpers::DeviceHelper).to receive(:require_2fa_for_action?).and_return(false)
+
           params = {
             coin_amount: 10.0,
             coin_currency: 'usdt',
@@ -221,6 +255,9 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
         it 'prevents transferring to self via email' do
           user = create(:user)
           create(:coin_account, user: user, coin_currency: 'usdt', layer: 'erc20', balance: 1000)
+
+          # Mock 2FA check to bypass authentication
+          allow_any_instance_of(V1::Helpers::DeviceHelper).to receive(:require_2fa_for_action?).and_return(false)
 
           # Stub the validation for this specific test because it will fail otherwise
           allow_any_instance_of(CoinWithdrawal).to receive(:validate_coin_amount).and_return(true)
@@ -243,6 +280,9 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
           user.update!(username: 'myusername')
           create(:coin_account, user: user, coin_currency: 'usdt', layer: 'erc20', balance: 1000)
 
+          # Mock 2FA check to bypass authentication
+          allow_any_instance_of(V1::Helpers::DeviceHelper).to receive(:require_2fa_for_action?).and_return(false)
+
           # Stub the validation for this specific test because it will fail otherwise
           allow_any_instance_of(CoinWithdrawal).to receive(:validate_coin_amount).and_return(true)
 
@@ -261,7 +301,7 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
       end
 
       context 'when user has 2FA disabled' do
-        it 'creates withdrawal without 2FA requirement' do
+        it 'requires 2FA code even when user has no 2FA enabled' do
           user_no_2fa = create(:user)
           create(:coin_account, :usdt_main, user: user_no_2fa, balance: 200.0)
 
@@ -274,8 +314,11 @@ RSpec.describe V1::CoinWithdrawals::Api, sidekiq: :inline, type: :request do
 
           post '/api/v1/coin_withdrawals', params: withdrawal_params, headers: auth_headers(user_no_2fa)
 
-          expect(response).to have_http_status(:success)
-          expect(JSON.parse(response.body)['status']).to eq('success')
+          expect(response).to have_http_status(:bad_request)
+          json_response = JSON.parse(response.body)
+          expect(json_response['message']).to eq('2FA code is required for this action')
+          expect(json_response['requires_2fa']).to be true
+          expect(json_response['device_trusted']).to be false
         end
       end
 

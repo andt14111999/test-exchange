@@ -128,6 +128,7 @@ module V1
 
             if current_user.verify_otp(params[:code])
               current_user.disable_authenticator!
+              current_user.access_devices.update_all(trusted: false, updated_at: Time.current)
               current_user.save!
               { message: '2FA has been successfully disabled' }
             else

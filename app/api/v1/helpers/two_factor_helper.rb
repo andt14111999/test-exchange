@@ -27,13 +27,6 @@ module V1
 
         true
       end
-
-      def require_2fa_for_sensitive_action?
-        return false unless current_user.authenticator_enabled
-        return false if device_trusted?
-
-        true
-      end
     end
   end
 end

@@ -57,12 +57,13 @@ module V1
       end
 
       def device_trusted?
+        return false unless current_user.authenticator_enabled
+
         device = current_access_device
         device&.trusted || false
       end
 
       def require_2fa_for_action?
-        return false unless current_user.authenticator_enabled
         return false if device_trusted?
 
         true
