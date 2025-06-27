@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe V1::Offers::Entity do
   describe 'exposed attributes' do
     it 'exposes basic offer attributes' do
-      user = create(:user, display_name: 'Merchant Name')
+      user = create(:user, username: 'merchant123')
       offer = create(:offer, user: user)
 
       entity = described_class.represent(offer)
@@ -14,7 +14,7 @@ RSpec.describe V1::Offers::Entity do
       expect(serialized).to include(
         id: offer.id,
         user_id: offer.user_id,
-        merchant_display_name: 'Merchant Name',
+        merchant_display_name: 'merchant123',
         offer_type: offer.offer_type,
         coin_currency: offer.coin_currency,
         currency: offer.currency,
