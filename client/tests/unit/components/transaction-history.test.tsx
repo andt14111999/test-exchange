@@ -1,5 +1,11 @@
 import React from "react";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  within,
+  waitFor,
+} from "@testing-library/react";
 import { TransactionHistory } from "@/components/transaction-history";
 import {
   Transaction,
@@ -15,6 +21,20 @@ jest.mock("next-intl", () => ({
     return key;
   },
 }));
+
+// Mock sonner toast
+jest.mock("sonner", () => ({
+  toast: {
+    success: jest.fn(),
+  },
+}));
+
+// Mock clipboard API
+Object.assign(navigator, {
+  clipboard: {
+    writeText: jest.fn(),
+  },
+});
 
 const mockFiatTransaction: Transaction = {
   id: "1",
@@ -37,7 +57,33 @@ const mockCryptoTransaction: Transaction = {
   hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 };
 
+const mockEthTransaction: Transaction = {
+  id: "3",
+  type: TRANSACTION_TYPE.DEPOSIT,
+  amount: 1.5,
+  status: TRANSACTION_STATUS.COMPLETED,
+  created_at: "2024-03-20T12:00:00Z",
+  updated_at: "2024-03-20T12:00:00Z",
+  coin_currency: "eth",
+  hash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+};
+
+const mockTransactionWithoutHash: Transaction = {
+  id: "4",
+  type: TRANSACTION_TYPE.WITHDRAWAL,
+  amount: 0.1,
+  status: TRANSACTION_STATUS.PENDING,
+  created_at: "2024-03-20T13:00:00Z",
+  updated_at: "2024-03-20T13:00:00Z",
+  coin_currency: "btc",
+  hash: "",
+};
+
 describe("TransactionHistory", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it("should render loading state correctly", () => {
     render(<TransactionHistory transactions={[]} isLoading={true} />);
     const skeletons = screen.getAllByTestId("skeleton");
@@ -77,9 +123,176 @@ describe("TransactionHistory", () => {
       screen.getByText(formatDate("2024-03-20T11:00:00Z")),
     ).toBeInTheDocument();
 
-    // Check transaction hash
-    const hash = "0x123456...90abcdef";
+    // Check transaction hash (truncated) - using the actual truncated format
+    const hash = "0x1234...abcdef";
     expect(screen.getByText(hash)).toBeInTheDocument();
+  });
+
+  describe("Copy and Explorer Button Functionality", () => {
+    it("should display copy and explorer buttons for crypto transactions with hash", () => {
+      render(<TransactionHistory transactions={[mockCryptoTransaction]} />);
+
+      // Check truncated hash is displayed - using actual format
+      expect(screen.getByText("0x1234...abcdef")).toBeInTheDocument();
+
+      // Check copy button is present
+      const copyButton = screen.getByTitle("Copy transaction hash");
+      expect(copyButton).toBeInTheDocument();
+
+      // Check explorer button is present
+      const explorerButton = screen.getByTitle("View on explorer");
+      expect(explorerButton).toBeInTheDocument();
+    });
+
+    it("should copy transaction hash to clipboard when copy button is clicked", async () => {
+      const { toast } = require("sonner");
+      render(<TransactionHistory transactions={[mockCryptoTransaction]} />);
+
+      const copyButton = screen.getByTitle("Copy transaction hash");
+      fireEvent.click(copyButton);
+
+      await waitFor(() => {
+        expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+          "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+        );
+        expect(toast.success).toHaveBeenCalledWith(
+          "Transaction hash copied to clipboard",
+        );
+      });
+    });
+
+    it("should open correct explorer URL for Bitcoin transactions", () => {
+      // Mock window.open
+      const originalOpen = window.open;
+      window.open = jest.fn();
+
+      render(<TransactionHistory transactions={[mockCryptoTransaction]} />);
+
+      const explorerButton = screen.getByTitle("View on explorer");
+      const explorerLink = explorerButton.closest("a");
+
+      expect(explorerLink).toHaveAttribute(
+        "href",
+        "https://blockstream.info/tx/0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+      );
+      expect(explorerLink).toHaveAttribute("target", "_blank");
+      expect(explorerLink).toHaveAttribute("rel", "noopener noreferrer");
+
+      window.open = originalOpen;
+    });
+
+    it("should open correct explorer URL for Ethereum transactions", () => {
+      render(<TransactionHistory transactions={[mockEthTransaction]} />);
+
+      const explorerButton = screen.getByTitle("View on explorer");
+      const explorerLink = explorerButton.closest("a");
+
+      expect(explorerLink).toHaveAttribute(
+        "href",
+        "https://etherscan.io/tx/0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+      );
+    });
+
+    it("should display dash for crypto transactions without hash", () => {
+      render(
+        <TransactionHistory transactions={[mockTransactionWithoutHash]} />,
+      );
+
+      // Should show dash instead of hash/buttons
+      expect(screen.getByText("-")).toBeInTheDocument();
+
+      // Should not show copy or explorer buttons
+      expect(
+        screen.queryByTitle("Copy transaction hash"),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByTitle("View on explorer")).not.toBeInTheDocument();
+    });
+
+    it("should display 'Fiat Transaction' for fiat transactions", () => {
+      render(<TransactionHistory transactions={[mockFiatTransaction]} />);
+
+      expect(screen.getByText("Fiat Transaction")).toBeInTheDocument();
+
+      // Should not show copy or explorer buttons for fiat transactions
+      expect(
+        screen.queryByTitle("Copy transaction hash"),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByTitle("View on explorer")).not.toBeInTheDocument();
+    });
+
+    it("should show full hash on hover", () => {
+      render(<TransactionHistory transactions={[mockCryptoTransaction]} />);
+
+      const hashElement = screen.getByText("0x1234...abcdef");
+      expect(hashElement).toHaveAttribute(
+        "title",
+        "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+      );
+    });
+
+    it("should handle different cryptocurrency explorer URLs", () => {
+      const bnbTransaction: Transaction = {
+        ...mockCryptoTransaction,
+        coin_currency: "bnb",
+        hash: "0xbnbhash123",
+      };
+
+      const trxTransaction: Transaction = {
+        ...mockCryptoTransaction,
+        coin_currency: "trx",
+        hash: "trxhash123",
+      };
+
+      const solTransaction: Transaction = {
+        ...mockCryptoTransaction,
+        coin_currency: "sol",
+        hash: "solhash123",
+      };
+
+      // Test BNB
+      const { rerender } = render(
+        <TransactionHistory transactions={[bnbTransaction]} />,
+      );
+      let explorerLink = screen.getByTitle("View on explorer").closest("a");
+      expect(explorerLink).toHaveAttribute(
+        "href",
+        "https://bscscan.com/tx/0xbnbhash123",
+      );
+
+      // Test TRX
+      rerender(<TransactionHistory transactions={[trxTransaction]} />);
+      explorerLink = screen.getByTitle("View on explorer").closest("a");
+      expect(explorerLink).toHaveAttribute(
+        "href",
+        "https://tronscan.org/#/transaction/trxhash123",
+      );
+
+      // Test SOL
+      rerender(<TransactionHistory transactions={[solTransaction]} />);
+      explorerLink = screen.getByTitle("View on explorer").closest("a");
+      expect(explorerLink).toHaveAttribute(
+        "href",
+        "https://solscan.io/tx/solhash123",
+      );
+    });
+
+    it("should use default explorer for unknown currencies", () => {
+      const unknownCurrencyTransaction: Transaction = {
+        ...mockCryptoTransaction,
+        coin_currency: "unknown",
+        hash: "unknownhash123",
+      };
+
+      render(
+        <TransactionHistory transactions={[unknownCurrencyTransaction]} />,
+      );
+
+      const explorerLink = screen.getByTitle("View on explorer").closest("a");
+      expect(explorerLink).toHaveAttribute(
+        "href",
+        "https://etherscan.io/tx/unknownhash123",
+      );
+    });
   });
 
   it("should handle sorting correctly", async () => {
@@ -287,6 +500,18 @@ describe("TransactionHistory", () => {
         within(dateHeader).getByTestId("arrow-down-icon"),
       ).toBeInTheDocument();
     });
+
+    it("should have accessible copy and explorer buttons", () => {
+      render(<TransactionHistory transactions={[mockCryptoTransaction]} />);
+
+      const copyButton = screen.getByTitle("Copy transaction hash");
+      expect(copyButton).toBeInTheDocument();
+      expect(copyButton.tagName.toLowerCase()).toBe("button");
+
+      const explorerButton = screen.getByTitle("View on explorer");
+      expect(explorerButton).toBeInTheDocument();
+      expect(explorerButton.tagName.toLowerCase()).toBe("button");
+    });
   });
 
   describe("Internationalization", () => {
@@ -335,6 +560,17 @@ describe("TransactionHistory", () => {
       render(<TransactionHistory transactions={[emptyFieldsTransaction]} />);
       const row = screen.getByRole("row", { name: /withdrawal 0\.5/i });
       expect(row).toBeInTheDocument();
+    });
+
+    it("should handle very short hash correctly", () => {
+      const shortHashTransaction: Transaction = {
+        ...mockCryptoTransaction,
+        hash: "0x12345",
+      };
+      render(<TransactionHistory transactions={[shortHashTransaction]} />);
+
+      // Short hash should be displayed as-is (not truncated)
+      expect(screen.getByText("0x12345")).toBeInTheDocument();
     });
   });
 });
