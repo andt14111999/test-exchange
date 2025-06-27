@@ -4,6 +4,7 @@ import {
   Transaction,
   isFiatTransaction,
   TRANSACTION_STATUS,
+  isCryptoTransaction,
 } from "@/types/transaction";
 import { formatDate } from "@/lib/utils";
 import { useTranslations } from "next-intl";
@@ -19,9 +20,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SortableHeader } from "@/components/sortable-header";
 import { useMemo, useState } from "react";
 import { SortKey, SortState } from "@/types/sort";
-import { ArrowDown, ArrowUp, ExternalLink } from "lucide-react";
+import { ArrowDown, ArrowUp, ExternalLink, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface TransactionHistoryProps {
   transactions: Transaction[];
@@ -42,6 +44,37 @@ const STATUS_CLASSES = {
 
 const SKELETON_ROWS = 5;
 
+// Helper function to truncate middle of string
+const truncateMiddle = (str: string, start = 6, end = 6) => {
+  if (str.length <= start + end) return str;
+  return `${str.slice(0, start)}...${str.slice(-end)}`;
+};
+
+// Helper function to get explorer URL
+const getExplorerUrl = (transaction: Transaction): string | null => {
+  if (!isCryptoTransaction(transaction) || !transaction.hash) return null;
+
+  // Determine network based on coin_currency
+  const currency = transaction.coin_currency?.toLowerCase();
+  const hash = transaction.hash;
+
+  // For different networks - you may need to adjust these based on your actual network detection logic
+  if (currency === "btc") {
+    return `https://blockstream.info/tx/${hash}`;
+  } else if (currency === "eth" || currency === "usdt" || currency === "usdc") {
+    return `https://etherscan.io/tx/${hash}`;
+  } else if (currency === "bnb") {
+    return `https://bscscan.com/tx/${hash}`;
+  } else if (currency === "trx") {
+    return `https://tronscan.org/#/transaction/${hash}`;
+  } else if (currency === "sol") {
+    return `https://solscan.io/tx/${hash}`;
+  }
+
+  // Default to etherscan for unknown currencies
+  return `https://etherscan.io/tx/${hash}`;
+};
+
 export function TransactionHistory({
   transactions,
   isLoading = false,
@@ -60,6 +93,11 @@ export function TransactionHistory({
       key,
       direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
+  };
+
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`);
   };
 
   const sortedTransactions = useMemo(() => {
@@ -208,15 +246,55 @@ export function TransactionHistory({
                   <ExternalLink className="h-4 w-4" />
                 </Button>
               ) : (
-                <span className="font-mono text-sm">
-                  {isFiatTransaction(transaction)
-                    ? t("wallet.history.fiatTransaction", {
+                <div className="flex items-center gap-1">
+                  {isFiatTransaction(transaction) ? (
+                    <span className="font-mono text-sm text-muted-foreground">
+                      {t("wallet.history.fiatTransaction", {
                         fallback: "Fiat Transaction",
-                      })
-                    : "hash" in transaction && transaction.hash
-                      ? `${transaction.hash.slice(0, 8)}...${transaction.hash.slice(-8)}`
-                      : ""}
-                </span>
+                      })}
+                    </span>
+                  ) : isCryptoTransaction(transaction) && transaction.hash ? (
+                    <>
+                      <span
+                        className="font-mono text-sm"
+                        title={transaction.hash}
+                      >
+                        {truncateMiddle(transaction.hash)}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() =>
+                          handleCopy(transaction.hash, "Transaction hash")
+                        }
+                        title="Copy transaction hash"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                      {getExplorerUrl(transaction) && (
+                        <a
+                          href={getExplorerUrl(transaction)!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            title="View on explorer"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </Button>
+                        </a>
+                      )}
+                    </>
+                  ) : (
+                    <span className="font-mono text-sm text-muted-foreground">
+                      -
+                    </span>
+                  )}
+                </div>
               )}
             </TableCell>
           </TableRow>
