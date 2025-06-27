@@ -103,7 +103,6 @@ describe("ProfilePage", () => {
     | "profile.title"
     | "profile.email"
     | "profile.role"
-    | "profile.editProfile"
     | "profile.username"
     | "profile.notSet"
     | "profile.kycLevel"
@@ -120,7 +119,6 @@ describe("ProfilePage", () => {
     "profile.title": "Profile Information",
     "profile.email": "Email",
     "profile.role": "Role",
-    "profile.editProfile": "Edit Profile",
     "profile.username": "Username",
     "profile.notSet": "Not set",
     "profile.kycLevel": "KYC Level",
@@ -825,27 +823,7 @@ describe("ProfilePage", () => {
     });
   });
 
-  describe("Button Actions", () => {
-    it("handles edit profile button click", () => {
-      const mockUser: User = {
-        id: "1",
-        name: "John Doe",
-        email: "john@example.com",
-        role: "user",
-      };
-
-      (useUserStore as unknown as jest.Mock).mockReturnValue({
-        user: mockUser,
-      });
-
-      render(<ProfilePage />);
-
-      const editButton = screen.getByText("Edit Profile");
-      fireEvent.click(editButton);
-
-      expect(mockRouter.push).toHaveBeenCalledWith("/profile/edit");
-    });
-
+  describe("Set Username Button", () => {
     it("shows set username button when username is not set", () => {
       const mockUser: User = {
         id: "1",
@@ -1105,7 +1083,6 @@ describe("ProfilePage", () => {
       expect(screen.getByTestId("user-avatar")).toBeInTheDocument();
 
       // Check buttons
-      expect(screen.getByText("Edit Profile")).toBeInTheDocument();
       expect(screen.queryByText("Set Username")).not.toBeInTheDocument();
     });
   });
