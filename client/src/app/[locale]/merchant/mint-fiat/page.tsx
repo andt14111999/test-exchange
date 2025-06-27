@@ -20,10 +20,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  cancelEscrow,
-  createEscrow,
-  Escrow,
-  getEscrows,
+  cancelFiatMint,
+  createFiatMint,
+  FiatMint,
+  getFiatMints,
 } from "@/lib/api/merchant";
 import { ExchangeRates, getExchangeRates } from "@/lib/api/settings";
 import { format } from "date-fns";
@@ -35,40 +35,40 @@ import { useWallet } from "@/hooks/use-wallet";
 import { getTokenBalance } from "@/lib/api/coins";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCoins } from "@/lib/api/coins";
-import { useEscrowChannel } from "@/hooks/use-escrow-channel";
+import { useFiatMintChannel } from "@/hooks/use-fiat-mint-channel";
 import { NumberInputWithCommas } from "@/components/ui/number-input-with-commas";
 
-// Component to handle individual escrow subscription
-function EscrowSubscription({
-  escrow,
+// Component to handle individual fiat mint subscription
+function FiatMintSubscription({
+  fiatMint,
   onUpdate,
 }: {
-  escrow: Escrow;
-  onUpdate: (escrow: Escrow) => void;
+  fiatMint: FiatMint;
+  onUpdate: (fiatMint: FiatMint) => void;
 }) {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [pollCount, setPollCount] = useState(0);
   const MAX_POLL_ATTEMPTS = 15; // 1.5 seconds maximum polling (100ms * 15)
 
-  // Memoize the escrow ID to prevent unnecessary re-renders
-  const escrowId = useMemo(() => escrow.id.toString(), [escrow.id]);
+  // Memoize the fiat mint ID to prevent unnecessary re-renders
+  const fiatMintId = useMemo(() => fiatMint.id.toString(), [fiatMint.id]);
 
   // Memoize the update callback to prevent unnecessary re-renders
-  const handleEscrowUpdate = useCallback(
-    (updatedEscrow: Escrow) => {
-      if (!updatedEscrow || !updatedEscrow.id) {
-        console.error("Invalid escrow data received");
+  const handleFiatMintUpdate = useCallback(
+    (updatedFiatMint: FiatMint) => {
+      if (!updatedFiatMint || !updatedFiatMint.id) {
+        console.error("Invalid fiat mint data received");
         return;
       }
 
-      const mergedEscrow = {
-        ...escrow,
-        status: updatedEscrow.status,
+      const mergedFiatMint = {
+        ...fiatMint,
+        status: updatedFiatMint.status,
       };
 
-      onUpdate(mergedEscrow);
+      onUpdate(mergedFiatMint);
     },
-    [escrow, onUpdate],
+    [fiatMint, onUpdate],
   );
 
   // Only subscribe once when component mounts
@@ -79,49 +79,49 @@ function EscrowSubscription({
   }, [isSubscribed]);
 
   // Use the memoized values in the websocket hook
-  useEscrowChannel({
-    escrowId,
-    onEscrowUpdated: handleEscrowUpdate,
+  useFiatMintChannel({
+    fiatMintId,
+    onFiatMintUpdated: handleFiatMintUpdate,
   });
 
-  // Poll for escrow status updates if still pending
+  // Poll for fiat mint status updates if still pending
   useEffect(() => {
-    if (escrow.status === "pending" && pollCount < MAX_POLL_ATTEMPTS) {
+    if (fiatMint.status === "pending" && pollCount < MAX_POLL_ATTEMPTS) {
       const pollInterval = setInterval(async () => {
         try {
-          const response = await getEscrows();
-          const escrowsData = Array.isArray(response)
+          const response = await getFiatMints();
+          const fiatMintsData = Array.isArray(response)
             ? response
             : Array.isArray(response.data)
               ? response.data
               : [response.data];
 
-          const updatedEscrow = escrowsData.find(
-            (e: Escrow | undefined) => e?.id === escrow.id,
+          const updatedFiatMint = fiatMintsData.find(
+            (e: FiatMint | undefined) => e?.id === fiatMint.id,
           );
 
-          if (updatedEscrow && updatedEscrow.status !== "pending") {
-            onUpdate(updatedEscrow);
+          if (updatedFiatMint && updatedFiatMint.status !== "pending") {
+            onUpdate(updatedFiatMint);
             clearInterval(pollInterval);
           } else {
             setPollCount((prev) => prev + 1);
           }
         } catch (error) {
-          console.error("Failed to poll escrow status:", error);
+          console.error("Failed to poll fiat mint status:", error);
           setPollCount((prev) => prev + 1);
         }
       }, 100); // Poll every 100ms
 
       return () => clearInterval(pollInterval);
     }
-  }, [escrow.id, escrow.status, onUpdate, pollCount]);
+  }, [fiatMint.id, fiatMint.status, onUpdate, pollCount]);
 
   return null;
 }
 
-export default function MerchantEscrows() {
-  const t = useTranslations("merchant.escrows");
-  const [escrows, setEscrows] = useState<Escrow[]>([]);
+export default function MerchantMintFiat() {
+  const t = useTranslations("merchant.mintFiat");
+  const [fiatMints, setFiatMints] = useState<FiatMint[]>([]);
   const [loading, setLoading] = useState(true);
   const [usdtAmount, setUsdtAmount] = useState("");
   const [fiatCurrency, setFiatCurrency] = useState("VND");
@@ -205,20 +205,20 @@ export default function MerchantEscrows() {
     setEstimatedFiatAmount(amount.toLocaleString());
   }, [usdtAmount, fiatCurrency, exchangeRates, walletData, coinsData, t]);
 
-  const fetchEscrows = useCallback(async () => {
+  const fetchFiatMints = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await getEscrows();
+      const response = await getFiatMints();
 
       if (Array.isArray(response)) {
-        setEscrows(response);
+        setFiatMints(response);
       } else if (response.data) {
-        const escrowsData = Array.isArray(response.data)
+        const fiatMintsData = Array.isArray(response.data)
           ? response.data
           : [response.data];
-        setEscrows(escrowsData);
+        setFiatMints(fiatMintsData);
       } else {
-        setEscrows([]);
+        setFiatMints([]);
       }
     } catch (error) {
       toast.error(t("fetchError") + ": " + error);
@@ -228,18 +228,18 @@ export default function MerchantEscrows() {
   }, [t]);
 
   useEffect(() => {
-    fetchEscrows();
-  }, [fetchEscrows]);
+    fetchFiatMints();
+  }, [fetchFiatMints]);
 
-  const handleEscrowUpdate = useCallback((updatedEscrow: Escrow) => {
-    setEscrows((currentEscrows) =>
-      currentEscrows.map((e) =>
-        e.id === updatedEscrow.id ? updatedEscrow : e,
+  const handleFiatMintUpdate = useCallback((updatedFiatMint: FiatMint) => {
+    setFiatMints((currentFiatMints) =>
+      currentFiatMints.map((e) =>
+        e.id === updatedFiatMint.id ? updatedFiatMint : e,
       ),
     );
   }, []);
 
-  async function handleCreateEscrow(e: React.FormEvent) {
+  async function handleCreateFiatMint(e: React.FormEvent) {
     e.preventDefault();
 
     if (!usdtAmount || !fiatCurrency) {
@@ -252,172 +252,110 @@ export default function MerchantEscrows() {
       const inputAmount = parseFloat(usdtAmount);
 
       if (inputAmount > parseFloat(usdtBalance)) {
-        setErrorMessage(t("insufficientBalance"));
-        setIsBalanceInsufficient(true);
+        toast.error(t("insufficientBalance"));
         return;
       }
     }
 
+    setCreating(true);
+    setErrorMessage(null);
     try {
-      setCreating(true);
-      setErrorMessage(null);
-      await createEscrow(usdtAmount, fiatCurrency);
-      toast.success(t("createSuccess"));
-      setUsdtAmount("");
-      fetchEscrows();
-    } catch (error: unknown) {
-      console.error("Failed to create escrow:", error);
-
-      const axiosError = error as {
-        response?: { data?: { errors?: string[] } };
-      };
-      if (axiosError.response?.data?.errors) {
-        const errorMessages = axiosError.response.data.errors;
-        if (
-          errorMessages.includes(
-            "Usdt amount USDT amount exceeds available balance",
-          )
-        ) {
-          setErrorMessage(t("merchant.escrows.insufficientBalance"));
-        } else {
-          setErrorMessage(errorMessages.join(", "));
-        }
+      const newFiatMint = await createFiatMint(usdtAmount, fiatCurrency);
+      if (
+        "data" in newFiatMint &&
+        newFiatMint.data &&
+        !Array.isArray(newFiatMint.data)
+      ) {
+        setFiatMints((prev) => [newFiatMint.data as FiatMint, ...prev]);
+        toast.success(t("creationSuccess"));
+        setUsdtAmount("");
+        setFiatCurrency("VND");
+      } else if ("message" in newFiatMint) {
+        setErrorMessage(newFiatMint.message as string);
+        toast.error(`${t("creationError")} ${newFiatMint.message}`);
       } else {
-        setErrorMessage(t("createError"));
+        setErrorMessage(t("creationError"));
+        toast.error(t("creationError"));
       }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : t("creationError");
+      setErrorMessage(errorMessage);
+      toast.error(`${t("creationError")} ${errorMessage}`);
     } finally {
       setCreating(false);
     }
   }
 
-  async function handleCancelEscrow(id: number) {
+  async function handleCancelFiatMint(id: number) {
     try {
-      const escrow = escrows.find((e) => e.id === id);
-      if (!escrow) {
-        toast.error(t("escrowNotFound"));
-        return;
-      }
-
-      if (walletData && coinsData) {
-        const fiatBalance = getTokenBalance(
-          escrow.fiat_currency.toLowerCase(),
-          walletData,
-          coinsData,
-        );
-        const requiredFiatAmount = parseFloat(escrow.fiat_amount);
-
-        if (parseFloat(fiatBalance) < requiredFiatAmount) {
-          toast.error(
-            <div className="flex flex-col gap-1">
-              <div className="font-medium">{t("insufficientFiatBalance")}</div>
-              <div className="text-sm text-muted-foreground">
-                {t("common.errors.insufficientBalance", {
-                  balance: parseFloat(fiatBalance).toLocaleString(),
-                  token: escrow.fiat_currency,
-                })}
-              </div>
-            </div>,
-          );
-          return;
-        }
-      }
-
-      await cancelEscrow(id);
-    } catch (error) {
-      console.error(`Failed to cancel escrow ${id}:`, error);
-      toast.error(t("cancelError"));
+      await cancelFiatMint(id);
+      setFiatMints((prev) =>
+        prev.map((fiatMint) =>
+          fiatMint.id === id ? { ...fiatMint, status: "cancelled" } : fiatMint,
+        ),
+      );
+      toast.success(t("cancellationSuccess"));
+    } catch {
+      toast.error(t("cancellationError"));
     }
   }
 
   function getStatusBadge(status: string) {
     switch (status) {
       case "active":
-        return <Badge className="bg-green-500">{t("status.active")}</Badge>;
+        return <Badge variant="default">{t("status.active")}</Badge>;
       case "cancelled":
-        return <Badge className="bg-red-500">{t("status.cancelled")}</Badge>;
+        return <Badge variant="destructive">{t("status.cancelled")}</Badge>;
       default:
-        return <Badge>{status}</Badge>;
+        return <Badge variant="secondary">{status}</Badge>;
     }
   }
 
   return (
     <ProtectedLayout>
-      <div className="container mx-auto py-8">
-        {/* Add escrow subscriptions only for non-cancelled escrows */}
-        {escrows
-          .filter((escrow) => escrow.status !== "cancelled")
-          .map((escrow) => (
-            <EscrowSubscription
-              key={escrow.id}
-              escrow={escrow}
-              onUpdate={handleEscrowUpdate}
-            />
-          ))}
-
-        <h1 className="text-2xl font-bold mb-6">{t("title")}</h1>
+      <div className="container mx-auto p-4">
+        <h1 className="mb-4 text-2xl font-bold">{t("title")}</h1>
 
         <Card className="mb-8">
           <CardHeader>
             <CardTitle>{t("createTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
-            {errorMessage && (
-              <div className="relative w-full rounded-lg border border-destructive/50 p-4 text-destructive dark:border-destructive mb-6">
-                <AlertCircle className="h-4 w-4 absolute left-4 top-4" />
-                <div className="text-sm pl-7">{errorMessage}</div>
-              </div>
-            )}
-
-            {exchangeRates && (
-              <div className="mb-4 p-3 bg-muted rounded-md">
-                <h3 className="text-sm font-medium mb-2">
-                  {t("currentRates")}
-                </h3>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div>
-                    1 USDT = {exchangeRates.usdt_to_vnd.toLocaleString()} VND
-                  </div>
-                  <div>
-                    1 USDT = {exchangeRates.usdt_to_php.toLocaleString()} PHP
-                  </div>
-                  <div>
-                    1 USDT = {exchangeRates.usdt_to_ngn.toLocaleString()} NGN
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-md">
-              <p className="text-sm">
-                <span className="font-medium">{t("currentBalance")}: </span>
-                <span className="font-bold">
-                  {parseFloat(usdtBalance).toLocaleString()}
-                </span>{" "}
-                USDT
-              </p>
-            </div>
-
-            <form onSubmit={handleCreateEscrow} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
+            <form onSubmit={handleCreateFiatMint} className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="usdt-amount"
+                    className="mb-2 block text-sm font-medium"
+                  >
                     {t("usdtAmount")}
                   </label>
                   <NumberInputWithCommas
-                    data-testid="balance-input"
                     value={usdtAmount}
                     onChange={setUsdtAmount}
                     placeholder={t("usdtAmountPlaceholder")}
-                    min={0}
-                    step={0.01}
-                    inputMode="decimal"
+                    className="w-full"
+                    disabled={creating}
                   />
+                  {usdtBalance && (
+                    <div className="mt-2 text-sm text-gray-500">
+                      {t("currentBalance")}: {usdtBalance} USDT
+                    </div>
+                  )}
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
+                <div>
+                  <label
+                    htmlFor="fiat-currency"
+                    className="mb-2 block text-sm font-medium"
+                  >
                     {t("fiatCurrency")}
                   </label>
-                  <Select value={fiatCurrency} onValueChange={setFiatCurrency}>
+                  <Select
+                    value={fiatCurrency}
+                    onValueChange={setFiatCurrency}
+                    disabled={creating}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder={t("selectCurrency")} />
                     </SelectTrigger>
@@ -431,11 +369,15 @@ export default function MerchantEscrows() {
               </div>
 
               {estimatedFiatAmount && (
-                <div className="p-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-md">
-                  <p className="text-sm">
-                    {t("estimatedFiatAmount")}:{" "}
-                    <strong>{estimatedFiatAmount}</strong> {fiatCurrency}
-                  </p>
+                <div className="text-sm text-gray-500">
+                  {t("estimatedFiatAmount")}: {estimatedFiatAmount}
+                </div>
+              )}
+
+              {errorMessage && (
+                <div className="flex items-center text-red-500">
+                  <AlertCircle className="mr-2 h-4 w-4" />
+                  {errorMessage}
                 </div>
               )}
 
@@ -455,9 +397,9 @@ export default function MerchantEscrows() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-4">{t("loading")}</div>
-            ) : escrows.length === 0 ? (
-              <div className="text-center py-4">{t("noEscrows")}</div>
+              <p>{t("loading")}</p>
+            ) : fiatMints.length === 0 ? (
+              <p>{t("noMints")}</p>
             ) : (
               <Table>
                 <TableHeader>
@@ -472,30 +414,31 @@ export default function MerchantEscrows() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {escrows.map((escrow) => (
-                    <TableRow key={escrow.id}>
-                      <TableCell>{escrow.id}</TableCell>
-                      <TableCell>{escrow.usdt_amount}</TableCell>
-                      <TableCell>{escrow.fiat_amount}</TableCell>
-                      <TableCell>{escrow.fiat_currency}</TableCell>
-                      <TableCell>{getStatusBadge(escrow.status)}</TableCell>
+                  {fiatMints.map((fiatMint) => (
+                    <TableRow key={fiatMint.id}>
+                      <TableCell>{fiatMint.id}</TableCell>
+                      <TableCell>{fiatMint.usdt_amount}</TableCell>
+                      <TableCell>{fiatMint.fiat_amount}</TableCell>
+                      <TableCell>{fiatMint.fiat_currency}</TableCell>
+                      <TableCell>{getStatusBadge(fiatMint.status)}</TableCell>
                       <TableCell>
-                        {format(
-                          new Date(escrow.created_at),
-                          "MMM d, yyyy HH:mm",
-                        )}
+                        {format(new Date(fiatMint.created_at), "PPP p")}
                       </TableCell>
                       <TableCell>
-                        {escrow.status === "active" && (
+                        {fiatMint.status === "active" && (
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => handleCancelEscrow(escrow.id)}
+                            onClick={() => handleCancelFiatMint(fiatMint.id)}
                           >
                             {t("cancel")}
                           </Button>
                         )}
                       </TableCell>
+                      <FiatMintSubscription
+                        fiatMint={fiatMint}
+                        onUpdate={handleFiatMintUpdate}
+                      />
                     </TableRow>
                   ))}
                 </TableBody>

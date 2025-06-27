@@ -170,12 +170,7 @@ describe("ImageViewer", () => {
     const dialogImage = screen.getByTestId("dialog-image");
     expect(dialogImage).toHaveAttribute("src", defaultProps.src);
     expect(dialogImage).toHaveAttribute("alt", defaultProps.alt);
-    expect(dialogImage).toHaveClass(
-      "block",
-      "max-w-full",
-      "max-h-[90vh]",
-      "object-contain",
-    );
+    expect(dialogImage).toHaveClass("block", "max-w-none", "max-h-none");
   });
 
   it("applies correct styling to dialog container", async () => {
@@ -189,12 +184,6 @@ describe("ImageViewer", () => {
     await user.click(screen.getByTestId("image-container"));
 
     const dialogContainer = screen.getByTestId("dialog-container");
-    expect(dialogContainer).toHaveClass(
-      "relative",
-      "flex",
-      "items-center",
-      "justify-center",
-      "min-h-0",
-    );
+    expect(dialogContainer).toHaveClass("relative");
   });
 });

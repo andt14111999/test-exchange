@@ -2,10 +2,10 @@ import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/config";
 import {
   registerAsMerchant,
-  getEscrows,
-  getEscrow,
-  createEscrow,
-  cancelEscrow,
+  getFiatMints,
+  getFiatMint,
+  createFiatMint,
+  cancelFiatMint,
   getOffers,
   getOffer,
   createOffer,
@@ -16,7 +16,7 @@ import {
   setOfferOnlineStatus,
   getMerchantOffers,
   type MerchantRegistrationResponse,
-  type Escrow,
+  type FiatMint,
   type Offer,
   type CreateOfferRequest,
   type UpdateOfferRequest,
@@ -33,7 +33,7 @@ jest.mock("@/lib/api/client", () => ({
 }));
 
 describe("Merchant API", () => {
-  const mockEscrow: Escrow = {
+  const mockFiatMint: FiatMint = {
     id: 1,
     usdt_amount: "100",
     fiat_amount: "3000",
@@ -106,60 +106,60 @@ describe("Merchant API", () => {
     });
   });
 
-  describe("Escrow Operations", () => {
-    describe("getEscrows", () => {
-      it("should fetch all escrows successfully", async () => {
-        const mockResponse = { data: [mockEscrow] };
+  describe("FiatMint Operations", () => {
+    describe("getFiatMints", () => {
+      it("should fetch all fiat mints successfully", async () => {
+        const mockResponse = { data: [mockFiatMint] };
         (apiClient.get as jest.Mock).mockResolvedValueOnce(mockResponse);
 
-        const result = await getEscrows();
+        const result = await getFiatMints();
 
         expect(apiClient.get).toHaveBeenCalledWith(
-          API_ENDPOINTS.merchant.escrows.list,
+          API_ENDPOINTS.merchant.mint_fiat.list,
         );
         expect(result).toEqual(mockResponse.data);
       });
 
-      it("should handle error when fetching escrows", async () => {
-        const mockError = new Error("Failed to fetch escrows");
+      it("should handle error when fetching fiat mints", async () => {
+        const mockError = new Error("Failed to fetch fiat mints");
         (apiClient.get as jest.Mock).mockRejectedValueOnce(mockError);
 
-        await expect(getEscrows()).rejects.toThrow(mockError);
+        await expect(getFiatMints()).rejects.toThrow(mockError);
         expect(apiClient.get).toHaveBeenCalledTimes(1);
       });
     });
 
-    describe("getEscrow", () => {
-      it("should fetch specific escrow successfully", async () => {
-        const mockResponse = { data: mockEscrow };
+    describe("getFiatMint", () => {
+      it("should fetch specific fiat mint successfully", async () => {
+        const mockResponse = { data: mockFiatMint };
         (apiClient.get as jest.Mock).mockResolvedValueOnce(mockResponse);
 
-        const result = await getEscrow(1);
+        const result = await getFiatMint(1);
 
         expect(apiClient.get).toHaveBeenCalledWith(
-          API_ENDPOINTS.merchant.escrows.get(1),
+          API_ENDPOINTS.merchant.mint_fiat.get(1),
         );
         expect(result).toEqual(mockResponse.data);
       });
 
-      it("should handle error when fetching specific escrow", async () => {
-        const mockError = new Error("Failed to fetch escrow");
+      it("should handle error when fetching specific fiat mint", async () => {
+        const mockError = new Error("Failed to fetch fiat mint");
         (apiClient.get as jest.Mock).mockRejectedValueOnce(mockError);
 
-        await expect(getEscrow(1)).rejects.toThrow(mockError);
+        await expect(getFiatMint(1)).rejects.toThrow(mockError);
         expect(apiClient.get).toHaveBeenCalledTimes(1);
       });
     });
 
-    describe("createEscrow", () => {
-      it("should create escrow successfully", async () => {
-        const mockResponse = { data: mockEscrow };
+    describe("createFiatMint", () => {
+      it("should create fiat mint successfully", async () => {
+        const mockResponse = { data: mockFiatMint };
         (apiClient.post as jest.Mock).mockResolvedValueOnce(mockResponse);
 
-        const result = await createEscrow("100", "USD");
+        const result = await createFiatMint("100", "USD");
 
         expect(apiClient.post).toHaveBeenCalledWith(
-          API_ENDPOINTS.merchant.escrows.create,
+          API_ENDPOINTS.merchant.mint_fiat.create,
           {
             usdt_amount: "100",
             fiat_currency: "USD",
@@ -168,33 +168,33 @@ describe("Merchant API", () => {
         expect(result).toEqual(mockResponse.data);
       });
 
-      it("should handle error when creating escrow", async () => {
-        const mockError = new Error("Failed to create escrow");
+      it("should handle error when creating fiat mint", async () => {
+        const mockError = new Error("Failed to create fiat mint");
         (apiClient.post as jest.Mock).mockRejectedValueOnce(mockError);
 
-        await expect(createEscrow("100", "USD")).rejects.toThrow(mockError);
+        await expect(createFiatMint("100", "USD")).rejects.toThrow(mockError);
         expect(apiClient.post).toHaveBeenCalledTimes(1);
       });
     });
 
-    describe("cancelEscrow", () => {
-      it("should cancel escrow successfully", async () => {
-        const mockResponse = { data: { ...mockEscrow, status: "cancelled" } };
+    describe("cancelFiatMint", () => {
+      it("should cancel fiat mint successfully", async () => {
+        const mockResponse = { data: { ...mockFiatMint, status: "cancelled" } };
         (apiClient.post as jest.Mock).mockResolvedValueOnce(mockResponse);
 
-        const result = await cancelEscrow(1);
+        const result = await cancelFiatMint(1);
 
         expect(apiClient.post).toHaveBeenCalledWith(
-          API_ENDPOINTS.merchant.escrows.cancel(1),
+          API_ENDPOINTS.merchant.mint_fiat.cancel(1),
         );
         expect(result).toEqual(mockResponse.data);
       });
 
-      it("should handle error when cancelling escrow", async () => {
-        const mockError = new Error("Failed to cancel escrow");
+      it("should handle error when cancelling fiat mint", async () => {
+        const mockError = new Error("Failed to cancel fiat mint");
         (apiClient.post as jest.Mock).mockRejectedValueOnce(mockError);
 
-        await expect(cancelEscrow(1)).rejects.toThrow(mockError);
+        await expect(cancelFiatMint(1)).rejects.toThrow(mockError);
         expect(apiClient.post).toHaveBeenCalledTimes(1);
       });
     });

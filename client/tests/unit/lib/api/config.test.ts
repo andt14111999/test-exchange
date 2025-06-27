@@ -139,22 +139,25 @@ describe("API Configuration", () => {
     });
 
     describe("merchant endpoints", () => {
-      it("should have correct merchant registration endpoint", () => {
-        expect(API_ENDPOINTS.merchant.register).toBe("/merchant_registration");
+      it("should have correct merchant base and register endpoint", () => {
+        expect(API_ENDPOINTS.merchant.base).toBe("/merchant");
+        expect(API_ENDPOINTS.merchant.register).toBe("/merchant/register");
       });
 
-      describe("escrow operations", () => {
-        it("should generate correct escrow endpoints", () => {
-          const escrowId = 123;
-          expect(API_ENDPOINTS.merchant.escrows.list).toBe("/merchant_escrows");
-          expect(API_ENDPOINTS.merchant.escrows.create).toBe(
-            "/merchant_escrows",
+      describe("mint_fiat operations", () => {
+        it("should generate correct mint_fiat endpoints", () => {
+          const fiatMintId = 123;
+          expect(API_ENDPOINTS.merchant.mint_fiat.list).toBe(
+            "/merchant/mint_fiat",
           );
-          expect(API_ENDPOINTS.merchant.escrows.get(escrowId)).toBe(
-            "/merchant_escrows/123",
+          expect(API_ENDPOINTS.merchant.mint_fiat.create).toBe(
+            "/merchant/mint_fiat",
           );
-          expect(API_ENDPOINTS.merchant.escrows.cancel(escrowId)).toBe(
-            "/merchant_escrows/123/cancel",
+          expect(API_ENDPOINTS.merchant.mint_fiat.get(fiatMintId)).toBe(
+            "/merchant/mint_fiat/123",
+          );
+          expect(API_ENDPOINTS.merchant.mint_fiat.cancel(fiatMintId)).toBe(
+            "/merchant/mint_fiat/123/cancel",
           );
         });
       });
@@ -163,6 +166,9 @@ describe("API Configuration", () => {
         it("should generate correct offer endpoints", () => {
           const offerId = 456;
           expect(API_ENDPOINTS.merchant.offers.list).toBe("/offers");
+          expect(API_ENDPOINTS.merchant.offers.merchantList).toBe(
+            "/offers/merchant",
+          );
           expect(API_ENDPOINTS.merchant.offers.create).toBe("/offers");
           expect(API_ENDPOINTS.merchant.offers.get(offerId)).toBe(
             "/offers/456",
@@ -246,6 +252,7 @@ describe("API Configuration", () => {
           "/amm_positions/789/close",
         );
         expect(API_ENDPOINTS.amm.orders).toBe("/amm_orders");
+        expect(API_ENDPOINTS.amm.ticks).toBe("/ticks");
       });
     });
 
@@ -289,6 +296,12 @@ describe("API Configuration", () => {
         expect(API_ENDPOINTS.paymentMethods.get(paymentMethodId)).toBe(
           "/payment_methods/999",
         );
+      });
+    });
+
+    describe("settings endpoints", () => {
+      it("should have correct coinSettings endpoint", () => {
+        expect(API_ENDPOINTS.settings.coinSettings).toBe("/coin_settings");
       });
     });
   });

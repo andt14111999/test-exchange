@@ -55,8 +55,10 @@ export function Header() {
       href: "/liquidity/pools",
     },
     {
-      title: t("merchant.escrows.title"),
-      href: "/merchant/escrows",
+      title: t("merchant.mintFiat.title"),
+      href: "/merchant/mint-fiat",
+      description: "Mint fiat currency",
+      requiresMerchant: true,
     },
   ];
 

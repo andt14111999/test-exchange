@@ -46,13 +46,8 @@ export const API_ENDPOINTS = {
       `/coin_accounts/generate_address?coin_currency=${coinCurrency}&layer=${layer}`,
   },
   merchant: {
-    register: "/merchant_registration",
-    escrows: {
-      list: "/merchant_escrows",
-      create: "/merchant_escrows",
-      get: (id: number) => `/merchant_escrows/${id}`,
-      cancel: (id: number) => `/merchant_escrows/${id}/cancel`,
-    },
+    base: "/merchant",
+    register: "/merchant/register",
     offers: {
       list: "/offers",
       merchantList: "/offers/merchant",
@@ -63,6 +58,12 @@ export const API_ENDPOINTS = {
       enable: (id: number) => `/offers/${id}/enable`,
       disable: (id: number) => `/offers/${id}/disable`,
       setOnlineStatus: (id: number) => `/offers/${id}/online_status`,
+    },
+    mint_fiat: {
+      list: "/merchant/mint_fiat",
+      create: "/merchant/mint_fiat",
+      get: (id: number) => `/merchant/mint_fiat/${id}`,
+      cancel: (id: number) => `/merchant/mint_fiat/${id}/cancel`,
     },
   },
   trades: {
