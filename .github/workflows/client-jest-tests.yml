@@ -101,7 +101,7 @@ jobs:
 
       - name: Publish Coverage Report as PR Comment
         if: github.event_name == 'pull_request'
-        uses: romeovs/lcov-reporter-action@v0.3.1
+        uses: romeovs/lcov-reporter-action@v0.4.0
         with:
           lcov-file: ./client/coverage/lcov.info
           github-token: ${{ secrets.GITHUB_TOKEN }}
