@@ -1,26 +1,35 @@
 import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/config";
-import { fetchUserData, updateUsername } from "@/lib/api/user";
+import {
+  fetchUserData,
+  updateUsername,
+  enableTwoFactorAuth,
+  verifyTwoFactorAuth,
+  disableTwoFactorAuth,
+} from "@/lib/api/user";
 
-// Mock trực tiếp cho axios
-jest.mock("axios", () => ({
-  isAxiosError: jest.fn(),
-}));
-
+// Mock the API client
 jest.mock("@/lib/api/client", () => ({
   apiClient: {
     get: jest.fn(),
     patch: jest.fn(),
+    post: jest.fn(),
+    delete: jest.fn(),
   },
 }));
 
-describe("User API", () => {
-  const mockIsAxiosError = jest.fn();
+// Mock axios
+jest.mock("axios", () => ({
+  isAxiosError: jest.fn(),
+}));
 
+import axios from "axios";
+
+const mockedAxios = jest.mocked(axios);
+
+describe("User API", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Gán mockIsAxiosError cho axios.isAxiosError sau khi jest.clearAllMocks()
-    jest.requireMock("axios").isAxiosError = mockIsAxiosError;
   });
 
   describe("fetchUserData", () => {
@@ -65,11 +74,10 @@ describe("User API", () => {
         response: {
           status: 401,
         },
-        isAxiosError: true,
       };
 
       (apiClient.get as jest.Mock).mockRejectedValueOnce(axiosError);
-      mockIsAxiosError.mockReturnValueOnce(true);
+      mockedAxios.isAxiosError.mockReturnValue(true);
 
       await expect(fetchUserData()).rejects.toThrow("Unauthorized");
       expect(apiClient.get).toHaveBeenCalledWith(API_ENDPOINTS.users.me);
@@ -80,11 +88,10 @@ describe("User API", () => {
         response: {
           status: 500,
         },
-        isAxiosError: true,
       };
 
       (apiClient.get as jest.Mock).mockRejectedValueOnce(axiosError);
-      mockIsAxiosError.mockReturnValueOnce(true);
+      mockedAxios.isAxiosError.mockReturnValue(true);
 
       await expect(fetchUserData()).rejects.toThrow("API error: 500");
       expect(apiClient.get).toHaveBeenCalledWith(API_ENDPOINTS.users.me);
@@ -94,7 +101,7 @@ describe("User API", () => {
       const error = new Error("Network error");
 
       (apiClient.get as jest.Mock).mockRejectedValueOnce(error);
-      mockIsAxiosError.mockReturnValueOnce(false);
+      mockedAxios.isAxiosError.mockReturnValue(false);
 
       await expect(fetchUserData()).rejects.toThrow("Network error");
       expect(apiClient.get).toHaveBeenCalledWith(API_ENDPOINTS.users.me);
@@ -158,7 +165,6 @@ describe("User API", () => {
         data: {
           id: "123",
           email: "test@example.com",
-          // username missing in response
         },
       };
 
@@ -172,7 +178,7 @@ describe("User API", () => {
       );
       expect(result).toEqual({
         ...mockResponse.data,
-        username, // Should be added by the function
+        username,
       });
     });
 
@@ -181,11 +187,10 @@ describe("User API", () => {
         response: {
           status: 401,
         },
-        isAxiosError: true,
       };
 
       (apiClient.patch as jest.Mock).mockRejectedValueOnce(axiosError);
-      mockIsAxiosError.mockReturnValueOnce(true);
+      mockedAxios.isAxiosError.mockReturnValue(true);
 
       await expect(updateUsername(username)).rejects.toThrow("Unauthorized");
       expect(apiClient.patch).toHaveBeenCalledWith(
@@ -199,17 +204,16 @@ describe("User API", () => {
         response: {
           status: 422,
           data: {
-            errors: ["Username already taken", "Username must be unique"],
+            errors: ["Username has already been taken"],
           },
         },
-        isAxiosError: true,
       };
 
       (apiClient.patch as jest.Mock).mockRejectedValueOnce(axiosError);
-      mockIsAxiosError.mockReturnValueOnce(true);
+      mockedAxios.isAxiosError.mockReturnValue(true);
 
       await expect(updateUsername(username)).rejects.toThrow(
-        "Username already taken, Username must be unique",
+        "Username has already been taken",
       );
       expect(apiClient.patch).toHaveBeenCalledWith(
         API_ENDPOINTS.users.updateUsername,
@@ -222,11 +226,10 @@ describe("User API", () => {
         response: {
           status: 500,
         },
-        isAxiosError: true,
       };
 
       (apiClient.patch as jest.Mock).mockRejectedValueOnce(axiosError);
-      mockIsAxiosError.mockReturnValueOnce(true);
+      mockedAxios.isAxiosError.mockReturnValue(true);
 
       await expect(updateUsername(username)).rejects.toThrow("API error: 500");
       expect(apiClient.patch).toHaveBeenCalledWith(
@@ -239,7 +242,7 @@ describe("User API", () => {
       const error = new Error("Network error");
 
       (apiClient.patch as jest.Mock).mockRejectedValueOnce(error);
-      mockIsAxiosError.mockReturnValueOnce(false);
+      mockedAxios.isAxiosError.mockReturnValue(false);
 
       await expect(updateUsername(username)).rejects.toThrow("Network error");
       expect(apiClient.patch).toHaveBeenCalledWith(
@@ -249,7 +252,7 @@ describe("User API", () => {
     });
 
     it("should handle invalid response format", async () => {
-      (apiClient.patch as jest.Mock).mockResolvedValueOnce({});
+      (apiClient.patch as jest.Mock).mockResolvedValueOnce({ data: null });
 
       await expect(updateUsername(username)).rejects.toThrow(
         "Invalid response format",
@@ -257,6 +260,239 @@ describe("User API", () => {
       expect(apiClient.patch).toHaveBeenCalledWith(
         API_ENDPOINTS.users.updateUsername,
         { username },
+      );
+    });
+  });
+
+  describe("enableTwoFactorAuth", () => {
+    it("successfully generates QR code for 2FA setup", async () => {
+      const mockResponse = {
+        data: {
+          qr_code_uri: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+          message: "2FA setup initiated",
+        },
+      };
+
+      (apiClient.post as jest.Mock).mockResolvedValueOnce(mockResponse);
+
+      const result = await enableTwoFactorAuth();
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        API_ENDPOINTS.users.twoFactorAuth.enable,
+      );
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it("handles 401 unauthorized error", async () => {
+      const axiosError = {
+        response: { status: 401 },
+      };
+
+      (apiClient.post as jest.Mock).mockRejectedValueOnce(axiosError);
+      mockedAxios.isAxiosError.mockReturnValue(true);
+
+      await expect(enableTwoFactorAuth()).rejects.toThrow("Unauthorized");
+    });
+
+    it("handles 400 bad request error", async () => {
+      const axiosError = {
+        response: {
+          status: 400,
+          data: { message: "2FA is already enabled" },
+        },
+      };
+
+      (apiClient.post as jest.Mock).mockRejectedValueOnce(axiosError);
+      mockedAxios.isAxiosError.mockReturnValue(true);
+
+      await expect(enableTwoFactorAuth()).rejects.toThrow(
+        "2FA is already enabled",
+      );
+    });
+
+    it("handles 500 server error", async () => {
+      const axiosError = {
+        response: { status: 500 },
+      };
+
+      (apiClient.post as jest.Mock).mockRejectedValueOnce(axiosError);
+      mockedAxios.isAxiosError.mockReturnValue(true);
+
+      await expect(enableTwoFactorAuth()).rejects.toThrow("API error: 500");
+    });
+
+    it("handles network errors", async () => {
+      const error = new Error("Network error");
+
+      (apiClient.post as jest.Mock).mockRejectedValueOnce(error);
+      mockedAxios.isAxiosError.mockReturnValue(false);
+
+      await expect(enableTwoFactorAuth()).rejects.toThrow(
+        "Failed to enable 2FA",
+      );
+    });
+  });
+
+  describe("verifyTwoFactorAuth", () => {
+    const code = "123456";
+
+    it("successfully verifies 2FA code without device trust", async () => {
+      const mockResponse = {
+        data: { message: "2FA enabled successfully" },
+      };
+
+      (apiClient.post as jest.Mock).mockResolvedValueOnce(mockResponse);
+
+      const result = await verifyTwoFactorAuth(code, false);
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        API_ENDPOINTS.users.twoFactorAuth.verify,
+        { code },
+        {
+          headers: { "Device-Trusted": "false" },
+        },
+      );
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it("successfully verifies 2FA code with device trust", async () => {
+      const mockResponse = {
+        data: { message: "2FA enabled successfully" },
+      };
+
+      (apiClient.post as jest.Mock).mockResolvedValueOnce(mockResponse);
+
+      const result = await verifyTwoFactorAuth(code, true);
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        API_ENDPOINTS.users.twoFactorAuth.verify,
+        { code },
+        {
+          headers: { "Device-Trusted": "true" },
+        },
+      );
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it("handles 400 invalid code error", async () => {
+      const axiosError = {
+        response: {
+          status: 400,
+          data: { message: "Invalid verification code" },
+        },
+      };
+
+      (apiClient.post as jest.Mock).mockRejectedValueOnce(axiosError);
+      mockedAxios.isAxiosError.mockReturnValue(true);
+
+      await expect(verifyTwoFactorAuth(code)).rejects.toThrow(
+        "Invalid verification code",
+      );
+    });
+
+    it("handles 401 unauthorized error", async () => {
+      const axiosError = {
+        response: { status: 401 },
+      };
+
+      (apiClient.post as jest.Mock).mockRejectedValueOnce(axiosError);
+      mockedAxios.isAxiosError.mockReturnValue(true);
+
+      await expect(verifyTwoFactorAuth(code)).rejects.toThrow("Unauthorized");
+    });
+
+    it("handles 500 server error", async () => {
+      const axiosError = {
+        response: { status: 500 },
+      };
+
+      (apiClient.post as jest.Mock).mockRejectedValueOnce(axiosError);
+      mockedAxios.isAxiosError.mockReturnValue(true);
+
+      await expect(verifyTwoFactorAuth(code)).rejects.toThrow("API error: 500");
+    });
+
+    it("handles network errors", async () => {
+      const error = new Error("Network error");
+
+      (apiClient.post as jest.Mock).mockRejectedValueOnce(error);
+      mockedAxios.isAxiosError.mockReturnValue(false);
+
+      await expect(verifyTwoFactorAuth(code)).rejects.toThrow(
+        "Failed to verify 2FA",
+      );
+    });
+  });
+
+  describe("disableTwoFactorAuth", () => {
+    const code = "123456";
+
+    it("successfully disables 2FA", async () => {
+      const mockResponse = {
+        data: { message: "2FA disabled successfully" },
+      };
+
+      (apiClient.delete as jest.Mock).mockResolvedValueOnce(mockResponse);
+
+      const result = await disableTwoFactorAuth(code);
+
+      expect(apiClient.delete).toHaveBeenCalledWith(
+        API_ENDPOINTS.users.twoFactorAuth.disable,
+        {
+          data: { code },
+        },
+      );
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it("handles 400 invalid code error", async () => {
+      const axiosError = {
+        response: {
+          status: 400,
+          data: { message: "Invalid verification code" },
+        },
+      };
+
+      (apiClient.delete as jest.Mock).mockRejectedValueOnce(axiosError);
+      mockedAxios.isAxiosError.mockReturnValue(true);
+
+      await expect(disableTwoFactorAuth(code)).rejects.toThrow(
+        "Invalid verification code",
+      );
+    });
+
+    it("handles 401 unauthorized error", async () => {
+      const axiosError = {
+        response: { status: 401 },
+      };
+
+      (apiClient.delete as jest.Mock).mockRejectedValueOnce(axiosError);
+      mockedAxios.isAxiosError.mockReturnValue(true);
+
+      await expect(disableTwoFactorAuth(code)).rejects.toThrow("Unauthorized");
+    });
+
+    it("handles 500 server error", async () => {
+      const axiosError = {
+        response: { status: 500 },
+      };
+
+      (apiClient.delete as jest.Mock).mockRejectedValueOnce(axiosError);
+      mockedAxios.isAxiosError.mockReturnValue(true);
+
+      await expect(disableTwoFactorAuth(code)).rejects.toThrow(
+        "API error: 500",
+      );
+    });
+
+    it("handles network errors", async () => {
+      const error = new Error("Network error");
+
+      (apiClient.delete as jest.Mock).mockRejectedValueOnce(error);
+      mockedAxios.isAxiosError.mockReturnValue(false);
+
+      await expect(disableTwoFactorAuth(code)).rejects.toThrow(
+        "Failed to disable 2FA",
       );
     });
   });

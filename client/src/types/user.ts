@@ -11,4 +11,5 @@ export interface UserData {
   kyc_level?: number;
   phone_verified?: boolean;
   document_verified?: boolean;
+  authenticator_enabled?: boolean;
 }

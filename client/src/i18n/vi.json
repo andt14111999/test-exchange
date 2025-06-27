@@ -12,6 +12,9 @@
   "12": {
     "01": "01"
   },
+  "16": {
+    "65": "65"
+  },
   "common": {
     "language": "Ngôn ngữ",
     "wallet": "Ví",
@@ -80,8 +83,6 @@
     "selectOfferType": "Chọn loại đề xuất",
     "buy": "Mua",
     "sell": "Bán",
-    "depositOffer": "Đề xuất Nạp tiền",
-    "withdrawOffer": "Đề xuất Rút tiền",
     "bankAccount": "Tài khoản ngân hàng",
     "bankAccountRequired": "Cần có tài khoản ngân hàng cho các đề xuất bán",
     "bankDetailsRequired": "Cần có thông tin tài khoản ngân hàng cho các đề xuất bán",
@@ -142,13 +143,13 @@
     "fetchOfferFailed": "Không thể tải chi tiết đề xuất",
     "offerNotFound": "Không tìm thấy đề xuất",
     "invalidOfferData": "Dữ liệu đề xuất không hợp lệ",
-    "mintFiat": {
-      "title": "Phát hành Fiat",
-      "createTitle": "Phát hành Fiat Mới",
-      "listTitle": "Danh sách Fiat đã phát hành",
-      "create": "Phát hành Fiat",
-      "creating": "Đang phát hành...",
-      "detail": "Chi tiết Fiat",
+    "escrows": {
+      "title": "Quản lý Escrow",
+      "createTitle": "Tạo Escrow Mới",
+      "listTitle": "Danh sách Escrow",
+      "create": "Tạo Escrow",
+      "creating": "Đang tạo...",
+      "detail": "Chi tiết Escrow",
       "usdt": "USDT",
       "fiatAmount": "Số tiền Fiat",
       "fiatCurrency": "Tiền tệ Fiat",
@@ -167,25 +168,25 @@
       "actions": "Hành động",
       "cancel": "Hủy",
       "viewDetail": "Xem chi tiết",
-      "noMints": "Không tìm thấy mục nào.",
-      "fetchError": "Không thể tải danh sách phát hành",
-      "createError": "Không thể phát hành Fiat",
-      "createSuccess": "Phát hành Fiat thành công",
-      "cancelError": "Không thể hủy phát hành Fiat",
-      "cancelSuccess": "Đã hủy phát hành Fiat thành công",
+      "noEscrows": "Không tìm thấy escrow nào",
+      "fetchError": "Không thể tải danh sách escrow",
+      "createError": "Không thể tạo escrow",
+      "createSuccess": "Tạo escrow thành công",
+      "cancelError": "Không thể hủy escrow",
+      "cancelSuccess": "Đã hủy escrow thành công",
       "validationError": "Vui lòng nhập số lượng và loại tiền",
       "insufficientBalance": "Số dư không đủ",
       "currentRates": "Tỷ Giá Hiện Tại",
       "estimatedFiatAmount": "Số Tiền Fiat Ước Tính",
-      "confirmCreate": "Phát hành Fiat cho",
+      "confirmCreate": "Tạo Escrow cho",
       "error": "Lỗi",
-      "creationSuccess": "Phát hành Fiat thành công!",
+      "creationSuccess": "Tạo escrow thành công!",
       "loading": "Đang tải...",
       "usdtAmount": "Số lượng USDT",
       "usdtAmountPlaceholder": "Nhập số lượng USDT",
-      "creationError": "Không thể phát hành Fiat",
-      "cancellationSuccess": "Hủy phát hành Fiat thành công",
-      "cancellationError": "Không thể hủy phát hành Fiat",
+      "creationError": "Không thể tạo escrow",
+      "cancellationSuccess": "Hủy escrow thành công",
+      "cancellationError": "Không thể hủy escrow",
       "id": "ID",
       "fiatAmountLabel": "Số tiền Fiat",
       "statusHeader": "Trạng thái",
@@ -428,7 +429,8 @@
     },
     "paymentInstructionsDescription": "Hướng dẫn về cách người mua nên thanh toán cho bạn",
     "bankAccountDescription": "Chọn tài khoản ngân hàng để nhận thanh toán",
-    "cancel": "Cancel"
+    "cancel": "Hủy",
+    "mintFiat": "MintFiat"
   },
   "customer": {
     "marketplace": "Thị trường",
@@ -877,7 +879,94 @@
     "noOffersForCurrency": "Không có đề xuất cho loại tiền tệ này",
     "noOffersForCurrencyDescription": "Hiện không có thương nhân nào cung cấp {currency} phù hợp với số tiền bạn muốn rút. Vui lòng thử số tiền khác hoặc thử lại sau.",
     "amountTooLow": "Số tiền quá thấp",
-    "amountTooLowDescription": "Số tiền tối thiểu để rút là {min} {currency}."
+    "amountTooLowDescription": "Số tiền tối thiểu để rút là {min} {currency}.",
+    "twoFactorRequired": "🔐 Xác thực 2 bước sẽ được yêu cầu cho giao dịch này",
+    "twoFactorInvalidCode": "Mã 2FA không đúng. Vui lòng thử lại.",
+    "twoFactorNoData": "Không có dữ liệu withdrawal để xử lý",
+    "twoFactorAuth": {
+      "title": "Xác thực 2 bước",
+      "description": "Vui lòng nhập mã 6 số từ ứng dụng xác thực của bạn để tiếp tục.",
+      "submitText": "Xác thực",
+      "alertDescription": "Mở ứng dụng Google Authenticator hoặc ứng dụng xác thực tương tự để lấy mã 6 số.",
+      "codeLabel": "Mã xác thực",
+      "codePlaceholder": "123456",
+      "codeHelper": "Nhập mã 6 số từ ứng dụng xác thực",
+      "cancel": "Hủy",
+      "authenticating": "Đang xác thực...",
+      "invalidCodeLength": "Vui lòng nhập mã 6 số",
+      "genericError": "Có lỗi xảy ra",
+      "deviceNotTrusted": "Thiết bị này chưa được tin cậy. Xác thực 2 bước sẽ được yêu cầu cho giao dịch này.",
+      "trustDevice": "Tin cậy thiết bị này (bỏ qua 2FA)",
+      "setup": {
+        "title": "Thiết lập xác thực 2 bước",
+        "step1Title": "Bước 1/2: Quét mã QR",
+        "step1Description": "Sử dụng ứng dụng Google Authenticator hoặc ứng dụng xác thực tương tự để quét mã QR bên dưới:",
+        "step1ManualEntry": "Hoặc nhập thủ công secret key:",
+        "step1Continue": "Tiếp tục",
+        "cancel": "Hủy",
+        "step2Title": "Bước 2/2: Xác thực mã",
+        "step2Description": "Nhập mã 6 số từ ứng dụng xác thực của bạn:",
+        "codeLabel": "Mã xác thực",
+        "codePlaceholder": "123456",
+        "backButton": "Quay lại",
+        "verifyButton": "Xác thực",
+        "verifying": "Đang xác thực...",
+        "successTitle": "Thành công!",
+        "successDescription": "Xác thực 2 bước đã được kích hoạt cho tài khoản của bạn.",
+        "backToProfile": "Quay lại trang hồ sơ",
+        "copied": "Đã sao chép",
+        "copiedDescription": "Secret key đã được sao chép vào clipboard",
+        "invalidCodeLength": "Vui lòng nhập mã 6 số",
+        "initializationError": "Có lỗi xảy ra khi khởi tạo 2FA",
+        "verificationError": "Mã xác thực không đúng"
+      }
+    },
+    "usdt": {
+      "title": "Rút USDT",
+      "description": "Rút USDT đến ví bên ngoài hoặc chuyển cho người dùng khác",
+      "withdrawalDetails": "Chi tiết rút tiền",
+      "chooseTypeAndDestination": "Chọn loại rút tiền và đích đến",
+      "onChainWithdrawal": "Rút tiền On-chain",
+      "internalTransfer": "Chuyển khoản nội bộ",
+      "network": "Mạng",
+      "selectNetwork": "Chọn một mạng",
+      "destinationAddress": "Địa chỉ đích",
+      "enterAddress": "Nhập địa chỉ {network}",
+      "selectNetworkFirst": "Vui lòng chọn mạng trước",
+      "networkFee": "Phí mạng: {fee} USDT",
+      "availableBalance": "Số dư khả dụng: {balance} USDT",
+      "totalAmount": "Tổng số tiền: {amount} USDT",
+      "recipientUsername": "Tên người nhận",
+      "enterUsername": "Nhập tên người dùng",
+      "usernameExample": "Ví dụ: johndoe123",
+      "validatingUsername": "Đang xác thực tên người dùng...",
+      "amount": "Số tiền (USDT)",
+      "enterAmount": "Nhập số tiền",
+      "networkDisabled": "(Mạng bị tắt)",
+      "minWithdrawal": "Rút tối thiểu: 2 USDT",
+      "onlyWithdrawToNetwork": "Chỉ rút đến địa chỉ trên mạng {network}",
+      "minTransfer": "Chuyển tối thiểu: 2 USDT",
+      "noNetworkFees": "Không có phí mạng cho chuyển khoản nội bộ",
+      "instantTransfers": "Chuyển khoản tức thì giữa người dùng platform",
+      "withdrawAmount": "Số tiền rút",
+      "transferAmount": "Số tiền chuyển",
+      "processing": "Đang xử lý...",
+      "withdrawalRequestSuccess": "Yêu cầu rút tiền đã được gửi thành công",
+      "internalTransferSuccess": "Chuyển khoản nội bộ đã được gửi thành công",
+      "confirmWithdrawal": "Xác nhận rút tiền",
+      "confirmInternalTransfer": "Xác nhận chuyển khoản nội bộ",
+      "transactionDetails": "Chi tiết giao dịch",
+      "recipient": "Người nhận",
+      "fee": "Phí",
+      "total": "Tổng cộng",
+      "cancel": "Hủy",
+      "confirm": "Xác nhận",
+      "twoFactorDialog": {
+        "title": "Xác thực rút tiền",
+        "description": "Để bảo mật tài khoản, vui lòng nhập mã 2FA để hoàn tất giao dịch rút tiền.",
+        "submitText": "Xác nhận rút tiền"
+      }
+    }
   },
   "transactions": {
     "myTradingHistory": "Lịch sử Giao dịch của Tôi",
@@ -1359,5 +1448,31 @@
     "log": "Log"
   },
   "confirmRelease": "Xác nhận giải phóng",
-  "disputeResolution": "Giải quyết tranh chấp"
+  "disputeResolution": "Giải quyết tranh chấp",
+  "errorFileTooLarge": "File Too Large",
+  "errorInvalidFileType": "Invalid File Type",
+  "twoFactorAuth": {
+    "deviceNotTrusted": "DeviceNotTrusted"
+  },
+  "twoFactorDialog": {
+    "title": "Title",
+    "description": "Description",
+    "submitText": "SubmitText"
+  },
+  "api": {
+    "vietqr": {
+      "io": "Io"
+    }
+  },
+  "vietqr": {
+    "net": "Net"
+  },
+  "backend": {
+    "snow": {
+      "exchange": "Exchange"
+    }
+  },
+  "radix": {
+    "slottable": "Slottable"
+  }
 }

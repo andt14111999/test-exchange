@@ -10,6 +10,11 @@ export const API_ENDPOINTS = {
   users: {
     me: "/users/me",
     updateUsername: "/users/username",
+    twoFactorAuth: {
+      enable: "/users/two_factor_auth/enable",
+      verify: "/users/two_factor_auth/verify",
+      disable: "/users/two_factor_auth/disable",
+    },
   },
   wallet: {
     balances: "/balances",

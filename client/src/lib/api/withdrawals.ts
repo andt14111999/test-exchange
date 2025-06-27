@@ -7,6 +7,7 @@ export interface CreateWithdrawalRequest {
   coin_layer: string;
   coin_address?: string;
   receiver_username?: string;
+  two_factor_code?: string; // Optional 2FA code
 }
 
 export interface WithdrawalResponse {

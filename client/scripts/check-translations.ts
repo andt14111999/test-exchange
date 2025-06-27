@@ -639,12 +639,14 @@ async function fixMissingTranslations(
 
       setValueByPath(localeContents[locale], key, value as string);
       writeJsonFile(localeFiles[locale], localeContents[locale]);
+      console.log("🚀 ~ missingLocales.forEach ~ key:", key);
       keysAdded++;
       if (!filesUpdated) filesUpdated++;
     });
   });
 
   if (filesUpdated > 0) {
+    console.log("🚀 ~ keysAdded:", keysAdded);
     console.log(`\n✅ Đã cập nhật ${filesUpdated} file dịch`);
     console.log(`✅ Đã thêm ${keysAdded} key còn thiếu vào các file dịch`);
     return true;

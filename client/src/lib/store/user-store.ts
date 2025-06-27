@@ -12,6 +12,7 @@ interface User {
   kycLevel?: number;
   phoneVerified?: boolean;
   documentVerified?: boolean;
+  authenticatorEnabled?: boolean;
 }
 
 interface UserState {

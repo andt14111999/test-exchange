@@ -12,6 +12,9 @@
   "12": {
     "01": "01"
   },
+  "16": {
+    "65": "65"
+  },
   "common": {
     "language": "Language",
     "wallet": "Wallet",
@@ -80,8 +83,6 @@
     "selectOfferType": "Select offer type",
     "buy": "Buy",
     "sell": "Sell",
-    "depositOffer": "Deposit Offer",
-    "withdrawOffer": "Withdraw Offer",
     "bankAccount": "Bank Account",
     "bankAccountDescription": "Select a bank account for receiving payments",
     "bankDetailsRequired": "Bank account details are required for selling offers",
@@ -135,13 +136,13 @@
     "fetchOfferFailed": "Failed to fetch offer details.",
     "offerNotFound": "Offer not found.",
     "invalidOfferData": "Invalid offer data received.",
-    "mintFiat": {
-      "title": "Mint Fiat",
-      "createTitle": "Mint New Fiat",
-      "listTitle": "Fiat Mint List",
-      "create": "Mint Fiat",
-      "creating": "Minting...",
-      "detail": "Fiat Mint Detail",
+    "escrows": {
+      "title": "Escrows",
+      "createTitle": "Create New Escrow",
+      "listTitle": "Escrow List",
+      "create": "Create Escrow",
+      "creating": "Creating...",
+      "detail": "Escrow Detail",
       "usdt": "USDT",
       "fiatAmount": "Fiat Amount",
       "fiatCurrency": "Fiat Currency",
@@ -160,27 +161,27 @@
       "actions": "Actions",
       "cancel": "Cancel",
       "viewDetail": "View Detail",
-      "noMints": "No fiat mints found.",
+      "noEscrows": "No escrows found.",
       "loading": "Loading...",
       "currentRates": "Current Rates",
       "usdtAmount": "USDT Amount",
       "usdtAmountPlaceholder": "Enter USDT amount",
-      "createSuccess": "Fiat minted successfully!",
-      "fetchError": "Error fetching fiat mints",
+      "createSuccess": "Escrow created successfully!",
+      "fetchError": "Error fetching escrows",
       "validationError": "Please fill in all required fields",
-      "createError": "Error minting fiat",
+      "createError": "Error creating escrow",
       "insufficientBalance": "Insufficient USDT balance",
-      "cancelSuccess": "Fiat mint cancelled successfully",
-      "cancelError": "Error cancelling fiat mint",
+      "cancelSuccess": "Escrow cancelled successfully",
+      "cancelError": "Error cancelling escrow",
       "estimatedFiatAmount": "Estimated fiat amount",
-      "creationSuccess": "Fiat minted successfully!",
-      "creationError": "Failed to mint fiat.",
-      "cancellationSuccess": "Fiat mint cancelled successfully!",
-      "cancellationError": "Failed to cancel fiat mint.",
+      "creationSuccess": "Escrow created successfully!",
+      "creationError": "Failed to create escrow.",
+      "cancellationSuccess": "Escrow cancelled successfully!",
+      "cancellationError": "Failed to cancel escrow.",
       "id": "ID",
       "fiatAmountLabel": "Fiat Amount",
       "statusHeader": "Status",
-      "confirmCreate": "Mint Fiat for",
+      "confirmCreate": "Create Escrow for",
       "error": "Error",
       "currentBalance": "Current Balance"
     },
@@ -428,7 +429,8 @@
       "amountExceedsBalance": "Total amount cannot exceed your available balance",
       "availableBalance": "Available Balance"
     },
-    "paymentInstructionsDescription": "Instructions for how the buyer should make payment to you"
+    "paymentInstructionsDescription": "Instructions for how the buyer should make payment to you",
+    "mintFiat": "MintFiat"
   },
   "customer": {
     "marketplace": "Marketplace",
@@ -873,7 +875,94 @@
     "noOffersForCurrency": "No offers for this currency",
     "noOffersForCurrencyDescription": "There are no merchants offering {currency} that match your withdrawal amount. Please try a different amount or try again later.",
     "amountTooLow": "Amount too low",
-    "amountTooLowDescription": "The minimum amount to withdraw is {min} {currency}."
+    "amountTooLowDescription": "The minimum amount to withdraw is {min} {currency}.",
+    "twoFactorRequired": "🔐 2FA authentication will be required for this transaction",
+    "twoFactorInvalidCode": "Invalid 2FA code. Please try again.",
+    "twoFactorNoData": "No withdrawal data to process",
+    "twoFactorAuth": {
+      "title": "Two-Factor Authentication",
+      "description": "Please enter the 6-digit code from your authenticator app to continue.",
+      "submitText": "Authenticate",
+      "alertDescription": "Open Google Authenticator or similar authenticator app to get the 6-digit code.",
+      "codeLabel": "Authentication Code",
+      "codePlaceholder": "123456",
+      "codeHelper": "Enter the 6-digit code from your authenticator app",
+      "cancel": "Cancel",
+      "authenticating": "Authenticating...",
+      "invalidCodeLength": "Please enter a 6-digit code",
+      "genericError": "An error occurred",
+      "deviceNotTrusted": "This device is not trusted. 2FA verification will be required for this transaction.",
+      "trustDevice": "Trust this device (skip 2FA)",
+      "setup": {
+        "title": "Setup Two-Factor Authentication",
+        "step1Title": "Step 1/2: Scan QR Code",
+        "step1Description": "Use Google Authenticator or similar authenticator app to scan the QR code below:",
+        "step1ManualEntry": "Or manually enter the secret key:",
+        "step1Continue": "Continue",
+        "cancel": "Cancel",
+        "step2Title": "Step 2/2: Verify Code",
+        "step2Description": "Enter the 6-digit code from your authenticator app:",
+        "codeLabel": "Verification Code",
+        "codePlaceholder": "123456",
+        "backButton": "Back",
+        "verifyButton": "Verify",
+        "verifying": "Verifying...",
+        "successTitle": "Success!",
+        "successDescription": "Two-factor authentication has been enabled for your account.",
+        "backToProfile": "Back to Profile",
+        "copied": "Copied",
+        "copiedDescription": "Secret key has been copied to clipboard",
+        "invalidCodeLength": "Please enter a 6-digit code",
+        "initializationError": "An error occurred while initializing 2FA",
+        "verificationError": "Invalid verification code"
+      }
+    },
+    "usdt": {
+      "title": "Withdraw USDT",
+      "description": "Withdraw USDT to an external wallet or transfer to another user",
+      "withdrawalDetails": "Withdrawal Details",
+      "chooseTypeAndDestination": "Choose withdrawal type and destination",
+      "onChainWithdrawal": "On-chain Withdrawal",
+      "internalTransfer": "Internal Transfer",
+      "network": "Network",
+      "selectNetwork": "Select a network",
+      "destinationAddress": "Destination Address",
+      "enterAddress": "Enter {network} address",
+      "selectNetworkFirst": "Please select a network first",
+      "networkFee": "Network fee: {fee} USDT",
+      "availableBalance": "Available balance: {balance} USDT",
+      "totalAmount": "Total amount: {amount} USDT",
+      "recipientUsername": "Recipient Username",
+      "enterUsername": "Enter username",
+      "usernameExample": "Example: johndoe123",
+      "validatingUsername": "Validating username...",
+      "amount": "Amount (USDT)",
+      "enterAmount": "Enter amount",
+      "networkDisabled": "(Network disabled)",
+      "minWithdrawal": "Minimum withdrawal: 2 USDT",
+      "onlyWithdrawToNetwork": "Only withdraw to addresses on the {network} network",
+      "minTransfer": "Minimum transfer: 2 USDT",
+      "noNetworkFees": "No network fees for internal transfers",
+      "instantTransfers": "Transfers are instant between platform users",
+      "withdrawAmount": "Withdraw Amount",
+      "transferAmount": "Transfer Amount",
+      "processing": "Processing...",
+      "withdrawalRequestSuccess": "Withdrawal request submitted successfully",
+      "internalTransferSuccess": "Internal transfer submitted successfully",
+      "confirmWithdrawal": "Confirm Withdrawal",
+      "confirmInternalTransfer": "Confirm Internal Transfer",
+      "transactionDetails": "Transaction Details",
+      "recipient": "Recipient",
+      "fee": "Fee",
+      "total": "Total",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "twoFactorDialog": {
+        "title": "Verify Withdrawal",
+        "description": "For account security, please enter your 2FA code to complete the withdrawal transaction.",
+        "submitText": "Confirm Withdrawal"
+      }
+    }
   },
   "liquidity": {
     "balance": "Balance",
@@ -1357,5 +1446,29 @@
   "confirmRelease": "Confirm Release",
   "disputeResolution": "Dispute Resolution",
   "errorFileTooLarge": "File Too Large",
-  "errorInvalidFileType": "Invalid File Type"
+  "errorInvalidFileType": "Invalid File Type",
+  "twoFactorAuth": {
+    "deviceNotTrusted": "DeviceNotTrusted"
+  },
+  "twoFactorDialog": {
+    "title": "Title",
+    "description": "Description",
+    "submitText": "SubmitText"
+  },
+  "api": {
+    "vietqr": {
+      "io": "Io"
+    }
+  },
+  "vietqr": {
+    "net": "Net"
+  },
+  "backend": {
+    "snow": {
+      "exchange": "Exchange"
+    }
+  },
+  "radix": {
+    "slottable": "Slottable"
+  }
 }

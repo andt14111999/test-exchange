@@ -55,6 +55,7 @@ export function useAuth() {
           kycLevel: userData.kyc_level,
           phoneVerified: userData.phone_verified,
           documentVerified: userData.document_verified,
+          authenticatorEnabled: userData.authenticator_enabled,
         });
       } catch (error) {
         if (!mounted) return;
