@@ -255,7 +255,7 @@ export default function CreateOffer() {
         }
       }
     }
-  }, [walletData, form, isEditMode, updateAvailableBalance]);
+  }, [walletData, isEditMode, updateAvailableBalance]);
 
   // Watch currency changes to update default amount
   const selectedCurrency = form.watch("fiatCurrency");
@@ -272,7 +272,7 @@ export default function CreateOffer() {
         form.setValue("amount", balance);
       }
     }
-  }, [selectedCurrency, walletData, form, isEditMode, updateAvailableBalance]);
+  }, [selectedCurrency, walletData, isEditMode, updateAvailableBalance]);
 
   // Watch amount changes to update maxAmount based on the 300 million rule
   const amount = form.watch("amount");
@@ -282,7 +282,7 @@ export default function CreateOffer() {
     } else {
       form.setValue("maxAmount", MAX_AMOUNT_PER_TRANSACTION);
     }
-  }, [amount, form]);
+  }, [amount]);
 
   // Watch offer type changes to clear amount fields when switching from sell to buy
   const watchedOfferType = form.watch("type");
@@ -294,7 +294,7 @@ export default function CreateOffer() {
       form.setValue("minAmount", P2P_AMOUNT_LIMITS.MIN);
       form.setValue("maxAmount", P2P_AMOUNT_LIMITS.MAX);
     }
-  }, [watchedOfferType, form, isEditMode]);
+  }, [watchedOfferType, isEditMode]);
 
   // Fetch payment methods
   const { data: paymentMethodsResponse, isLoading: isLoadingPaymentMethods } =
@@ -445,8 +445,6 @@ export default function CreateOffer() {
             if (bankAccountId) {
               form.setValue("bankAccountId", bankAccountId);
             }
-            // Force validate form after setting values
-            form.trigger();
           }, 100);
 
           // Also need to set the selected payment method
@@ -473,7 +471,7 @@ export default function CreateOffer() {
         setIsLoading(false);
       }
     },
-    [t, paymentMethods, form],
+    [t, paymentMethods],
   );
 
   // Update default paymentMethodId when payment methods are loaded
@@ -486,11 +484,8 @@ export default function CreateOffer() {
         shouldTouch: true,
       });
       setSelectedPaymentMethod(paymentMethods[0]);
-
-      // Force validate the entire form
-      form.trigger();
     }
-  }, [paymentMethods, form]);
+  }, [paymentMethods]);
 
   // Fetch offer data if in edit mode
   useEffect(() => {
@@ -518,40 +513,18 @@ export default function CreateOffer() {
   const isDepositOffer = offerType === "buy"; // Deposit Offer
 
   // Memoize handlers to prevent infinite loops
-  const handlePaymentMethodChange = useCallback(
-    (id: string) => {
-      const method = paymentMethods.find((pm) => String(pm.id) === id);
-      setSelectedPaymentMethod(method || null);
+
+  const handleBankAccountChange = useCallback((bankAccount: BankAccount) => {
+    setSelectedBankAccount(bankAccount);
+    if (bankAccount?.id) {
       // Set the value and force form validation
-      form.setValue("paymentMethodId", id, {
+      form.setValue("bankAccountId", bankAccount.id, {
         shouldValidate: true,
         shouldDirty: true,
         shouldTouch: true,
       });
-
-      // Force validate the entire form
-      form.trigger();
-    },
-    [paymentMethods, form],
-  );
-
-  const handleBankAccountChange = useCallback(
-    (bankAccount: BankAccount) => {
-      setSelectedBankAccount(bankAccount);
-      if (bankAccount?.id) {
-        // Set the value and force form validation
-        form.setValue("bankAccountId", bankAccount.id, {
-          shouldValidate: true,
-          shouldDirty: true,
-          shouldTouch: true,
-        });
-
-        // Force validate the entire form
-        form.trigger();
-      }
-    },
-    [form],
-  );
+    }
+  }, []);
 
   async function onSubmit(values: FormValues) {
     try {
@@ -1018,7 +991,10 @@ export default function CreateOffer() {
                           value={field.value ? String(field.value) : ""}
                           onValueChange={(value) => {
                             field.onChange(value);
-                            handlePaymentMethodChange(value);
+                            const method = paymentMethods.find(
+                              (pm) => String(pm.id) === value,
+                            );
+                            setSelectedPaymentMethod(method || null);
                           }}
                           data-testid="payment-method-select"
                         >
