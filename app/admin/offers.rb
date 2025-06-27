@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register Offer do
+  actions :all, except: [ :destroy ]
+
   permit_params :user_id, :offer_type, :coin_currency, :currency, :price,
                 :min_amount, :max_amount, :total_amount, :payment_method_id,
                 :payment_time, :payment_details, :country_code, :disabled, :deleted,
@@ -170,9 +172,7 @@ ActiveAdmin.register Offer do
     link_to 'Disable', disable_admin_offer_path(resource), method: :put
   end
 
-  action_item :delete, only: :show, if: proc { !resource.deleted? } do
-    link_to 'Delete', delete_admin_offer_path(resource), method: :put, data: { confirm: 'Are you sure? This will cancel all awaiting trades.' }
-  end
+
 
   member_action :enable, method: :put do
     resource.enable!
@@ -182,10 +182,5 @@ ActiveAdmin.register Offer do
   member_action :disable, method: :put do
     resource.disable!('Disabled by admin')
     redirect_to admin_offer_path(resource), notice: 'Offer has been disabled'
-  end
-
-  member_action :delete, method: :put do
-    resource.delete!
-    redirect_to admin_offer_path(resource), notice: 'Offer has been deleted'
   end
 end

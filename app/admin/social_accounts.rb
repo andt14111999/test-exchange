@@ -6,7 +6,7 @@ ActiveAdmin.register SocialAccount do
   permit_params :user_id, :provider, :provider_user_id, :email, :name,
     :access_token, :refresh_token, :token_expires_at, :avatar_url, :profile_data
 
-  actions :all
+  actions :all, except: [ :destroy ]
 
   filter :user, collection: proc { User.all.map { |u| [ u.email, u.id ] } }
   filter :provider, as: :select, collection: -> { SocialAccount.distinct.pluck(:provider) }

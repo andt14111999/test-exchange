@@ -2,6 +2,7 @@
 
 ActiveAdmin.register FiatWithdrawal do
   menu priority: 6, parent: 'Fiat Management'
+  actions :all, except: [ :destroy ]
 
   permit_params :user_id, :fiat_account_id, :currency, :country_code,
                 :fiat_amount, :fee, :amount_after_transfer_fee,

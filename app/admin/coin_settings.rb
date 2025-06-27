@@ -1,5 +1,7 @@
 ActiveAdmin.register CoinSetting do
   menu priority: 2, parent: 'Settings', label: 'Coin Settings'
+  actions :all, except: [ :destroy ]
+
   permit_params :currency, :deposit_enabled, :withdraw_enabled, :swap_enabled, :layers
 
   json_editor

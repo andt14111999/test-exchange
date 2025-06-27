@@ -4,6 +4,7 @@ CurrencyTotal = Struct.new(:currency, :name, :frozen_balance, :balance)
 
 ActiveAdmin.register FiatAccount do
   menu priority: 4, parent: 'Fiat Management', label: 'Fiat Accounts'
+  actions :all, except: [ :destroy ]
 
   permit_params :user_id, :currency, :balance, :frozen_balance
 

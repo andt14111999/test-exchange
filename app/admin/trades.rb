@@ -2,6 +2,7 @@
 
 ActiveAdmin.register Trade do
   menu priority: 3
+  actions :all, except: [ :destroy ]
 
   permit_params :status, :dispute_resolution, :payment_proof_status
 

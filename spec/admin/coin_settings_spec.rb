@@ -63,13 +63,18 @@ RSpec.describe 'Admin::CoinSettings', type: :system do
             expect(rows.size).to be >= 3
             rows.first(3).each do |row|
               within(row) do
-                expect(page).to have_link('Delete')
+                expect(page).to have_link('View')
+                expect(page).to have_link('Edit')
+                # Delete button is not available because admin config excludes destroy action
               end
             end
           end
         else
-          delete_links = page.all('a', text: 'Delete').select { |a| a[:href]&.include?('/admin/coin_settings/') }
-          expect(delete_links.size).to be >= 3
+          # Check for View and Edit links instead of Delete since destroy is excluded
+          view_links = page.all('a', text: 'View').select { |a| a[:href]&.include?('/admin/coin_settings/') }
+          edit_links = page.all('a', text: 'Edit').select { |a| a[:href]&.include?('/admin/coin_settings/') }
+          expect(view_links.size).to be >= 3
+          expect(edit_links.size).to be >= 3
         end
       end
 
@@ -753,30 +758,33 @@ RSpec.describe 'Admin::CoinSettings', type: :system do
             expect(rows.size).to be >= 3
             rows.first(3).each do |row|
               within(row) do
-                expect(page).to have_link('Delete')
+                expect(page).to have_link('View')
+                expect(page).to have_link('Edit')
+                # Delete button is not available because admin config excludes destroy action
               end
             end
           end
         else
-          delete_links = page.all('a', text: 'Delete').select { |a| a[:href]&.include?('/admin/coin_settings/') }
-          expect(delete_links.size).to be >= 3
+          # Check for View and Edit links instead of Delete since destroy is excluded
+          view_links = page.all('a', text: 'View').select { |a| a[:href]&.include?('/admin/coin_settings/') }
+          edit_links = page.all('a', text: 'Edit').select { |a| a[:href]&.include?('/admin/coin_settings/') }
+          expect(view_links.size).to be >= 3
+          expect(edit_links.size).to be >= 3
         end
       end
 
-      it 'allows deleting a coin setting' do
+      it 'does not allow deleting a coin setting' do
+        # Since destroy action is excluded, we cannot delete coin settings
+        # Test that delete functionality is not available
         create(:coin_setting, currency: 'usdt-2')
         create(:coin_setting, currency: 'eth-2')
         create(:coin_setting, currency: 'delete_me_2')
         visit admin_coin_settings_path
         page.refresh
-        within('table.index_table tbody') do
-          row = all('tr[id^="coin_setting_"]').first
-          within(row) do
-            click_link 'Delete'
-          end
-        end
-        # Không cần xác nhận alert với RackTest
-        expect(page).to have_content('Coin setting was successfully destroyed')
+
+        # Verify that no delete buttons exist
+        expect(page).not_to have_link('Delete')
+        expect(page).not_to have_button('Delete')
       end
     end
 

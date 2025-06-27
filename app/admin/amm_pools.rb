@@ -3,7 +3,7 @@
 ActiveAdmin.register AmmPool do
   menu priority: 10, label: 'AMM Pools', parent: 'AMM'
 
-  actions :all
+  actions :all, except: [ :destroy ]
 
   scope :all
   scope :active

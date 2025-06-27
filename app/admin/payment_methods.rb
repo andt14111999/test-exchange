@@ -2,6 +2,7 @@
 
 ActiveAdmin.register PaymentMethod do
   menu priority: 6, parent: 'Fiat Management'
+  actions :all, except: [ :destroy ]
 
   permit_params :name, :display_name, :description, :country_code,
                 :enabled, :icon_url, :fields_required
