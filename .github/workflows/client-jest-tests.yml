@@ -2,11 +2,11 @@ name: Client Jest Unit Tests
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, staging]
     paths:
       - "client/**"
   pull_request:
-    branches: [main, master]
+    branches: [main]
     paths:
       - "client/**"
   workflow_dispatch:

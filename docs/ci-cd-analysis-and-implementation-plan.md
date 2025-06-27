@@ -15,7 +15,7 @@ This project is organized as a monorepo containing three main components:
    - Clockwork for scheduling
    - API endpoints using Grape
    - Admin interface using ActiveAdmin
-   - Authentication with Devise + JWTÂ
+   - Authentication with Devise + JWT
 
 2. **Client** (`/client/`) - Next.js frontend application
 

@@ -2,7 +2,7 @@ name: Engine Java Tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging]
     paths:
       - "engine/**"
   pull_request:

@@ -2,13 +2,13 @@ name: Client Translation Check
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - "client/src/i18n/**"
       - "client/src/components/**"
       - "client/src/app/**"
   push:
-    branches: [main, develop]
+    branches: [main, staging]
     paths:
       - "client/src/i18n/**"
       - "client/src/components/**"

@@ -51,3 +51,5 @@
 /coverage/
 /coverage.data
 
+.cursorignore
+

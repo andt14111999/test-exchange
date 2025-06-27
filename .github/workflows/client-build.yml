@@ -2,11 +2,11 @@ name: Client Build Check
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - "client/**"
   push:
-    branches: [main, develop]
+    branches: [main, staging]
     paths:
       - "client/**"
   workflow_dispatch:
