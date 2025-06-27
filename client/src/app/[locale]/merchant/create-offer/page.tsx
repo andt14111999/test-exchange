@@ -36,7 +36,7 @@ import { PaymentMethod } from "@/lib/api/payment-methods";
 import {
   FIAT_CURRENCIES,
   MAX_AMOUNT_PER_TRANSACTION,
-  MOCK_AMOUNT_LIMITS,
+  P2P_AMOUNT_LIMITS,
 } from "@/lib/constants";
 import { FiatCurrency } from "@/lib/types";
 import { handleApiError } from "@/lib/utils/error-handler";
@@ -130,16 +130,10 @@ const formSchema = z
     fiatCurrency: z
       .string()
       .transform((val) => val.toUpperCase() as FiatCurrency),
-    amount: z.number().min(MOCK_AMOUNT_LIMITS.MIN).max(MOCK_AMOUNT_LIMITS.MAX),
+    amount: z.number().min(P2P_AMOUNT_LIMITS.MIN).max(P2P_AMOUNT_LIMITS.MAX),
     price: z.number().default(1), // Price is always 1
-    minAmount: z
-      .number()
-      .min(MOCK_AMOUNT_LIMITS.MIN)
-      .max(MOCK_AMOUNT_LIMITS.MAX),
-    maxAmount: z
-      .number()
-      .min(MOCK_AMOUNT_LIMITS.MIN)
-      .max(MOCK_AMOUNT_LIMITS.MAX),
+    minAmount: z.number().min(P2P_AMOUNT_LIMITS.MIN).max(P2P_AMOUNT_LIMITS.MAX),
+    maxAmount: z.number().min(P2P_AMOUNT_LIMITS.MIN).max(P2P_AMOUNT_LIMITS.MAX),
     bankAccountId: z.union([z.string(), z.number()]).optional(),
     paymentMethodId: z.string().min(1, "paymentMethodRequired"),
     paymentTime: z.number().min(5).max(180), // Payment time in minutes
@@ -202,10 +196,10 @@ export default function CreateOffer() {
     defaultValues: {
       type: "sell",
       fiatCurrency: "VND",
-      amount: MOCK_AMOUNT_LIMITS.MIN,
+      amount: P2P_AMOUNT_LIMITS.MIN,
       price: 1, // Always 1
-      minAmount: MOCK_AMOUNT_LIMITS.MIN,
-      maxAmount: MOCK_AMOUNT_LIMITS.MAX,
+      minAmount: P2P_AMOUNT_LIMITS.MIN,
+      maxAmount: P2P_AMOUNT_LIMITS.MAX,
       bankAccountId: undefined,
       paymentMethodId: "",
       paymentTime: 15,
@@ -251,7 +245,12 @@ export default function CreateOffer() {
       if (selectedCurrency) {
         const balance = updateAvailableBalance(selectedCurrency);
 
-        if (balance !== undefined && !isEditMode) {
+        // Only auto-set amount for Withdraw offers (sell) in new offer mode
+        if (
+          balance !== undefined &&
+          !isEditMode &&
+          form.getValues("type") === "sell"
+        ) {
           form.setValue("amount", balance);
         }
       }
@@ -264,8 +263,12 @@ export default function CreateOffer() {
     if (walletData && selectedCurrency) {
       const balance = updateAvailableBalance(selectedCurrency);
 
-      // Only auto-set amount for new offers, not edit mode
-      if (balance !== undefined && !isEditMode) {
+      // Only auto-set amount for Withdraw offers (sell) and not in edit mode
+      if (
+        balance !== undefined &&
+        !isEditMode &&
+        form.getValues("type") === "sell"
+      ) {
         form.setValue("amount", balance);
       }
     }
@@ -280,6 +283,18 @@ export default function CreateOffer() {
       form.setValue("maxAmount", MAX_AMOUNT_PER_TRANSACTION);
     }
   }, [amount, form]);
+
+  // Watch offer type changes to clear amount fields when switching from sell to buy
+  const watchedOfferType = form.watch("type");
+  useEffect(() => {
+    // Only clear amounts when switching from sell to buy (not during initial load or edit mode)
+    if (!isEditMode && watchedOfferType === "buy") {
+      // Clear amount fields when switching to deposit offer (buy)
+      form.setValue("amount", P2P_AMOUNT_LIMITS.MIN);
+      form.setValue("minAmount", P2P_AMOUNT_LIMITS.MIN);
+      form.setValue("maxAmount", P2P_AMOUNT_LIMITS.MAX);
+    }
+  }, [watchedOfferType, form, isEditMode]);
 
   // Fetch payment methods
   const { data: paymentMethodsResponse, isLoading: isLoadingPaymentMethods } =
@@ -499,7 +514,8 @@ export default function CreateOffer() {
 
   // Get current offer type to conditionally display bank account selector
   const offerType = form.watch("type");
-  const isSellOffer = offerType === "sell";
+  const isWithdrawOffer = offerType === "sell"; // Withdraw Offer
+  const isDepositOffer = offerType === "buy"; // Deposit Offer
 
   // Memoize handlers to prevent infinite loops
   const handlePaymentMethodChange = useCallback(
@@ -727,13 +743,17 @@ export default function CreateOffer() {
                             <SelectItem value="buy">
                               <div className="flex items-center gap-2">
                                 <ArrowDown className="h-5 w-5 text-green-500" />
-                                <span className="font-medium">{t("buy")}</span>
+                                <span className="font-medium">
+                                  {t("depositOffer")}
+                                </span>
                               </div>
                             </SelectItem>
                             <SelectItem value="sell">
                               <div className="flex items-center gap-2">
                                 <ArrowUp className="h-5 w-5 text-red-500" />
-                                <span className="font-medium">{t("sell")}</span>
+                                <span className="font-medium">
+                                  {t("withdrawOffer")}
+                                </span>
                               </div>
                             </SelectItem>
                           </SelectContent>
@@ -905,12 +925,14 @@ export default function CreateOffer() {
                               data-testid="total-amount-input"
                             />
                           </FormControl>
-                          {availableBalance !== undefined && (
-                            <FormDescription>
-                              {t("availableBalance")}: {availableBalance}{" "}
-                              {selectedCurrency}
-                            </FormDescription>
-                          )}
+                          {/* Only show available balance for Withdraw offers */}
+                          {isWithdrawOffer &&
+                            availableBalance !== undefined && (
+                              <FormDescription>
+                                {t("availableBalance")}: {availableBalance}{" "}
+                                {selectedCurrency}
+                              </FormDescription>
+                            )}
                           <div className="hidden">
                             <FormMessage data-testid="form-message" />
                           </div>
@@ -1031,7 +1053,7 @@ export default function CreateOffer() {
                   />
 
                   {/* Bank Account Selector for Sell Offers */}
-                  {isSellOffer && (
+                  {isWithdrawOffer && (
                     <div className="space-y-3">
                       <FormLabel className="block text-base">
                         {t("bankAccount")}
@@ -1055,7 +1077,7 @@ export default function CreateOffer() {
                   )}
 
                   {/* Payment Instructions for Buy Offers */}
-                  {!isSellOffer && (
+                  {isDepositOffer && (
                     <FormField
                       control={form.control}
                       name="paymentDetails"

@@ -80,6 +80,8 @@
     "selectOfferType": "Select offer type",
     "buy": "Buy",
     "sell": "Sell",
+    "depositOffer": "Deposit Offer",
+    "withdrawOffer": "Withdraw Offer",
     "bankAccount": "Bank Account",
     "bankAccountDescription": "Select a bank account for receiving payments",
     "bankDetailsRequired": "Bank account details are required for selling offers",

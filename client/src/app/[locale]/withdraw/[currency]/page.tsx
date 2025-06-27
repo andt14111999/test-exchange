@@ -33,7 +33,7 @@ const WITHDRAW_FEES = {
   },
 };
 
-const MOCK_AMOUNT_LIMITS = {
+const P2P_AMOUNT_LIMITS = {
   MIN: 10000,
 };
 
@@ -113,10 +113,10 @@ export default function WithdrawPage() {
     }
 
     const numAmount = Number(amount);
-    if (isNaN(numAmount) || numAmount < MOCK_AMOUNT_LIMITS.MIN) {
+    if (isNaN(numAmount) || numAmount < P2P_AMOUNT_LIMITS.MIN) {
       setErrorMessage(
         t("amountTooLow", {
-          min: new Intl.NumberFormat("en-US").format(MOCK_AMOUNT_LIMITS.MIN),
+          min: new Intl.NumberFormat("en-US").format(P2P_AMOUNT_LIMITS.MIN),
           currency: currency.toUpperCase(),
         }),
       );

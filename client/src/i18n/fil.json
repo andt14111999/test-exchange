@@ -80,6 +80,8 @@
     "selectOfferType": "Piliin ang uri ng alok",
     "buy": "Bumili",
     "sell": "Magbenta",
+    "depositOffer": "Alok na Deposito",
+    "withdrawOffer": "Alok na Pag-withdraw",
     "bankAccount": "Account sa Bangko",
     "bankAccountRequired": "Kailangan ang account sa bangko para sa mga alok na pagbebenta",
     "bankDetailsRequired": "Kailangan ang mga detalye ng account sa bangko para sa mga alok na pagbebenta",

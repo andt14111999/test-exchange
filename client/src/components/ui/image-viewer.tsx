@@ -128,11 +128,14 @@ export function ImageViewer({
             >
               <X className="h-4 w-4" />
             </Button>
-            <img
+            <Image
               data-testid="dialog-image"
               src={src}
               alt={alt}
-              className="block max-w-none max-h-none"
+              width={0}
+              height={0}
+              className="block max-w-[90vw] max-h-[90vh] w-auto h-auto"
+              sizes="90vw"
               style={{
                 width: "auto",
                 height: "auto",
