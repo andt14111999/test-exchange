@@ -873,7 +873,11 @@
     "errorFetchingOffers": "Lỗi tải đề xuất",
     "insufficientBalanceDescription": "Số dư không đủ. Bạn có {available} {currency} có thể rút.",
     "withdrawDisabled": "Tính năng rút tiền bị tắt",
-    "withdrawDisabledDescription": "Tính năng rút tiền hiện đang bị tắt cho coin này"
+    "withdrawDisabledDescription": "Tính năng rút tiền hiện đang bị tắt cho coin này",
+    "noOffersForCurrency": "Không có đề xuất cho loại tiền tệ này",
+    "noOffersForCurrencyDescription": "Hiện không có thương nhân nào cung cấp {currency} phù hợp với số tiền bạn muốn rút. Vui lòng thử số tiền khác hoặc thử lại sau.",
+    "amountTooLow": "Số tiền quá thấp",
+    "amountTooLowDescription": "Số tiền tối thiểu để rút là {min} {currency}."
   },
   "transactions": {
     "myTradingHistory": "Lịch sử Giao dịch của Tôi",

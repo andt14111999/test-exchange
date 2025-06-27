@@ -873,7 +873,11 @@
     "somethingWentWrong": "May nangyaring mali. Mangyaring subukan muli mamaya.",
     "insufficientBalanceDescription": "Hindi sapat na balanse. Mag-deposit ng {amount} {currency} para mag-withdraw.",
     "withdrawDisabled": "Hindi Pinagana ang Pag-withdraw",
-    "withdrawDisabledDescription": "Ang pag-withdraw ay kasalukuyang hindi pinagana para sa coin na ito"
+    "withdrawDisabledDescription": "Ang pag-withdraw ay kasalukuyang hindi pinagana para sa coin na ito",
+    "noOffersForCurrency": "Walang alok para sa currency na ito",
+    "noOffersForCurrencyDescription": "Walang merchant na nag-aalok ng {currency} na tumugma sa inyong halaga ng pag-withdraw. Pakisubukang gumamit ng ibang halaga o subukan muli mamaya.",
+    "amountTooLow": "Masyadong mababang halaga",
+    "amountTooLowDescription": "Ang minimum na halaga para mag-withdraw ay {min} {currency}."
   },
   "transactions": {
     "myTradingHistory": "Aking Kasaysayan ng Pangangalakal",
