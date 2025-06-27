@@ -151,7 +151,8 @@ export default function WithdrawPage() {
         ? offersResponse
         : (offersResponse.data as Offer[]);
 
-      // Filter offers by currency and country code
+      // Filter offers by currency, country code, and amount range
+      const numAmount = Number(amount);
       const filteredOffers = offersData.filter((offer) => {
         const isMatchingCurrency =
           offer.currency.toLowerCase() === currency.toLowerCase();
@@ -161,13 +162,20 @@ export default function WithdrawPage() {
         const isOnline = offer.online !== false;
         const isNotOwnOffer = Number(offer.user_id) !== Number(user?.id);
 
+        // Check if the withdraw amount is within the offer's min/max range
+        const minAmount = parseFloat(String(offer.min_amount));
+        const maxAmount = parseFloat(String(offer.max_amount));
+        const isAmountInRange =
+          numAmount >= minAmount && numAmount <= maxAmount;
+
         return (
           isMatchingCurrency &&
           isMatchingCountry &&
           isBuyOffer &&
           isActive &&
           isOnline &&
-          isNotOwnOffer
+          isNotOwnOffer &&
+          isAmountInRange
         );
       });
 

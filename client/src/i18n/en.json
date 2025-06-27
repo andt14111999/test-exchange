@@ -869,7 +869,11 @@
     "errorFetchingOffers": "Error Fetching Offers",
     "insufficientBalanceDescription": "Insufficient balance. You have {available} {currency} available to withdraw.",
     "withdrawDisabled": "Withdrawal is currently disabled for this coin",
-    "withdrawDisabledDescription": "Withdrawal is currently disabled for this coin"
+    "withdrawDisabledDescription": "Withdrawal is currently disabled for this coin",
+    "noOffersForCurrency": "No offers for this currency",
+    "noOffersForCurrencyDescription": "There are no merchants offering {currency} that match your withdrawal amount. Please try a different amount or try again later.",
+    "amountTooLow": "Amount too low",
+    "amountTooLowDescription": "The minimum amount to withdraw is {min} {currency}."
   },
   "liquidity": {
     "balance": "Balance",
