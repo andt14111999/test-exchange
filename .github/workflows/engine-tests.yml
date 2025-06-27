@@ -53,7 +53,7 @@ jobs:
 
       - name: Check code coverage
         id: jacoco
-        uses: madrapps/jacoco-report@v1.7.1
+        uses: madrapps/jacoco-report@v1.7.2
         with:
           paths: ${{ github.workspace }}/engine/target/site/jacoco/jacoco.xml
           min-coverage-overall: 90
