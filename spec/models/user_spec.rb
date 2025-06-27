@@ -195,6 +195,7 @@ RSpec.describe User, type: :model do
     it 'returns allowed attributes for ransack search' do
       expected_attributes = %w[
         avatar_url
+        authenticator_enabled
         created_at
         display_name
         document_verified
@@ -355,6 +356,84 @@ RSpec.describe User, type: :model do
 
     it 'returns nil when no account exists for the currency' do
       expect(user.main_account('UNKNOWN')).to be_nil
+    end
+  end
+
+  describe '2FA functionality' do
+    describe '#assign_authenticator_key' do
+      it 'assigns a random authenticator key' do
+        user = create(:user)
+        expect(user.authenticator_key).to be_nil
+
+        user.assign_authenticator_key
+        expect(user.authenticator_key).to be_present
+        expect(user.authenticator_key).to match(/\A[A-Z2-7]{32}\z/)
+      end
+    end
+
+    describe '#generate_provisioning_uri' do
+      it 'generates a valid provisioning URI when key and username are present' do
+        user = create(:user, username: 'testuser')
+        user.assign_authenticator_key
+        user.save
+
+        uri = user.generate_provisioning_uri
+        expect(uri).to include('otpauth://totp/Snowfox%20Exchange:testuser')
+        expect(uri).to include('issuer=Snowfox%20Exchange')
+        expect(uri).to include("secret=#{user.authenticator_key}")
+      end
+
+      it 'uses email when username is not present' do
+        user = create(:user, email: 'test@example.com', username: nil)
+        user.assign_authenticator_key
+        user.save
+
+        uri = user.generate_provisioning_uri
+        expect(uri).to include('otpauth://totp/Snowfox%20Exchange:test%40example.com')
+        expect(uri).to include('issuer=Snowfox%20Exchange')
+        expect(uri).to include("secret=#{user.authenticator_key}")
+      end
+
+      it 'returns empty string when authenticator key is blank' do
+        user = create(:user, email: 'test@example.com')
+        expect(user.generate_provisioning_uri).to eq('')
+      end
+
+      it 'returns empty string when both username and email are blank' do
+        user = create(:user)
+        user.assign_authenticator_key
+        user.email = nil
+        user.username = nil
+        expect(user.generate_provisioning_uri).to eq('')
+      end
+    end
+
+    describe '#disable_authenticator!' do
+      it 'disables authenticator and clears the key' do
+        user = create(:user, authenticator_enabled: true)
+        user.assign_authenticator_key
+        user.save
+
+        user.disable_authenticator!
+        expect(user.authenticator_enabled).to be false
+        expect(user.authenticator_key).to be_nil
+      end
+    end
+
+    describe '#verify_otp' do
+      it 'delegates to otp_verifier' do
+        user = create(:user)
+        user.assign_authenticator_key
+        user.save
+
+        otp_verifier = instance_double(OtpVerifier)
+        allow(user).to receive(:otp_verifier).and_return(otp_verifier)
+        allow(otp_verifier).to receive(:verify_otp).with('123456').and_return(true)
+
+        result = user.verify_otp('123456')
+        expect(result).to be true
+        expect(otp_verifier).to have_received(:verify_otp).with('123456')
+      end
     end
   end
 

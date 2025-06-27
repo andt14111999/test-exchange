@@ -14,6 +14,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_26_085346) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
+  create_table "access_devices", id: :serial, force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "device_uuid_hash", null: false
+    t.jsonb "details", null: false
+    t.boolean "first_device", default: false, null: false
+    t.boolean "trusted", default: false, null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.index ["user_id", "device_uuid_hash"], name: "index_access_devices_on_user_id_and_device_uuid_hash", unique: true
+    t.index ["user_id"], name: "index_access_devices_on_user_id"
+  end
+
   create_table "active_admin_comments", force: :cascade do |t|
     t.string "namespace"
     t.text "body"
@@ -786,6 +798,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_26_085346) do
     t.datetime "updated_at", null: false
     t.string "username", limit: 20
     t.datetime "deleted_at"
+    t.boolean "authenticator_enabled", default: false, null: false
+    t.string "authenticator_key"
     t.index ["deleted_at"], name: "index_users_on_deleted_at"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["username"], name: "index_users_on_username", unique: true
@@ -801,6 +815,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_26_085346) do
     t.index ["item_type", "item_id"], name: "index_versions_on_item_type_and_item_id"
   end
 
+  add_foreign_key "access_devices", "users"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "amm_orders", "amm_pools"

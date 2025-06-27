@@ -10,6 +10,7 @@ module V1
     mount V1::CoinWithdrawals::Api
     mount V1::Notifications::Api
     mount V1::Users::Api
+    mount V1::AccessDevices::Api
     mount V1::Merchant::Escrows
     mount V1::Users::MerchantRegistration
     mount V1::Settings::Api

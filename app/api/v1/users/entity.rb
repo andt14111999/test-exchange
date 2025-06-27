@@ -13,6 +13,7 @@ module V1
       expose :kyc_level
       expose :phone_verified
       expose :document_verified
+      expose :authenticator_enabled
     end
   end
 end

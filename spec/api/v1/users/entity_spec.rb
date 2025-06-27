@@ -19,7 +19,8 @@ RSpec.describe V1::Users::Entity, type: :entity do
         status: user.status,
         kyc_level: user.kyc_level,
         phone_verified: user.phone_verified,
-        document_verified: user.document_verified
+        document_verified: user.document_verified,
+        authenticator_enabled: user.authenticator_enabled
       )
     end
   end
