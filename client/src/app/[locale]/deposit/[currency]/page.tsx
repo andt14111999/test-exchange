@@ -17,7 +17,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useWallet } from "@/hooks/use-wallet";
 import { getOffers, Offer } from "@/lib/api/merchant";
 import { createTrade } from "@/lib/api/trades";
-import { MOCK_AMOUNT_LIMITS } from "@/lib/constants";
+import { P2P_AMOUNT_LIMITS } from "@/lib/constants";
 import { getTradingFees, TradingFees } from "@/lib/api/settings";
 import { useUserStore } from "@/lib/store/user-store";
 import { MerchantOffer } from "@/types/fiat-deposits";
@@ -112,11 +112,11 @@ export default function DepositPage() {
     if (!amount) return;
 
     const numAmount = Number(amount);
-    if (isNaN(numAmount) || numAmount < MOCK_AMOUNT_LIMITS.MIN) {
+    if (isNaN(numAmount) || numAmount < P2P_AMOUNT_LIMITS.MIN) {
       toast({
         title: t("invalidAmount"),
         description: t("amountTooLow", {
-          min: new Intl.NumberFormat("en-US").format(MOCK_AMOUNT_LIMITS.MIN),
+          min: new Intl.NumberFormat("en-US").format(P2P_AMOUNT_LIMITS.MIN),
           currency: currency.toUpperCase(),
         }),
         variant: "destructive",
@@ -341,7 +341,7 @@ export default function DepositPage() {
                 id="amount"
                 type="text"
                 inputMode="numeric"
-                placeholder={`${new Intl.NumberFormat("en-US").format(MOCK_AMOUNT_LIMITS.MIN)} ${currency.toUpperCase()}`}
+                placeholder={`${new Intl.NumberFormat("en-US").format(P2P_AMOUNT_LIMITS.MIN)} ${currency.toUpperCase()}`}
                 value={
                   amount
                     ? new Intl.NumberFormat("en-US").format(Number(amount))
@@ -363,7 +363,7 @@ export default function DepositPage() {
               />
               <p className="text-sm text-muted-foreground">
                 {t("min")}:{" "}
-                {new Intl.NumberFormat("en-US").format(MOCK_AMOUNT_LIMITS.MIN)}{" "}
+                {new Intl.NumberFormat("en-US").format(P2P_AMOUNT_LIMITS.MIN)}{" "}
                 {currency.toUpperCase()}
               </p>
             </div>

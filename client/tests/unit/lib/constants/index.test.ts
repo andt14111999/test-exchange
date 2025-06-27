@@ -5,7 +5,7 @@ import {
   FIAT_CURRENCY_SYMBOLS,
   NETWORK_LABELS,
   MOCK_RATES,
-  MOCK_AMOUNT_LIMITS,
+  P2P_AMOUNT_LIMITS,
   DEPOSIT_FEES,
 } from "@/lib/constants";
 
@@ -84,18 +84,18 @@ describe("Constants", () => {
     });
   });
 
-  describe("MOCK_AMOUNT_LIMITS", () => {
+  describe("P2P_AMOUNT_LIMITS", () => {
     it("should have the correct amount limits", () => {
-      expect(MOCK_AMOUNT_LIMITS).toEqual({
+      expect(P2P_AMOUNT_LIMITS).toEqual({
         MIN: 50000,
         MAX: 1000000000,
       });
     });
 
     it("should have valid min and max values", () => {
-      expect(MOCK_AMOUNT_LIMITS.MIN).toBe(50000);
-      expect(MOCK_AMOUNT_LIMITS.MAX).toBe(1000000000);
-      expect(MOCK_AMOUNT_LIMITS.MIN).toBeLessThan(MOCK_AMOUNT_LIMITS.MAX);
+      expect(P2P_AMOUNT_LIMITS.MIN).toBe(50000);
+      expect(P2P_AMOUNT_LIMITS.MAX).toBe(1000000000);
+      expect(P2P_AMOUNT_LIMITS.MIN).toBeLessThan(P2P_AMOUNT_LIMITS.MAX);
     });
   });
 

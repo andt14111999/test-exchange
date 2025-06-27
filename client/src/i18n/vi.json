@@ -80,6 +80,8 @@
     "selectOfferType": "Chọn loại đề xuất",
     "buy": "Mua",
     "sell": "Bán",
+    "depositOffer": "Đề xuất Nạp tiền",
+    "withdrawOffer": "Đề xuất Rút tiền",
     "bankAccount": "Tài khoản ngân hàng",
     "bankAccountRequired": "Cần có tài khoản ngân hàng cho các đề xuất bán",
     "bankDetailsRequired": "Cần có thông tin tài khoản ngân hàng cho các đề xuất bán",

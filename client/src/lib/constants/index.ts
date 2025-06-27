@@ -27,7 +27,7 @@ export const MOCK_RATES = {
   },
 } as const;
 
-export const MOCK_AMOUNT_LIMITS = {
+export const P2P_AMOUNT_LIMITS = {
   MIN: 50000,
   MAX: 1000000000,
 } as const;
