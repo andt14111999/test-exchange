@@ -1,14 +1,22 @@
-name: Code Quality
+name: Client Code Quality
 
 on:
   pull_request:
     branches: [main, develop]
+    paths:
+      - "client/**"
   push:
     branches: [main, develop]
+    paths:
+      - "client/**"
+  workflow_dispatch:
 
 jobs:
   code-quality:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client
 
     steps:
       - uses: actions/checkout@v4
@@ -24,6 +32,7 @@ jobs:
         with:
           node-version: "20"
           cache: "pnpm"
+          cache-dependency-path: "client/pnpm-lock.yaml"
 
       - name: Install dependencies
         run: pnpm install
@@ -35,4 +44,4 @@ jobs:
         run: pnpm lint
 
       - name: Format check
-        run: pnpm format:check
+        run: pnpm format:check 

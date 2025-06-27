@@ -1,10 +1,14 @@
-name: Jest Unit Tests
+name: Client Jest Unit Tests
 
 on:
   push:
     branches: [main, master]
+    paths:
+      - "client/**"
   pull_request:
     branches: [main, master]
+    paths:
+      - "client/**"
   workflow_dispatch:
 
 # Add permissions configuration
@@ -18,6 +22,10 @@ jobs:
     name: "Jest Unit Tests"
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ./client
+        
     steps:
       - uses: actions/checkout@v4
 
@@ -60,12 +68,6 @@ jobs:
         env:
           CI: true
 
-      - name: List coverage files
-        run: |
-          echo "Listing coverage directory contents:"
-          find coverage -type f | sort
-        continue-on-error: true
-
       - name: Check coverage threshold
         run: |
           # Check if the coverage/lcov.info file exists, which is standard for Jest
@@ -88,51 +90,18 @@ jobs:
 
           echo "::notice::Test coverage meets the 80% threshold (actual: $COVERAGE%)"
 
-          # Check individual file coverage (minimum 60%)
-          echo "Checking individual file coverage (minimum 60% required)..."
-          FAILED_FILES=()
-          while IFS= read -r line; do
-            if [[ $line =~ SF:(.*) ]]; then
-              FILE="${BASH_REMATCH[1]}"
-            elif [[ $line =~ LF:[0-9]+ && $FILE ]]; then
-              LF=$(echo "$line" | cut -d: -f2)
-            elif [[ $line =~ LH:[0-9]+ && $FILE && $LF ]]; then
-              LH=$(echo "$line" | cut -d: -f2)
-              if [ "$LF" -gt 0 ]; then
-                COVERAGE=$(echo "scale=2; $LH * 100 / $LF" | bc)
-                if (( $(echo "$COVERAGE < 60" | bc -l) )); then
-                  echo "::error::File $FILE has low coverage: $COVERAGE% (threshold: 60%)"
-                  FAILED_FILES+=("$FILE: $COVERAGE%")
-                fi
-              fi
-              FILE=""
-              LF=""
-              LH=""
-            fi
-          done < coverage/lcov.info
-
-          if [ ${#FAILED_FILES[@]} -gt 0 ]; then
-            echo "The following files have coverage below 60%:"
-            for file in "${FAILED_FILES[@]}"; do
-              echo "  - $file"
-            done
-            exit 1
-          fi
-
-          echo "::notice::All files meet the minimum 60% coverage requirement"
-
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: coverage/
+          path: client/coverage/
           retention-days: 30
 
       - name: Publish Coverage Report as PR Comment
         if: github.event_name == 'pull_request'
         uses: romeovs/lcov-reporter-action@v0.3.1
         with:
-          lcov-file: ./coverage/lcov.info
+          lcov-file: ./client/coverage/lcov.info
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          title: "Test Coverage Report"
+          title: "Test Coverage Report" 

@@ -1,14 +1,22 @@
-name: Build Check
+name: Client Build Check
 
 on:
   pull_request:
     branches: [main, develop]
+    paths:
+      - "client/**"
   push:
     branches: [main, develop]
+    paths:
+      - "client/**"
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client
 
     steps:
       - uses: actions/checkout@v4
@@ -24,6 +32,7 @@ jobs:
         with:
           node-version: "20"
           cache: "pnpm"
+          cache-dependency-path: "client/pnpm-lock.yaml"
 
       - name: Install dependencies
         run: pnpm install
@@ -37,4 +46,4 @@ jobs:
             echo "Build failed: .next directory not found"
             exit 1
           fi
-          echo "Build successful: .next directory exists"
+          echo "Build successful: .next directory exists" 

@@ -1,23 +1,26 @@
-name: Translation Check
+name: Client Translation Check
 
 on:
   pull_request:
     branches: [main, develop]
     paths:
-      - "src/i18n/**"
-      - "src/components/**"
-      - "src/app/**"
+      - "client/src/i18n/**"
+      - "client/src/components/**"
+      - "client/src/app/**"
   push:
     branches: [main, develop]
     paths:
-      - "src/i18n/**"
-      - "src/components/**"
-      - "src/app/**"
+      - "client/src/i18n/**"
+      - "client/src/components/**"
+      - "client/src/app/**"
   workflow_dispatch:
 
 jobs:
   check-translations:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client
 
     steps:
       - uses: actions/checkout@v4
@@ -62,4 +65,4 @@ jobs:
           if [ "$MISSING_KEYS" -ne "0" ]; then
             echo "::error::Translation check failed: $MISSING_KEYS keys are missing"
             exit 1
-          fi
+          fi 
