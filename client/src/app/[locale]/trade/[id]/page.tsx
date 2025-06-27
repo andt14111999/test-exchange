@@ -241,7 +241,7 @@ const CancelTradeModal = ({ trade, onClose }: CancelTradeModalProps) => {
             variant: "destructive",
           });
         },
-      }
+      },
     );
   };
 
@@ -326,7 +326,7 @@ const DisputeTradeModal = ({ trade, onClose }: DisputeTradeModalProps) => {
             variant: "destructive",
           });
         },
-      }
+      },
     );
   };
 
@@ -408,7 +408,7 @@ const AwaitingPaymentCard = ({ trade, t, router }: Required<CardProps>) => {
             title: t("failedToMarkTradeAsPaid"),
             variant: "destructive",
           }),
-      }
+      },
     );
   };
 
@@ -510,7 +510,7 @@ const AwaitingPaymentCard = ({ trade, t, router }: Required<CardProps>) => {
                         <div className="font-medium">
                           {formatFiatAmount(
                             parseFloat(paymentAmount),
-                            trade.fiat_currency
+                            trade.fiat_currency,
                           )}
                         </div>
                         <CopyableField
@@ -740,7 +740,7 @@ const PaidCard = ({ t, trade }: Omit<Required<CardProps>, "router">) => {
                     <div className="font-medium">
                       {formatFiatAmount(
                         parseFloat(paymentAmount),
-                        trade.fiat_currency
+                        trade.fiat_currency,
                       )}
                     </div>
                     <CopyableField
@@ -859,7 +859,7 @@ const PaidCard = ({ t, trade }: Omit<Required<CardProps>, "router">) => {
                     <span className="font-medium">
                       {formatFiatAmount(
                         parseFloat(trade.fiat_amount),
-                        trade.fiat_currency
+                        trade.fiat_currency,
                       )}
                     </span>
                   </div>
@@ -1078,7 +1078,7 @@ const DisputedCard = ({ t, router, trade }: Required<CardProps>) => {
                     <span className="font-medium">
                       {formatFiatAmount(
                         parseFloat(trade.fiat_amount),
-                        trade.fiat_currency
+                        trade.fiat_currency,
                       )}
                     </span>
                   </div>
@@ -1130,7 +1130,7 @@ const TradeCountdown = ({ trade, t, onComplete }: CountdownProps) => {
       const timeoutDate = new Date(trade.unpaid_timeout_at);
       const now = new Date();
       const diffSeconds = Math.floor(
-        (timeoutDate.getTime() - now.getTime()) / 1000
+        (timeoutDate.getTime() - now.getTime()) / 1000,
       );
       return Math.max(0, diffSeconds);
     }
@@ -1140,7 +1140,7 @@ const TradeCountdown = ({ trade, t, onComplete }: CountdownProps) => {
       const timeoutDate = new Date(trade.paid_timeout_at);
       const now = new Date();
       const diffSeconds = Math.floor(
-        (timeoutDate.getTime() - now.getTime()) / 1000
+        (timeoutDate.getTime() - now.getTime()) / 1000,
       );
       return Math.max(0, diffSeconds);
     }
@@ -1275,7 +1275,7 @@ const TradeDetailContent = ({
             <div className="text-xl font-bold">
               {formatFiatAmount(
                 parseFloat(trade.fiat_amount),
-                trade.fiat_currency
+                trade.fiat_currency,
               )}
             </div>
           </div>
@@ -1385,7 +1385,7 @@ const TradeDetailContent = ({
                       <div className="text-sm text-gray-500">
                         {t("uploadedAt")}:{" "}
                         {new Date(
-                          trade.payment_receipt_details.uploaded_at
+                          trade.payment_receipt_details.uploaded_at,
                         ).toLocaleString()}
                       </div>
                     )}
