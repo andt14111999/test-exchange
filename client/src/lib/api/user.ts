@@ -77,3 +77,99 @@ export async function updateUsername(username: string): Promise<UserData> {
     throw new Error("Failed to update username");
   }
 }
+
+// 2FA API functions
+export interface TwoFactorAuthStatus {
+  enabled: boolean;
+}
+
+export interface TwoFactorAuthEnable {
+  qr_code_uri: string;
+  message: string;
+}
+
+export interface TwoFactorAuthResponse {
+  message: string;
+}
+
+export async function enableTwoFactorAuth(): Promise<TwoFactorAuthEnable> {
+  try {
+    const response = await apiClient.post(
+      API_ENDPOINTS.users.twoFactorAuth.enable,
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      if (error.response.status === 401) {
+        throw new Error("Unauthorized");
+      }
+      if (error.response.status === 400) {
+        throw new Error(
+          error.response.data?.message || "2FA is already enabled",
+        );
+      }
+      throw new Error(`API error: ${error.response.status}`);
+    }
+    throw new Error("Failed to enable 2FA");
+  }
+}
+
+export async function verifyTwoFactorAuth(
+  code: string,
+  trustDevice: boolean = false,
+): Promise<TwoFactorAuthResponse> {
+  try {
+    const response = await apiClient.post(
+      API_ENDPOINTS.users.twoFactorAuth.verify,
+      {
+        code,
+      },
+      {
+        headers: {
+          "Device-Trusted": trustDevice.toString(),
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      if (error.response.status === 401) {
+        throw new Error("Unauthorized");
+      }
+      if (error.response.status === 400) {
+        throw new Error(
+          error.response.data?.message || "Invalid verification code",
+        );
+      }
+      throw new Error(`API error: ${error.response.status}`);
+    }
+    throw new Error("Failed to verify 2FA");
+  }
+}
+
+export async function disableTwoFactorAuth(
+  code: string,
+): Promise<TwoFactorAuthResponse> {
+  try {
+    const response = await apiClient.delete(
+      API_ENDPOINTS.users.twoFactorAuth.disable,
+      {
+        data: { code },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      if (error.response.status === 401) {
+        throw new Error("Unauthorized");
+      }
+      if (error.response.status === 400) {
+        throw new Error(
+          error.response.data?.message || "Invalid verification code",
+        );
+      }
+      throw new Error(`API error: ${error.response.status}`);
+    }
+    throw new Error("Failed to disable 2FA");
+  }
+}

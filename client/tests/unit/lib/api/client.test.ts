@@ -38,6 +38,8 @@ jest.mock("axios", () => ({
 const mockLocalStorage = {
   getItem: jest.fn(),
   removeItem: jest.fn(),
+  setItem: jest.fn(),
+  clear: jest.fn(),
 };
 
 Object.defineProperty(window, "localStorage", {

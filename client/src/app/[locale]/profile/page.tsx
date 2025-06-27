@@ -4,6 +4,7 @@ import { ProtectedLayout } from "@/components/protected-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TwoFactorAuthDisableDialog } from "@/components/two-factor-auth-disable-dialog";
 import { useUserStore } from "@/lib/store/user-store";
 import { useRouter } from "@/navigation";
 import {
@@ -17,12 +18,13 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
   const t = useTranslations();
   const router = useRouter();
   const { user } = useUserStore();
+  const [showDisable2FADialog, setShowDisable2FADialog] = useState(false);
 
   // Redirect nếu user không có username
   useEffect(() => {
@@ -45,6 +47,15 @@ export default function ProfilePage() {
       default:
         return "bg-gray-100 text-gray-800 border-gray-300";
     }
+  };
+
+  const handleSetup2FA = () => {
+    router.push("/profile/two-factor-setup");
+  };
+
+  const handleDisable2FASuccess = () => {
+    // Refresh user data để cập nhật trạng thái 2FA
+    window.location.reload();
   };
 
   const loadingContent = (
@@ -170,17 +181,66 @@ export default function ProfilePage() {
                 </span>
               </div>
             )}
+
+            {/* 2FA Status */}
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-muted-foreground" />
+              <span>
+                Xác thực 2 bước:{" "}
+                {user?.authenticatorEnabled ? (
+                  <span className="inline-flex items-center gap-1">
+                    <span className="text-green-600 font-medium">Đã bật</span>
+                    <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1">
+                    <span className="text-red-600 font-medium">Chưa bật</span>
+                    <div className="h-2 w-2 bg-red-500 rounded-full"></div>
+                  </span>
+                )}
+              </span>
+            </div>
           </div>
 
-          <div className="pt-4 flex gap-2">
+          <div className="pt-4 flex gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              onClick={() => router.push("/profile/edit")}
+            >
+              {t("profile.editProfile")}
+            </Button>
             {!user?.username && (
               <Button onClick={() => router.push("/profile/update")}>
                 {t("profile.setUsername")}
               </Button>
             )}
+
+            {/* 2FA Action Buttons */}
+            {user?.authenticatorEnabled ? (
+              <Button
+                variant="destructive"
+                onClick={() => setShowDisable2FADialog(true)}
+              >
+                Tắt 2FA
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSetup2FA}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Shield className="h-4 w-4 mr-2" />
+                Thiết lập 2FA
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      <TwoFactorAuthDisableDialog
+        open={showDisable2FADialog}
+        onOpenChange={setShowDisable2FADialog}
+        onSuccess={handleDisable2FASuccess}
+      />
     </div>
   );
 

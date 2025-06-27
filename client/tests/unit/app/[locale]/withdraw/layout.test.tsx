@@ -1,3 +1,29 @@
+// Mock next-intl/server first
+jest.mock("next-intl/server", () => ({
+  getRequestConfig: jest.fn(),
+  setRequestLocale: jest.fn(),
+  getTranslations: jest.fn(),
+  getLocale: jest.fn(),
+}));
+
+// Mock next-intl/navigation
+jest.mock("next-intl/navigation", () => ({
+  createNavigation: jest.fn(() => ({
+    Link: "a",
+    redirect: jest.fn(),
+    useRouter: () => ({
+      push: jest.fn(),
+      back: jest.fn(),
+    }),
+    usePathname: () => "/test",
+  })),
+}));
+
+// Mock next-intl
+jest.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => `translated.${key}`,
+}));
+
 import { render, screen } from "@testing-library/react";
 import WithdrawLayout from "@/app/[locale]/withdraw/layout";
 

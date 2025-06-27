@@ -78,6 +78,7 @@ export function useGoogleAuth() {
             kycLevel: userResponse.data.kyc_level,
             phoneVerified: userResponse.data.phone_verified,
             documentVerified: userResponse.data.document_verified,
+            authenticatorEnabled: userResponse.data.authenticator_enabled,
           };
 
           setUser(userData);

@@ -22,6 +22,9 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { useDeviceTrust } from "@/hooks/use-device-trust";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Fee constants - should move to constants file later
 const WITHDRAW_FEES = {
@@ -59,6 +62,9 @@ export default function WithdrawPage() {
   const { user } = useUserStore();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Device trust state using custom hook
+  const { isDeviceTrusted, isCheckingDevice } = useDeviceTrust();
+
   // Get the country code based on currency
   const countryCode =
     currency.toUpperCase() === "VND"
@@ -90,6 +96,10 @@ export default function WithdrawPage() {
     walletData?.fiat_accounts.find(
       (account) => account.currency.toLowerCase() === currency.toLowerCase(),
     )?.balance || 0;
+
+  // Determine if we should show 2FA warning
+  const shouldShow2FAWarning =
+    !isCheckingDevice && user?.authenticatorEnabled && !isDeviceTrusted;
 
   const handleShowOffers = async () => {
     // Check if bank account is selected
@@ -485,6 +495,14 @@ export default function WithdrawPage() {
                 </div>
               )}
             </div>
+          )}
+
+          {shouldShow2FAWarning && (
+            <Alert>
+              <AlertDescription>
+                {t("twoFactorAuth.deviceNotTrusted")}
+              </AlertDescription>
+            </Alert>
           )}
         </div>
       </Form>

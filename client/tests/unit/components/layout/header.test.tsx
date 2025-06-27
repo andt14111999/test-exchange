@@ -51,9 +51,7 @@ describe("Header", () => {
       expect(screen.getByText("customer.tradingHistory")).toBeInTheDocument();
       expect(screen.getByText("common.wallet")).toBeInTheDocument();
       expect(screen.getByText("common.swap")).toBeInTheDocument();
-      expect(
-        screen.queryByText("merchant.mintFiat.title"),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText("merchant.mintFiat")).not.toBeInTheDocument();
     });
   });
 
@@ -71,7 +69,7 @@ describe("Header", () => {
       expect(screen.getByText("merchant.tradingHistory")).toBeInTheDocument();
       expect(screen.getByText("common.wallet")).toBeInTheDocument();
       expect(screen.getByText("common.swap")).toBeInTheDocument();
-      expect(screen.getByText("merchant.mintFiat.title")).toBeInTheDocument();
+      expect(screen.getByText("merchant.mintFiat")).toBeInTheDocument();
     });
   });
 });
