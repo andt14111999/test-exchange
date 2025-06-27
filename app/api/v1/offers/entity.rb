@@ -6,7 +6,7 @@ module V1
       expose :id
       expose :user_id
       expose :merchant_display_name do |offer|
-        offer.user.display_name
+        offer.user.username
       end
       expose :offer_type
       expose :coin_currency
