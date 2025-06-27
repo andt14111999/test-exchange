@@ -57,7 +57,7 @@ export default function MerchantRegistration() {
       }
 
       toast.success(t("success"));
-      router.push("/merchant/escrows");
+      router.push("/merchant/mint-fiat");
     } catch (error) {
       console.error("Failed to register as merchant:", error);
 

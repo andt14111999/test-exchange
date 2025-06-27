@@ -23,7 +23,7 @@ const config = {
     "<rootDir>/tests/components/", // Ignore component tests using Playwright
     "<rootDir>/tests/fixtures/", // Ignore Playwright fixtures
   ],
-  transformIgnorePatterns: ["node_modules/(?!(next-intl|use-intl)/)"],
+  transformIgnorePatterns: ["/node_modules/(?!(next-intl|use-intl)/)"],
   moduleNameMapper: {
     // Handle CSS imports (with CSS modules)
     "^.+\\.module\\.(css|sass|scss)$": "identity-obj-proxy",

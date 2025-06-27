@@ -95,7 +95,7 @@ describe("MerchantRegistration", () => {
 
     await waitFor(() => {
       expect(registerAsMerchant).toHaveBeenCalledTimes(1);
-      expect(mockRouter.push).toHaveBeenCalledWith("/merchant/escrows");
+      expect(mockRouter.push).toHaveBeenCalledWith("/merchant/mint-fiat");
     });
   });
 

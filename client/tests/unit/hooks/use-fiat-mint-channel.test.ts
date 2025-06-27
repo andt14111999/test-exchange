@@ -1,7 +1,7 @@
 import { renderHook, act } from "@testing-library/react";
-import { useEscrowChannel } from "@/hooks/use-escrow-channel";
+import { useFiatMintChannel } from "@/hooks/use-fiat-mint-channel";
 import { createActionCableConsumer } from "@/lib/api/action-cable";
-import type { Escrow } from "@/lib/api/merchant";
+import type { FiatMint } from "@/lib/api/merchant";
 import type { Subscription } from "@rails/actioncable";
 
 jest.mock("@/lib/api/action-cable", () => ({
@@ -24,11 +24,11 @@ interface MockConsumer {
   };
 }
 
-describe("useEscrowChannel", () => {
+describe("useFiatMintChannel", () => {
   let mockSubscription: MockSubscription;
   let mockConsumer: MockConsumer;
-  let mockOnEscrowUpdated: jest.Mock;
-  let escrowId: string;
+  let mockOnFiatMintUpdated: jest.Mock;
+  let fiatMintId: string;
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -46,8 +46,8 @@ describe("useEscrowChannel", () => {
       },
     };
     (createActionCableConsumer as jest.Mock).mockReturnValue(mockConsumer);
-    mockOnEscrowUpdated = jest.fn();
-    escrowId = "123";
+    mockOnFiatMintUpdated = jest.fn();
+    fiatMintId = "123";
   });
 
   afterEach(() => {
@@ -57,27 +57,33 @@ describe("useEscrowChannel", () => {
 
   it("should setup connection and subscribe to channel", () => {
     renderHook(() =>
-      useEscrowChannel({ escrowId, onEscrowUpdated: mockOnEscrowUpdated }),
+      useFiatMintChannel({
+        fiatMintId,
+        onFiatMintUpdated: mockOnFiatMintUpdated,
+      }),
     );
     expect(createActionCableConsumer).toHaveBeenCalled();
     expect(mockConsumer.subscriptions.create).toHaveBeenCalledWith(
-      { channel: "MerchantEscrowChannel", escrow_id: escrowId },
+      { channel: "MerchantFiatMintChannel", fiat_mint_id: fiatMintId },
       expect.any(Object),
     );
   });
 
-  it("should not setup connection if escrowId is falsy", () => {
+  it("should not setup connection if fiatMintId is falsy", () => {
     renderHook(() =>
-      useEscrowChannel({ escrowId: "", onEscrowUpdated: mockOnEscrowUpdated }),
+      useFiatMintChannel({
+        fiatMintId: "",
+        onFiatMintUpdated: mockOnFiatMintUpdated,
+      }),
     );
     expect(createActionCableConsumer).not.toHaveBeenCalled();
   });
 
   it("should cleanup existing connection before setting up new one", () => {
-    const { rerender } = renderHook((props) => useEscrowChannel(props), {
-      initialProps: { escrowId, onEscrowUpdated: mockOnEscrowUpdated },
+    const { rerender } = renderHook((props) => useFiatMintChannel(props), {
+      initialProps: { fiatMintId, onFiatMintUpdated: mockOnFiatMintUpdated },
     });
-    rerender({ escrowId: "456", onEscrowUpdated: mockOnEscrowUpdated });
+    rerender({ fiatMintId: "456", onFiatMintUpdated: mockOnFiatMintUpdated });
     expect(mockSubscription.unsubscribe).toHaveBeenCalled();
     expect(mockConsumer.disconnect).toHaveBeenCalled();
     expect(mockConsumer.subscriptions.create).toHaveBeenCalledTimes(2);
@@ -85,7 +91,10 @@ describe("useEscrowChannel", () => {
 
   it("should handle testPing functionality", () => {
     const { result } = renderHook(() =>
-      useEscrowChannel({ escrowId, onEscrowUpdated: mockOnEscrowUpdated }),
+      useFiatMintChannel({
+        fiatMintId,
+        onFiatMintUpdated: mockOnFiatMintUpdated,
+      }),
     );
     act(() => {
       result.current.testPing();
@@ -103,7 +112,10 @@ describe("useEscrowChannel", () => {
 
   it("should start keepalive on connection and stop on disconnection", () => {
     renderHook(() =>
-      useEscrowChannel({ escrowId, onEscrowUpdated: mockOnEscrowUpdated }),
+      useFiatMintChannel({
+        fiatMintId,
+        onFiatMintUpdated: mockOnFiatMintUpdated,
+      }),
     );
     act(() => {
       mockSubscription.connected!();
@@ -127,7 +139,10 @@ describe("useEscrowChannel", () => {
 
   it("should reconnect after disconnection", () => {
     renderHook(() =>
-      useEscrowChannel({ escrowId, onEscrowUpdated: mockOnEscrowUpdated }),
+      useFiatMintChannel({
+        fiatMintId,
+        onFiatMintUpdated: mockOnFiatMintUpdated,
+      }),
     );
     act(() => {
       mockSubscription.disconnected!();
@@ -140,7 +155,10 @@ describe("useEscrowChannel", () => {
 
   it("should stop keepalive on rejected", () => {
     renderHook(() =>
-      useEscrowChannel({ escrowId, onEscrowUpdated: mockOnEscrowUpdated }),
+      useFiatMintChannel({
+        fiatMintId,
+        onFiatMintUpdated: mockOnFiatMintUpdated,
+      }),
     );
     act(() => {
       mockSubscription.rejected!();
@@ -150,31 +168,40 @@ describe("useEscrowChannel", () => {
 
   it("should process received messages correctly (object)", () => {
     renderHook(() =>
-      useEscrowChannel({ escrowId, onEscrowUpdated: mockOnEscrowUpdated }),
+      useFiatMintChannel({
+        fiatMintId,
+        onFiatMintUpdated: mockOnFiatMintUpdated,
+      }),
     );
-    const mockEscrow: Escrow = { id: 1, status: "active" } as Escrow;
+    const mockFiatMint: FiatMint = { id: 1, status: "active" } as FiatMint;
     act(() => {
-      mockSubscription.received!({ status: "success", data: mockEscrow });
+      mockSubscription.received!({ status: "success", data: mockFiatMint });
     });
-    expect(mockOnEscrowUpdated).toHaveBeenCalledWith(mockEscrow);
+    expect(mockOnFiatMintUpdated).toHaveBeenCalledWith(mockFiatMint);
   });
 
   it("should process received messages correctly (string)", () => {
     renderHook(() =>
-      useEscrowChannel({ escrowId, onEscrowUpdated: mockOnEscrowUpdated }),
+      useFiatMintChannel({
+        fiatMintId,
+        onFiatMintUpdated: mockOnFiatMintUpdated,
+      }),
     );
-    const mockEscrow: Escrow = { id: 2, status: "pending" } as Escrow;
+    const mockFiatMint: FiatMint = { id: 2, status: "pending" } as FiatMint;
     act(() => {
       mockSubscription.received!(
-        JSON.stringify({ status: "success", data: mockEscrow }),
+        JSON.stringify({ status: "success", data: mockFiatMint }),
       );
     });
-    expect(mockOnEscrowUpdated).toHaveBeenCalledWith(mockEscrow);
+    expect(mockOnFiatMintUpdated).toHaveBeenCalledWith(mockFiatMint);
   });
 
   it("should handle invalid JSON in received string", () => {
     renderHook(() =>
-      useEscrowChannel({ escrowId, onEscrowUpdated: mockOnEscrowUpdated }),
+      useFiatMintChannel({
+        fiatMintId,
+        onFiatMintUpdated: mockOnFiatMintUpdated,
+      }),
     );
     const consoleSpy = jest.spyOn(console, "error").mockImplementation();
     act(() => {
@@ -186,7 +213,10 @@ describe("useEscrowChannel", () => {
 
   it("should handle error in processing received", () => {
     renderHook(() =>
-      useEscrowChannel({ escrowId, onEscrowUpdated: mockOnEscrowUpdated }),
+      useFiatMintChannel({
+        fiatMintId,
+        onFiatMintUpdated: mockOnFiatMintUpdated,
+      }),
     );
     const consoleSpy = jest.spyOn(console, "error").mockImplementation();
     act(() => {
@@ -198,7 +228,10 @@ describe("useEscrowChannel", () => {
 
   it("should cleanup on unmount", () => {
     const { unmount } = renderHook(() =>
-      useEscrowChannel({ escrowId, onEscrowUpdated: mockOnEscrowUpdated }),
+      useFiatMintChannel({
+        fiatMintId,
+        onFiatMintUpdated: mockOnFiatMintUpdated,
+      }),
     );
     unmount();
     expect(mockSubscription.unsubscribe).toHaveBeenCalled();
@@ -208,7 +241,10 @@ describe("useEscrowChannel", () => {
   it("should handle consumer creation failure", () => {
     (createActionCableConsumer as jest.Mock).mockReturnValue(null);
     renderHook(() =>
-      useEscrowChannel({ escrowId, onEscrowUpdated: mockOnEscrowUpdated }),
+      useFiatMintChannel({
+        fiatMintId,
+        onFiatMintUpdated: mockOnFiatMintUpdated,
+      }),
     );
     // No error expected, just coverage
   });
@@ -222,14 +258,20 @@ describe("useEscrowChannel", () => {
       throw new Error("unsubscribe error");
     });
     renderHook(() =>
-      useEscrowChannel({ escrowId, onEscrowUpdated: mockOnEscrowUpdated }),
+      useFiatMintChannel({
+        fiatMintId,
+        onFiatMintUpdated: mockOnFiatMintUpdated,
+      }),
     );
     // No error expected, just coverage
   });
 
   it("should handle error in keepalive", () => {
     renderHook(() =>
-      useEscrowChannel({ escrowId, onEscrowUpdated: mockOnEscrowUpdated }),
+      useFiatMintChannel({
+        fiatMintId,
+        onFiatMintUpdated: mockOnFiatMintUpdated,
+      }),
     );
     mockSubscription.perform.mockImplementation(() => {
       throw new Error("keepalive error");

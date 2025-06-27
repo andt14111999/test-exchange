@@ -1,24 +1,24 @@
 import { useEffect, useRef, useCallback } from "react";
 import { createActionCableConsumer } from "@/lib/api/action-cable";
-import type { Escrow } from "@/lib/api/merchant";
+import type { FiatMint } from "@/lib/api/merchant";
 import type { Subscription, Consumer } from "@rails/actioncable";
 
-interface UseEscrowChannelProps {
-  escrowId: string;
-  onEscrowUpdated: (escrow: Escrow) => void;
+interface UseFiatMintChannelProps {
+  fiatMintId: string;
+  onFiatMintUpdated: (fiatMint: FiatMint) => void;
 }
 
 interface ResponseWithData {
   status?: string;
-  data?: Escrow;
+  data?: FiatMint;
   message?: string;
   [key: string]: unknown;
 }
 
-export function useEscrowChannel({
-  escrowId,
-  onEscrowUpdated,
-}: UseEscrowChannelProps) {
+export function useFiatMintChannel({
+  fiatMintId,
+  onFiatMintUpdated,
+}: UseFiatMintChannelProps) {
   const subscriptionRef = useRef<Subscription | null>(null);
   const consumerRef = useRef<Consumer | null>(null);
 
@@ -46,7 +46,7 @@ export function useEscrowChannel({
 
   useEffect(() => {
     const setupConnection = () => {
-      if (!escrowId) {
+      if (!fiatMintId) {
         return;
       }
 
@@ -73,8 +73,8 @@ export function useEscrowChannel({
       try {
         subscriptionRef.current = consumer.subscriptions.create(
           {
-            channel: "MerchantEscrowChannel",
-            escrow_id: escrowId,
+            channel: "MerchantFiatMintChannel",
+            fiat_mint_id: fiatMintId,
           },
           {
             connected() {
@@ -107,14 +107,14 @@ export function useEscrowChannel({
                 }
 
                 if (processedResponse.data) {
-                  onEscrowUpdated(processedResponse.data);
+                  onFiatMintUpdated(processedResponse.data);
                 }
               };
 
               try {
                 processResponse();
               } catch (error) {
-                console.error("Error processing escrow update:", error);
+                console.error("Error processing fiat mint update:", error);
               }
             },
           } as unknown as Subscription,
@@ -166,7 +166,7 @@ export function useEscrowChannel({
         console.error("Error in cleanup:", error);
       }
     };
-  }, [escrowId, onEscrowUpdated]);
+  }, [fiatMintId, onFiatMintUpdated]);
 
   return {
     testPing,

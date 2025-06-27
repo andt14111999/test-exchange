@@ -1339,12 +1339,12 @@ const TradeDetailContent = ({
                       {t("paymentProof")}
                     </div>
                     {trade.payment_receipt_details.file_url ? (
-                      <div className="flex justify-center items-center w-full">
-                        <div className="w-full max-w-md flex justify-center">
+                      <div className="flex justify-center w-full">
+                        <div className="w-full max-w-md">
                           <ImageViewer
                             src={trade.payment_receipt_details.file_url}
                             alt="Payment proof"
-                            className="mx-auto"
+                            className="w-full"
                             maxHeight={300}
                           />
                         </div>

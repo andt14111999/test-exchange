@@ -10,7 +10,7 @@ export interface MerchantRegistrationResponse {
   };
 }
 
-export interface Escrow {
+export interface FiatMint {
   id: number;
   usdt_amount: string;
   fiat_amount: string;
@@ -94,11 +94,13 @@ export async function registerAsMerchant(): Promise<MerchantRegistrationResponse
 }
 
 /**
- * Get all escrows for the current merchant
+ * Get all fiat mints for the current merchant
  */
-export async function getEscrows(): Promise<ApiResponse<Escrow> | Escrow[]> {
+export async function getFiatMints(): Promise<
+  ApiResponse<FiatMint> | FiatMint[]
+> {
   try {
-    const response = await apiClient.get(API_ENDPOINTS.merchant.escrows.list);
+    const response = await apiClient.get(API_ENDPOINTS.merchant.mint_fiat.list);
     return response.data;
   } catch (error) {
     throw error;
@@ -106,12 +108,12 @@ export async function getEscrows(): Promise<ApiResponse<Escrow> | Escrow[]> {
 }
 
 /**
- * Get a specific escrow by ID
+ * Get a specific fiat mint by ID
  */
-export async function getEscrow(id: number): Promise<ApiResponse<Escrow>> {
+export async function getFiatMint(id: number): Promise<ApiResponse<FiatMint>> {
   try {
-    const response = await apiClient.get<ApiResponse<Escrow>>(
-      API_ENDPOINTS.merchant.escrows.get(id),
+    const response = await apiClient.get<ApiResponse<FiatMint>>(
+      API_ENDPOINTS.merchant.mint_fiat.get(id),
     );
     return response.data;
   } catch (error) {
@@ -120,15 +122,15 @@ export async function getEscrow(id: number): Promise<ApiResponse<Escrow>> {
 }
 
 /**
- * Create a new escrow
+ * Create a new fiat mint
  */
-export async function createEscrow(
+export async function createFiatMint(
   usdtAmount: string,
   fiatCurrency: string,
-): Promise<ApiResponse<Escrow>> {
+): Promise<ApiResponse<FiatMint>> {
   try {
-    const response = await apiClient.post<ApiResponse<Escrow>>(
-      API_ENDPOINTS.merchant.escrows.create,
+    const response = await apiClient.post<ApiResponse<FiatMint>>(
+      API_ENDPOINTS.merchant.mint_fiat.create,
       {
         usdt_amount: usdtAmount,
         fiat_currency: fiatCurrency,
@@ -141,12 +143,14 @@ export async function createEscrow(
 }
 
 /**
- * Cancel an existing escrow
+ * Cancel an existing fiat mint
  */
-export async function cancelEscrow(id: number): Promise<ApiResponse<Escrow>> {
+export async function cancelFiatMint(
+  id: number,
+): Promise<ApiResponse<FiatMint>> {
   try {
-    const response = await apiClient.post<ApiResponse<Escrow>>(
-      API_ENDPOINTS.merchant.escrows.cancel(id),
+    const response = await apiClient.post<ApiResponse<FiatMint>>(
+      API_ENDPOINTS.merchant.mint_fiat.cancel(id),
     );
     return response.data;
   } catch (error) {

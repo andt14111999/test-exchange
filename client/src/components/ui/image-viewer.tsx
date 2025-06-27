@@ -27,10 +27,6 @@ export function ImageViewer({
     width: number;
     height: number;
   } | null>(null);
-  const [naturalDimensions, setNaturalDimensions] = useState<{
-    width: number;
-    height: number;
-  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const imgRef = useRef<HTMLImageElement>(null);
 
@@ -40,12 +36,6 @@ export function ImageViewer({
       const aspectRatio = img.naturalWidth / img.naturalHeight;
       let displayWidth = img.naturalWidth;
       let displayHeight = img.naturalHeight;
-
-      // Store natural dimensions for dialog
-      setNaturalDimensions({
-        width: img.naturalWidth,
-        height: img.naturalHeight,
-      });
 
       // If image is too tall, constrain by maxHeight
       if (displayHeight > maxHeight) {
@@ -121,17 +111,14 @@ export function ImageViewer({
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent
-          className="p-0 border-0 bg-black/95 shadow-none max-w-[95vw] max-h-[95vh] w-auto h-auto overflow-auto"
+          className="p-0 border-0 bg-black/95 shadow-none max-w-none max-h-none w-auto h-auto overflow-auto"
           onPointerDownOutside={() => setIsOpen(false)}
           onEscapeKeyDown={() => setIsOpen(false)}
         >
           <VisuallyHidden>
             <DialogTitle>Image Viewer</DialogTitle>
           </VisuallyHidden>
-          <div
-            data-testid="dialog-container"
-            className="relative flex items-center justify-center min-h-0"
-          >
+          <div data-testid="dialog-container" className="relative">
             <Button
               data-testid="close-button"
               variant="ghost"
@@ -141,20 +128,16 @@ export function ImageViewer({
             >
               <X className="h-4 w-4" />
             </Button>
-            {naturalDimensions && (
-              <Image
-                data-testid="dialog-image"
-                src={src}
-                alt={alt}
-                width={naturalDimensions.width}
-                height={naturalDimensions.height}
-                className="block max-w-full max-h-[90vh] object-contain"
-                style={{
-                  width: "auto",
-                  height: "auto",
-                }}
-              />
-            )}
+            <img
+              data-testid="dialog-image"
+              src={src}
+              alt={alt}
+              className="block max-w-none max-h-none"
+              style={{
+                width: "auto",
+                height: "auto",
+              }}
+            />
           </div>
         </DialogContent>
       </Dialog>
