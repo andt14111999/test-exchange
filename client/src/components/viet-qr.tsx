@@ -3,6 +3,8 @@ import Image from "next/image";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { CopyIcon } from "lucide-react";
+import { Bank } from "@/lib/api/banks";
+import { useBanks } from "@/lib/api/hooks/use-banks";
 
 // Function to calculate CRC-16 for VietQR
 const calculateCRC16 = (str: string): string => {
@@ -101,40 +103,68 @@ const generateVietQRData = (
   }
 };
 
-// Get bank bin code for Vietnamese banks
-const getBankBIN = (bankName: string): string => {
-  const bankMap: Record<string, string> = {
-    // Common Vietnamese banks
-    VIETCOMBANK: "970436",
-    VIETINBANK: "970415",
-    BIDV: "970418",
-    TECHCOMBANK: "970407",
-    MBBANK: "970422",
-    TPBANK: "970423",
-    ACB: "970416",
-    VPBANK: "970432",
-    SACOMBANK: "970403",
-    VIETCAPITALBANK: "970454",
-    EXIMBANK: "970431",
-    OCB: "970448",
-    AGRIBANK: "970405",
-    HDBANK: "970437",
-    SHB: "970443",
-    SEABANK: "970440",
-    BAOVIETBANK: "970438",
-    PVCOMBANK: "970412",
-    VIETABANK: "970427",
-    NAMABANK: "970428",
-    ABBANK: "970425",
-    VIB: "970441",
-    OCEANBANK: "970414",
-  };
+// Normalize string for comparison (remove diacritics, spaces, and convert to lowercase)
+const normalizeString = (str: string): string => {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+    .replace(/[^\w]/g, ""); // Remove spaces and special characters
+};
 
-  // Normalize bank name for comparison
-  const normalizedBankName = bankName.trim().toUpperCase().replace(/\s+/g, "");
+// Find bank by name with fuzzy matching
+const findBankByName = (bankName: string, banks: Bank[]): Bank | null => {
+  if (!bankName?.trim() || !banks?.length) return null;
 
-  // Return the BIN if found, otherwise a default value
-  return bankMap[normalizedBankName] || "970436"; // Default to Vietcombank if not found
+  const normalizedInput = normalizeString(bankName);
+
+  // First try exact matches with short names and codes
+  for (const bank of banks) {
+    const normalizedShortName = normalizeString(bank.shortName);
+    const normalizedCode = normalizeString(bank.code);
+
+    if (
+      normalizedInput === normalizedShortName ||
+      normalizedInput === normalizedCode
+    ) {
+      return bank;
+    }
+  }
+
+  // Then try full name matches
+  for (const bank of banks) {
+    const normalizedFullName = normalizeString(bank.name);
+    if (normalizedInput === normalizedFullName) {
+      return bank;
+    }
+  }
+
+  // Finally try partial matches
+  for (const bank of banks) {
+    const normalizedShortName = normalizeString(bank.shortName);
+    const normalizedCode = normalizeString(bank.code);
+    const normalizedFullName = normalizeString(bank.name);
+
+    // Check if input contains the bank identifier or vice versa
+    if (
+      normalizedInput.includes(normalizedShortName) ||
+      normalizedShortName.includes(normalizedInput) ||
+      normalizedInput.includes(normalizedCode) ||
+      normalizedCode.includes(normalizedInput) ||
+      normalizedFullName.includes(normalizedInput) ||
+      normalizedInput.includes(normalizedFullName)
+    ) {
+      return bank;
+    }
+  }
+
+  return null;
+};
+
+// Get bank BIN code with smart matching
+const getBankBIN = (bankName: string, banks: Bank[]): string | null => {
+  const foundBank = findBankByName(bankName, banks);
+  return foundBank?.bin || null;
 };
 
 export interface VietQRProps {
@@ -148,6 +178,7 @@ export interface VietQRProps {
   scanQRText?: string;
   qrSize?: number;
   useImageAPI?: boolean;
+  banks?: Bank[]; // Optional banks data from API - if not provided, will use internal hook
 }
 
 export const VietQR = ({
@@ -161,35 +192,46 @@ export const VietQR = ({
   scanQRText = "Scan QR Code",
   qrSize = 200,
   useImageAPI = true,
+  banks: propsBanks,
 }: VietQRProps) => {
   const { toast } = useToast();
 
-  // Only consider as Vietnamese bank if we have both bank name and account number
+  // Use banks from props or fetch from API
+  const { data: banksResponse, isLoading } = useBanks();
+  const apiBanks = banksResponse?.data || [];
+  const banks = propsBanks || apiBanks;
+
+  // Only consider as Vietnamese bank if we have both bank name, account number, and banks data
   const isVietnameseBank =
-    bankName?.trim().length > 0 && accountNumber?.trim().length > 0;
+    bankName?.trim().length > 0 &&
+    accountNumber?.trim().length > 0 &&
+    banks?.length > 0;
+
+  // Get bank BIN
+  const bankBIN = isVietnameseBank ? getBankBIN(bankName, banks) : null;
 
   // Generate the VietQR data
-  const qrData = isVietnameseBank
-    ? generateVietQRData(getBankBIN(bankName), accountNumber, amount, content)
-    : JSON.stringify({
-        bankName,
-        accountName,
-        accountNumber,
-        amount,
-        currency,
-        content,
-      });
+  const qrData =
+    isVietnameseBank && bankBIN
+      ? generateVietQRData(bankBIN, accountNumber, amount, content)
+      : JSON.stringify({
+          bankName,
+          accountName,
+          accountNumber,
+          amount,
+          currency,
+          content,
+        });
 
   // Generate VietQR image URL using the VietQR.io API
   const getVietQRImageUrl = () => {
-    if (!isVietnameseBank) return null;
+    if (!isVietnameseBank || !bankBIN) return null;
 
-    const bankId = getBankBIN(bankName);
     const templateType = "compact2";
     const encodedAccountName = encodeURIComponent(accountName || "");
     const numericAmount = parseFloat(amount.replace(/[^\d.]/g, "")).toString();
 
-    return `https://img.vietqr.io/image/${bankId}-${accountNumber}-${templateType}.png?amount=${numericAmount}&addInfo=${encodeURIComponent(content)}&accountName=${encodedAccountName}`;
+    return `https://img.vietqr.io/image/${bankBIN}-${accountNumber}-${templateType}.png?amount=${numericAmount}&addInfo=${encodeURIComponent(content)}&accountName=${encodedAccountName}`;
   };
 
   const vietQRImageUrl = useImageAPI ? getVietQRImageUrl() : null;
@@ -201,6 +243,40 @@ export const VietQR = ({
       description: "Payment information copied",
     });
   };
+
+  // Show loading state if banks are being fetched
+  if (isLoading && !propsBanks) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-slate-50 p-4 rounded space-y-4">
+          <div className="text-gray-500 text-sm text-center">
+            Loading banks data...
+          </div>
+          <div className="flex justify-center">
+            <div className="w-[200px] h-[200px] bg-gray-200 animate-pulse rounded-lg"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if no banks data available
+  if (!banks?.length) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-red-50 p-4 rounded space-y-4">
+          <div className="text-red-600 text-sm text-center">
+            Unable to load banks data. Please try again later.
+          </div>
+          <div className="flex justify-center">
+            <div className="w-[200px] h-[200px] bg-red-100 rounded-lg flex items-center justify-center">
+              <span className="text-red-500 text-xs">No QR Code</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -244,10 +320,19 @@ export const VietQR = ({
           </div>
         </div>
 
-        {isVietnameseBank && (
+        {isVietnameseBank && bankBIN && (
           <div className="flex justify-center mt-1">
             <div className="text-xs font-medium px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-full">
               VietQR
+            </div>
+          </div>
+        )}
+
+        {/* Show warning if bank not found */}
+        {bankName && !bankBIN && banks?.length > 0 && (
+          <div className="flex justify-center mt-1">
+            <div className="text-xs font-medium px-1.5 py-0.5 bg-yellow-50 text-yellow-700 rounded-full">
+              Bank not recognized - using generic QR
             </div>
           </div>
         )}

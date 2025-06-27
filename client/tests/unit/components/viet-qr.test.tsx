@@ -1,12 +1,19 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { VietQR } from "@/components/viet-qr";
 import { useToast } from "@/components/ui/use-toast";
+import { useBanks } from "@/lib/api/hooks/use-banks";
 import "@testing-library/jest-dom";
 import type { ImageProps } from "next/image";
+import { Bank } from "@/lib/api/banks";
 
 // Mock the useToast hook
 jest.mock("@/components/ui/use-toast", () => ({
   useToast: jest.fn(),
+}));
+
+// Mock the useBanks hook
+jest.mock("@/lib/api/hooks/use-banks", () => ({
+  useBanks: jest.fn(),
 }));
 
 // Mock the QRCodeSVG component
@@ -61,12 +68,64 @@ Object.defineProperty(navigator, "clipboard", {
 
 describe("VietQR", () => {
   const mockShowToast = jest.fn();
+  const mockUseBanks = useBanks as jest.MockedFunction<typeof useBanks>;
+
+  const mockBanks: Bank[] = [
+    {
+      name: "Ngân hàng TMCP Ngoại Thương Việt Nam",
+      code: "VCB",
+      bin: "970436",
+      shortName: "Vietcombank",
+      logo: "https://api.vietqr.io/img/VCB.png",
+      transferSupported: 1,
+      lookupSupported: 1,
+      short_name: "Vietcombank",
+      support: 3,
+      isTransfer: 1,
+      swift_code: "BFTVVNVX",
+    },
+    {
+      name: "Ngân hàng TMCP Đầu tư và Phát triển Việt Nam",
+      code: "BIDV",
+      bin: "970418",
+      shortName: "BIDV",
+      logo: "https://api.vietqr.io/img/BIDV.png",
+      transferSupported: 1,
+      lookupSupported: 1,
+      short_name: "BIDV",
+      support: 3,
+      isTransfer: 1,
+      swift_code: "BIDVVNVX",
+    },
+    {
+      name: "Ngân hàng TMCP Tiên Phong",
+      code: "TPB",
+      bin: "970423",
+      shortName: "TPBank",
+      logo: "https://api.vietqr.io/img/TPB.png",
+      transferSupported: 1,
+      lookupSupported: 1,
+      short_name: "TPBank",
+      support: 3,
+      isTransfer: 1,
+      swift_code: "TPBVVNVX",
+    },
+  ];
 
   beforeEach(() => {
     jest.clearAllMocks();
     (useToast as jest.Mock).mockReturnValue({
       toast: mockShowToast,
     });
+
+    // Mock useBanks to return React Query structure
+    mockUseBanks.mockReturnValue({
+      data: { status: "success", data: mockBanks },
+      isLoading: false,
+      error: null,
+      isError: false,
+      isSuccess: true,
+    } as ReturnType<typeof useBanks>);
   });
 
   const defaultProps = {
@@ -191,16 +250,18 @@ describe("VietQR", () => {
     ); // BIDV BIN
   });
 
-  it("defaults to Vietcombank BIN for unknown bank names", () => {
+  it("renders generic QR for unknown bank names", () => {
     render(
       <VietQR {...defaultProps} bankName="UNKNOWN_BANK" useImageAPI={false} />,
     );
 
     const qrCode = screen.getByTestId("qr-code-svg");
-    expect(qrCode).toHaveAttribute(
-      "data-value",
-      expect.stringContaining("970436"),
-    ); // Default Vietcombank BIN
+    // Should render generic QR with JSON data since bank not found
+    const qrValue = qrCode.getAttribute("data-value") || "";
+    expect(qrValue).toContain("UNKNOWN_BANK");
+    expect(
+      screen.getByText("Bank not recognized - using generic QR"),
+    ).toBeInTheDocument();
   });
 
   it("handles amount with non-numeric characters correctly", () => {
@@ -271,5 +332,73 @@ describe("VietQR", () => {
 
     expect(src).toContain("970436-1234567890-compact2.png");
     expect(src).toContain("accountName=");
+  });
+
+  it("shows loading state when banks are being fetched", () => {
+    mockUseBanks.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+      isError: false,
+      isSuccess: false,
+    } as ReturnType<typeof useBanks>);
+
+    render(<VietQR {...defaultProps} />);
+
+    expect(screen.getByText("Loading banks data...")).toBeInTheDocument();
+    // Check for loading skeleton div
+    const loadingDiv = document.querySelector(
+      ".w-\\[200px\\].h-\\[200px\\].bg-gray-200.animate-pulse.rounded-lg",
+    );
+    expect(loadingDiv).toBeInTheDocument();
+  });
+
+  it("shows error state when banks cannot be loaded", () => {
+    mockUseBanks.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error("Failed to fetch banks"),
+      isError: true,
+      isSuccess: false,
+    } as ReturnType<typeof useBanks>);
+
+    render(<VietQR {...defaultProps} />);
+
+    expect(
+      screen.getByText("Unable to load banks data. Please try again later."),
+    ).toBeInTheDocument();
+  });
+
+  it("uses provided banks prop instead of hook", () => {
+    const customBanks: Bank[] = [
+      {
+        name: "Custom Bank",
+        code: "CB",
+        bin: "999999",
+        shortName: "CustomBank",
+        logo: "",
+        transferSupported: 1,
+        lookupSupported: 1,
+        short_name: "CustomBank",
+        support: 3,
+        isTransfer: 1,
+        swift_code: "CUSTCB",
+      },
+    ];
+
+    render(
+      <VietQR
+        {...defaultProps}
+        bankName="CustomBank"
+        banks={customBanks}
+        useImageAPI={false}
+      />,
+    );
+
+    const qrCode = screen.getByTestId("qr-code-svg");
+    expect(qrCode).toHaveAttribute(
+      "data-value",
+      expect.stringContaining("999999"),
+    );
   });
 });
