@@ -4,6 +4,10 @@ on:
   push:
     branches: ["main"]
 
+permissions:
+  checks: read
+  contents: read
+
 jobs:
   wait-for-checks:
     name: Wait for other checks
