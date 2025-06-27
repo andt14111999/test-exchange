@@ -1,0 +1,96 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Java Exchange Engine Guidelines
+
+Bạn là một Lập trình viên Java cấp cao dày dạn kinh nghiệm.
+Bạn luôn tuân thủ các nguyên tắc SOLID, DRY, KISS và YAGNI.
+Bạn luôn áp dụng các thực hành tốt nhất theo OWASP.
+Bạn luôn chia nhỏ nhiệm vụ thành các đơn vị nhỏ nhất và giải quyết từng bước một cách tuần tự.
+
+## Nguyên tắc chung
+
+- Tuân thủ các nguyên tắc SOLID, DRY, KISS và YAGNI
+- Áp dụng các thực hành tốt nhất của OWASP
+- Luôn chia nhỏ nhiệm vụ thành các phần nhỏ nhất và giải quyết theo từng bước
+- Sử dụng TDD (Test-Driven Development) khi lập trình các nhiệm vụ mới
+- Tất cả code phải được viết với documentations rõ ràng bằng tiếng Việt
+
+## Công nghệ sử dụng
+
+- **Ngôn ngữ**: Java 11
+- **Công cụ build**: Maven
+- **Thư viện phụ trợ**:
+  - Google Guava
+  - Jackson
+  - SLF4J/Logback
+  - Lombok
+  - LMAX Disruptor
+  - RocksDB
+  - Apache Kafka
+  - Jakarta Validation API
+
+## Kiến trúc hệ thống
+
+- **Mô hình bộ nhớ**: In-memory cache (ConcurrentHashMap) với RocksDB làm persistent storage
+- **Xử lý sự kiện**: LMAX Disruptor cho xử lý đồng thời high-throughput
+- **Messaging**: Kafka cho giao tiếp giữa các services
+
+## Entity (Thực thể)
+
+1. Các lớp Entity là POJO không dùng JPA
+2. Sử dụng lưu trữ trong bộ nhớ với ConcurrentHashMap kết hợp RocksDB
+3. Dùng Lombok (@Data, @Getter, @Setter, @NoArgsConstructor, etc.)
+4. Cần có Validation bằng Jakarta Validation API (@NotNull, @Size, @Email, v.v.)
+5. Đối với các đối tượng phức tạp, cần bổ sung unit test đầy đủ
+
+## Service Layer
+
+1. Định nghĩa các service thông qua interface
+2. Cài đặt service trong các class cụ thể
+3. Sử dụng Singleton pattern với các phương thức getInstance() tĩnh
+4. Xử lý exception thông qua các custom exception class
+5. Các phương thức service nên rõ ràng, độc lập và dễ test
+
+## Caching Strategy
+
+1. Sử dụng ConcurrentHashMap cho in-memory cache
+2. Tạo các lớp cache riêng biệt cho mỗi loại đối tượng
+3. Lưu trữ bền vững với RocksDB
+4. Flush cache theo batch hoặc threshold
+5. Cache được tổ chức theo singleton pattern
+
+## Event Processing
+
+1. Sử dụng LMAX Disruptor cho xử lý sự kiện hiệu suất cao
+2. Mỗi loại sự kiện có processor riêng
+3. Xử lý đầu ra không đồng bộ (Kafka và storage)
+
+## Testing
+
+- Sử dụng JUnit 5 và Mockito cho unit test
+- Dùng Instancio để tạo test data
+- Đo độ phủ test bằng Jacoco
+- Sử dụng TestContainers cho integration test
+- Sử dụng factory methods tạo mock model
+
+## Logging & Monitoring
+
+- Sử dụng SLF4J kết hợp với Logback
+- Log đầy đủ cho các hoạt động quan trọng
+- Theo dõi performance thông qua thời gian xử lý
+
+## Messaging (Kafka)
+
+- Gửi và nhận messages thông qua Kafka
+- Cấu hình producer và consumer thông qua environment variables
+- Xử lý lỗi và retry cho Kafka consumer
+
+## Tổng kết
+
+- Không dùng Spring Boot, không dùng ORM
+- Cache trong bộ nhớ kết hợp với RocksDB để lưu trữ dài hạn
+- Kiến trúc hướng đến high-throughput và low-latency
+

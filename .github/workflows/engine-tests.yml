@@ -1,0 +1,89 @@
+name: Engine Java Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "engine/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "engine/**"
+  workflow_dispatch:
+
+permissions:
+  checks: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  build:
+    name: "Java Test Suite"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ./engine
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 23
+        uses: actions/setup-java@v4
+        with:
+          java-version: "23"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn -B clean compile
+
+      - name: Run tests and generate JaCoCo report
+        run: mvn -B test jacoco:report
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v3
+        if: always() # Always run even if tests fail
+        with:
+          report_paths: "engine/**/target/surefire-reports/TEST-*.xml"
+          check_name: Java Test Results
+          require_tests: true
+          detailed_summary: true
+
+      - name: Check code coverage
+        id: jacoco
+        uses: madrapps/jacoco-report@v1.7.1
+        with:
+          paths: ${{ github.workspace }}/engine/target/site/jacoco/jacoco.xml
+          min-coverage-overall: 90
+          min-coverage-changed-files: 90
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "# 🦞 Engine Coverage Report"
+          update-comment: true
+          pass-emoji: "✅"
+          fail-emoji: "❌"
+          continue-on-error: true
+          skip-if-no-changes: false
+
+      - name: Upload JaCoCo coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: engine-jacoco-report
+          path: engine/target/site/jacoco/
+          retention-days: 30
+
+      - name: Fail workflow if overall coverage is less than required
+        if: ${{ steps.jacoco.outputs.coverage-overall < 90.0 }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+            core.setFailed('Engine overall coverage below required threshold (90%)!')
+
+      - name: Fail workflow if any Java file has insufficient coverage
+        if: ${{ steps.jacoco.outputs.coverage-changed-files < 90.0 }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+            core.setFailed('One or more changed Java files in engine do not meet coverage threshold (90%)!') 

@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: Exchange-kafka
+    ports:
+      - "9092"  # Chỉ expose trong internal network
+    environment:
+      CLUSTER_ID: 'kafka-cluster-1'
+      KAFKA_NODE_ID: '0'
+      KAFKA_PROCESS_ROLES: 'controller,broker'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '0@kafka:9093'
+      KAFKA_LISTENERS: 'PLAINTEXT://kafka:29092,CONTROLLER://kafka:9093'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: '0'
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: '1'
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: '1'
+      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - exchange_network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: Exchange-kafka-ui
+    ports:
+      - "8085"  # Chỉ expose trong internal network
+    environment:
+      KAFKA_CLUSTERS_0_NAME: production
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      SPRING_SECURITY_USER_NAME: ${KAFKA_UI_USERNAME}
+      SPRING_SECURITY_USER_PASSWORD: ${KAFKA_UI_PASSWORD}
+    depends_on:
+      - kafka
+    networks:
+      - exchange_network
+
+  app:
+    build:
+      context: ..
+      dockerfile: Exchange-Engine-Docker/Dockerfile
+    container_name: Exchange-engine
+    ports:
+      - "8081"  # Chỉ expose trong internal network
+    env_file:
+      - .env.production
+    volumes:
+      - rocksdb_data:/app/data/rocksdb/production
+    depends_on:
+      - kafka
+    networks:
+      - exchange_network
+
+networks:
+  exchange_network:
+    driver: bridge
+
+volumes:
+  kafka_data:
+  rocksdb_data:

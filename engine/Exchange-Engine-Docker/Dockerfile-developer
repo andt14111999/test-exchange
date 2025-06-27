@@ -1,0 +1,43 @@
+
+# Build stage
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
+WORKDIR /build
+
+# Thêm volume cache Maven repositories
+VOLUME /root/.m2
+
+# Step 1: Caching Maven dependencies
+RUN echo "===== STEP 1: Caching Maven dependencies ====="
+COPY pom.xml .
+# Tối ưu lệnh go-offline để chỉ download dependencies chính
+RUN mvn -B -T 4 dependency:resolve-plugins dependency:resolve -Dmaven.repo.local=/root/.m2/repository
+
+# Step 2: Building application
+RUN echo "===== STEP 2: Building application ====="
+COPY src ./src
+# Sử dụng -U để update dependencies, thêm -Dmaven.test.skip=true để bỏ qua tests hoàn toàn
+RUN mvn clean package -Dmaven.test.skip=true -B -U -T 4
+
+# Run stage - sử dụng base image đã cài sẵn RocksDB
+FROM exchangeengine/rocksdb-base:latest-9.7.3
+
+# Step 3: Setting up runtime environment
+RUN echo "===== STEP 3: Setting up runtime environment ====="
+WORKDIR /app
+
+# Step 4: Copying application artifacts
+RUN echo "===== STEP 4: Copying application artifacts ====="
+COPY --from=builder /build/target/exchange-engine-*-jar-with-dependencies.jar /app/app.jar
+
+# Step 5: Creating data directories
+RUN echo "===== STEP 5: Creating data directories ====="
+RUN mkdir -p /app/data/rocksdb/
+
+# Thêm công cụ hỗ trợ debug cho môi trường developer
+RUN apt-get update && apt-get install -y curl vim htop net-tools && apt-get clean
+
+# Step 6: Configuring startup
+RUN echo "===== STEP 6: Configuring startup ====="
+
+# Run the application with remote debugging enabled
+ENTRYPOINT ["java", "-jar", "app.jar"]

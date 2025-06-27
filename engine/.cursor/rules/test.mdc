@@ -1,0 +1,12 @@
+---
+description:
+globs: *Test.java,/src/test/*Test.java
+alwaysApply: false
+---
+- Khi viết test phải sử dụng và tạo Factory sử dụng Instancio để thực hiện tạo các model
+- Trong các test phải sử dụng 1 model nào đó thì sử dụng factory tương ứng tránh việc tạo model thật
+- luôn tuân thủ việc clear instance bằng cách sử dụng các extension CombinedTestExtension
+- khi tạo 1 class mới ở cache và rocksdb có sử dụng instance nhớ phải thêm nó vào SingletonResetExtension để clear khi các test khác khởi chạy
+- Sử dụng jakarta.validation thay vì validate thủ công
+- Sử dụng com.exchangeengine.util.JsonSerializer cho toMessageJson
+- Sử dụng @JsonIgnoreProperties(ignoreUnknown = true) trước model để không parse data không cần thiết xuống model

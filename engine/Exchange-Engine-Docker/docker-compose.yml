@@ -1,0 +1,57 @@
+services:
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: Exchange-kafka
+    ports:
+      - "9092:9092"  # Chỉ mở port 9092 ra bên ngoài
+    environment:
+      CLUSTER_ID: 'kafka-cluster-1'
+      KAFKA_NODE_ID: '0'
+      KAFKA_PROCESS_ROLES: 'controller,broker'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '0@kafka:9093'
+      KAFKA_LISTENERS: 'INTERNAL://kafka:29092,EXTERNAL://0.0.0.0:9092,CONTROLLER://kafka:9093'
+      KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka:29092,EXTERNAL://127.0.0.1:9092'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: '0'
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: '1'
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: '1'
+      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: Exchange-kafka-ui
+    ports:
+      - "8085:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092  # Dùng internal port 29092
+    depends_on:
+      - kafka
+
+  app:
+    build:
+      context: ..
+      dockerfile: Exchange-Engine-Docker/Dockerfile
+    container_name: Exchange-engine
+    ports:
+      - "8081:8080"
+    environment:
+      VERSION: "1.0.0-dev"
+    env_file:
+      - .env.development
+    volumes:
+      - rocksdb_data:/app/data/rocksdb/development
+      - maven-repo-cache:/root/.m2
+    depends_on:
+      - kafka
+
+volumes:
+  kafka_data:
+  rocksdb_data:
+  maven-repo-cache:
