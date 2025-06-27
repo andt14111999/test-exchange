@@ -2,7 +2,10 @@ import { useWallet } from "@/hooks/use-wallet";
 import { FiatAccount } from "@/lib/api/balance";
 import { BankAccount } from "@/lib/api/bank-accounts";
 import { usePaymentMethods } from "@/lib/api/hooks/use-payment-methods";
+import { useBanks } from "@/lib/api/hooks/use-banks";
+import { useBankAccounts } from "@/lib/api/hooks/use-bank-accounts";
 import { PaymentMethod } from "@/lib/api/payment-methods";
+import { Bank } from "@/lib/api/banks";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useSearchParams } from "next/navigation";
@@ -65,6 +68,17 @@ jest.mock("@/hooks/use-wallet", () => ({
 
 jest.mock("@/lib/api/hooks/use-payment-methods", () => ({
   usePaymentMethods: jest.fn(),
+}));
+
+jest.mock("@/lib/api/hooks/use-banks", () => ({
+  useBanks: jest.fn(),
+}));
+
+jest.mock("@/lib/api/hooks/use-bank-accounts", () => ({
+  useBankAccounts: jest.fn(),
+  useCreateBankAccount: jest.fn(),
+  useUpdateBankAccount: jest.fn(),
+  useDeleteBankAccount: jest.fn(),
 }));
 
 // Mock user store
@@ -418,6 +432,62 @@ const mockPaymentMethods = [
   },
 ] as PaymentMethod[];
 
+const mockBanks = [
+  {
+    name: "Vietcombank",
+    code: "VCB",
+    bin: "970436",
+    shortName: "VCB",
+    logo: "https://example.com/vcb-logo.png",
+    transferSupported: 1,
+    lookupSupported: 1,
+    short_name: "VCB",
+    support: 1,
+    isTransfer: 1,
+    swift_code: "BFTVVNVX",
+  },
+  {
+    name: "Techcombank",
+    code: "TCB",
+    bin: "970407",
+    shortName: "TCB",
+    logo: "https://example.com/tcb-logo.png",
+    transferSupported: 1,
+    lookupSupported: 1,
+    short_name: "TCB",
+    support: 1,
+    isTransfer: 1,
+    swift_code: "VTCBVNVX",
+  },
+] as Bank[];
+
+const mockBankAccounts = [
+  {
+    id: "123",
+    bank_name: "Vietcombank",
+    bank_code: "VCB",
+    account_name: "Test Account",
+    account_number: "12345678",
+    branch: "Ho Chi Minh City",
+    country_code: "VN",
+    is_primary: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: "456",
+    bank_name: "Techcombank",
+    bank_code: "TCB",
+    account_name: "Test Account 2",
+    account_number: "87654321",
+    branch: "Hanoi",
+    country_code: "VN",
+    is_primary: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+] as BankAccount[];
+
 describe("CreateOffer Component", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -431,6 +501,18 @@ describe("CreateOffer Component", () => {
     (usePaymentMethods as jest.Mock).mockReturnValue({
       data: mockPaymentMethods,
       isLoading: false,
+    });
+
+    (useBanks as jest.Mock).mockReturnValue({
+      data: { data: mockBanks },
+      isLoading: false,
+      error: null,
+    });
+
+    (useBankAccounts as jest.Mock).mockReturnValue({
+      data: { data: mockBankAccounts },
+      isLoading: false,
+      error: null,
     });
 
     (useSearchParams as jest.Mock).mockReturnValue({

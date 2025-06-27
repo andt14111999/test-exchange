@@ -157,15 +157,26 @@ export function BankAccountSelector({
   // Sync currentValue with selectedAccount whenever it changes
   useEffect(() => {
     if (currentValue && bankAccounts.length > 0) {
-      const account = bankAccounts.find((acc) => acc.id === currentValue);
+      // Try both strict and loose comparison
+      let account = bankAccounts.find((acc) => acc.id === currentValue);
+      if (!account) {
+        // Try with string conversion
+        account = bankAccounts.find(
+          (acc) => String(acc.id) === String(currentValue),
+        );
+      }
       if (
         account &&
         (!selectedAccount || selectedAccount.id !== currentValue)
       ) {
         setSelectedAccount(account);
+        // Also notify parent component when syncing from form value
+        if (onAccountSelect) {
+          onAccountSelect(account);
+        }
       }
     }
-  }, [currentValue, bankAccounts, selectedAccount]);
+  }, [currentValue, bankAccounts, selectedAccount, onAccountSelect]);
 
   // Handle empty bank accounts data more gracefully
   useEffect(() => {
@@ -352,10 +363,21 @@ export function BankAccountSelector({
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="flex-1 min-w-0">
                   <Select
-                    value={field.value || selectedAccount?.id || ""}
+                    value={
+                      field.value ||
+                      (selectedAccount?.id ? String(selectedAccount.id) : "") ||
+                      ""
+                    }
                     onValueChange={(value) => {
-                      const account =
-                        bankAccounts.find((acc) => acc.id === value) || null;
+                      let account = bankAccounts.find(
+                        (acc) => acc.id === value,
+                      );
+                      if (!account) {
+                        // Try with string conversion
+                        account = bankAccounts.find(
+                          (acc) => String(acc.id) === value,
+                        );
+                      }
                       if (account) {
                         updateFormValue(account);
                       }
@@ -371,7 +393,7 @@ export function BankAccountSelector({
                     </SelectTrigger>
                     <SelectContent>
                       {bankAccounts.map((account) => (
-                        <SelectItem key={account.id} value={account.id}>
+                        <SelectItem key={account.id} value={String(account.id)}>
                           <BankAccountDisplay account={account} />
                         </SelectItem>
                       ))}
