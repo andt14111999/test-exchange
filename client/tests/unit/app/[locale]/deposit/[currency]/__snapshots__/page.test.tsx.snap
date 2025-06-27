@@ -1,0 +1,104 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DepositPage should match snapshot 1`] = `
+<div>
+  <div
+    data-testid="protected-layout"
+  >
+    <div
+      data-testid="fiat-transaction-layout"
+    >
+      <div
+        class="space-y-8"
+      >
+        <div
+          class="space-y-6"
+        >
+          <div
+            class="space-y-4"
+          >
+            <div
+              class="flex justify-end"
+            >
+              <p
+                class="text-sm text-muted-foreground"
+              >
+                balance
+                :
+                 
+                1,000,000
+                 
+                VND
+              </p>
+            </div>
+            <div
+              class="space-y-2"
+            >
+              <label
+                for="amount"
+              >
+                amountToDeposit
+              </label>
+              <input
+                class="pl-2"
+                id="amount"
+                inputmode="numeric"
+                placeholder="50,000 VND"
+                type="text"
+                value=""
+              />
+              <p
+                class="text-sm text-muted-foreground"
+              >
+                min
+                :
+                 
+                50,000
+                 
+                VND
+              </p>
+            </div>
+            <div
+              data-testid="skeleton"
+            />
+          </div>
+          <button
+            class="w-full"
+            disabled=""
+          >
+            continue
+          </button>
+        </div>
+        <div>
+          <div>
+            <div>
+              depositHistory
+            </div>
+          </div>
+          <div>
+            <p
+              class="text-sm text-muted-foreground"
+            >
+              viewHistoryDescription
+            </p>
+          </div>
+          <div>
+            <button
+              variant="outline"
+            >
+              <a
+                href="/wallet/history/fiat/vnd"
+              >
+                viewHistory
+                <span
+                  data-testid="arrow-right"
+                />
+              </a>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

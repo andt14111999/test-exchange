@@ -1,0 +1,138 @@
+name: Jest Unit Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+# Add permissions configuration
+permissions:
+  checks: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  coverage:
+    name: "Jest Unit Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: "8.15.4"
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install required system packages
+        run: sudo apt-get update && sudo apt-get install -y bc
+
+      - name: Build the app
+        run: pnpm build
+        env:
+          CI: true
+
+      - name: Run tests with coverage
+        run: pnpm test:coverage:ci
+        env:
+          CI: true
+
+      - name: List coverage files
+        run: |
+          echo "Listing coverage directory contents:"
+          find coverage -type f | sort
+        continue-on-error: true
+
+      - name: Check coverage threshold
+        run: |
+          # Check if the coverage/lcov.info file exists, which is standard for Jest
+          if [ ! -f "coverage/lcov.info" ]; then
+            echo "Coverage file not found: coverage/lcov.info"
+            exit 1
+          fi
+
+          # Use lcov-summary to calculate the coverage percentage from lcov.info
+          COVERAGE_SUMMARY=$(npx lcov-summary coverage/lcov.info)
+          COVERAGE=$(echo "$COVERAGE_SUMMARY" | grep -A1 "Total Coverage:" | tail -n1 | grep -oP '[0-9.]+(?=%)')
+
+          echo "Coverage percentage: $COVERAGE%"
+
+          # Check if coverage meets the 80% threshold
+          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+            echo "::error::Test coverage is below 80% (actual: $COVERAGE%)"
+            exit 1
+          fi
+
+          echo "::notice::Test coverage meets the 80% threshold (actual: $COVERAGE%)"
+
+          # Check individual file coverage (minimum 60%)
+          echo "Checking individual file coverage (minimum 60% required)..."
+          FAILED_FILES=()
+          while IFS= read -r line; do
+            if [[ $line =~ SF:(.*) ]]; then
+              FILE="${BASH_REMATCH[1]}"
+            elif [[ $line =~ LF:[0-9]+ && $FILE ]]; then
+              LF=$(echo "$line" | cut -d: -f2)
+            elif [[ $line =~ LH:[0-9]+ && $FILE && $LF ]]; then
+              LH=$(echo "$line" | cut -d: -f2)
+              if [ "$LF" -gt 0 ]; then
+                COVERAGE=$(echo "scale=2; $LH * 100 / $LF" | bc)
+                if (( $(echo "$COVERAGE < 60" | bc -l) )); then
+                  echo "::error::File $FILE has low coverage: $COVERAGE% (threshold: 60%)"
+                  FAILED_FILES+=("$FILE: $COVERAGE%")
+                fi
+              fi
+              FILE=""
+              LF=""
+              LH=""
+            fi
+          done < coverage/lcov.info
+
+          if [ ${#FAILED_FILES[@]} -gt 0 ]; then
+            echo "The following files have coverage below 60%:"
+            for file in "${FAILED_FILES[@]}"; do
+              echo "  - $file"
+            done
+            exit 1
+          fi
+
+          echo "::notice::All files meet the minimum 60% coverage requirement"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+      - name: Publish Coverage Report as PR Comment
+        if: github.event_name == 'pull_request'
+        uses: romeovs/lcov-reporter-action@v0.3.1
+        with:
+          lcov-file: ./coverage/lcov.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          title: "Test Coverage Report"

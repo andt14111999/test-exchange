@@ -1,0 +1,38 @@
+name: Code Quality
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Check types
+        run: pnpm type-check
+
+      - name: Lint code
+        run: pnpm lint
+
+      - name: Format check
+        run: pnpm format:check

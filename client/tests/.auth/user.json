@@ -1,0 +1,29 @@
+{
+  "cookies": [
+    {
+      "name": "token",
+      "value": "mock-auth-token",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "token",
+          "value": "mock-auth-token"
+        },
+        {
+          "name": "user",
+          "value": "{\"id\":1,\"email\":\"test@example.com\",\"name\":\"Test User\",\"role\":\"user\"}"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,154 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LocaleLayout should render with valid locale 1`] = `
+<div>
+  <div
+    data-testid="next-intl-provider"
+  >
+    <div
+      data-testid="number-format-provider"
+    >
+      <div
+        data-testid="query-provider"
+      >
+        <div
+          data-testid="client-pool-initializer"
+        />
+        <div
+          data-testid="notification-provider"
+        >
+          <div
+            data-testid="balance-provider"
+          >
+            <div
+              class="relative min-h-screen flex flex-col"
+            >
+              <div
+                data-testid="header"
+              />
+              <main
+                class="flex-1"
+              >
+                <div
+                  class="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6"
+                >
+                  <div
+                    data-testid="test-children"
+                  >
+                    Test Content
+                  </div>
+                </div>
+              </main>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      data-testid="toast"
+    />
+  </div>
+</div>
+`;
+
+exports[`LocaleLayout should use default locale when locale is empty 1`] = `
+<div>
+  <div
+    data-testid="next-intl-provider"
+  >
+    <div
+      data-testid="number-format-provider"
+    >
+      <div
+        data-testid="query-provider"
+      >
+        <div
+          data-testid="client-pool-initializer"
+        />
+        <div
+          data-testid="notification-provider"
+        >
+          <div
+            data-testid="balance-provider"
+          >
+            <div
+              class="relative min-h-screen flex flex-col"
+            >
+              <div
+                data-testid="header"
+              />
+              <main
+                class="flex-1"
+              >
+                <div
+                  class="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6"
+                >
+                  <div
+                    data-testid="test-children"
+                  >
+                    Test Content
+                  </div>
+                </div>
+              </main>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      data-testid="toast"
+    />
+  </div>
+</div>
+`;
+
+exports[`LocaleLayout should use default locale when locale is invalid 1`] = `
+<div>
+  <div
+    data-testid="next-intl-provider"
+  >
+    <div
+      data-testid="number-format-provider"
+    >
+      <div
+        data-testid="query-provider"
+      >
+        <div
+          data-testid="client-pool-initializer"
+        />
+        <div
+          data-testid="notification-provider"
+        >
+          <div
+            data-testid="balance-provider"
+          >
+            <div
+              class="relative min-h-screen flex flex-col"
+            >
+              <div
+                data-testid="header"
+              />
+              <main
+                class="flex-1"
+              >
+                <div
+                  class="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6"
+                >
+                  <div
+                    data-testid="test-children"
+                  >
+                    Test Content
+                  </div>
+                </div>
+              </main>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      data-testid="toast"
+    />
+  </div>
+</div>
+`;

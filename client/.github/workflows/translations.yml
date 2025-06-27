@@ -1,0 +1,65 @@
+name: Translation Check
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "src/i18n/**"
+      - "src/components/**"
+      - "src/app/**"
+  push:
+    branches: [main, develop]
+    paths:
+      - "src/i18n/**"
+      - "src/components/**"
+      - "src/app/**"
+  workflow_dispatch:
+
+jobs:
+  check-translations:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: "8.15.4"
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Check translations
+        id: check-translations
+        run: |
+          OUTPUT=$(pnpm check-translations 2>&1)
+          echo "$OUTPUT"
+
+          # Extract the number of missing keys using a more precise pattern
+          MISSING_KEYS=$(echo "$OUTPUT" | grep -F "Tổng số key thiếu (so với code):" | grep -o '[0-9]\+' || echo "0")
+          echo "Missing keys: $MISSING_KEYS"
+
+          if [ "$MISSING_KEYS" -ne "0" ]; then
+            echo "::error::Translation check failed: $MISSING_KEYS keys are missing"
+            exit 1
+          fi

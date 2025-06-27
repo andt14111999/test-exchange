@@ -1,0 +1,75 @@
+name: Playwright E2E Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: "Playwright E2E Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: "8.15.4"
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install serve and wait-on
+        run: npm install -g wait-on
+
+      - name: Install Playwright
+        run: pnpm exec playwright install --with-deps
+
+      - name: Build the app
+        run: pnpm build
+        env:
+          CI: true
+
+      - name: Start Next.js server
+        run: pnpm start &
+        env:
+          CI: true
+          PORT: 3000
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:3000 -t 60000
+
+      - name: Run Playwright tests
+        run: pnpm test:e2e
+        env:
+          CI: true
+          BASE_URL: http://localhost:3000
+
+      - name: Upload Playwright test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30

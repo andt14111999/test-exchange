@@ -1,0 +1,23 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LiquidityLayout should match snapshot 1`] = `
+<div>
+  <div
+    data-testid="protected-layout"
+  >
+    <div
+      class="min-h-[calc(100vh-theme(spacing.14))] bg-gradient-to-b from-background to-muted"
+    >
+      <div
+        data-testid="amm-pool-provider"
+      >
+        <div
+          data-testid="test-children"
+        >
+          Test Content
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
