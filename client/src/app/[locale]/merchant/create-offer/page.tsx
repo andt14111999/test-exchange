@@ -127,9 +127,9 @@ const FormErrors = ({
 const formSchema = z
   .object({
     type: z.enum(["buy", "sell"] as const),
-    fiatCurrency: z.enum(
-      FIAT_CURRENCIES as unknown as [FiatCurrency, ...FiatCurrency[]],
-    ),
+    fiatCurrency: z
+      .string()
+      .transform((val) => val.toUpperCase() as FiatCurrency),
     amount: z.number().min(MOCK_AMOUNT_LIMITS.MIN).max(MOCK_AMOUNT_LIMITS.MAX),
     price: z.number().default(1), // Price is always 1
     minAmount: z
@@ -222,10 +222,11 @@ export default function CreateOffer() {
 
   // Update available balance when currency changes
   const updateAvailableBalance = useCallback(
-    (currency: FiatCurrency) => {
-      if (walletData) {
+    (currency: FiatCurrency | undefined) => {
+      if (walletData && currency && typeof currency === "string") {
         const account = walletData.fiat_accounts.find(
-          (acc: FiatAccount) => acc.currency === currency,
+          (acc: FiatAccount) =>
+            acc.currency.toUpperCase() === currency.toUpperCase(),
         );
 
         if (account) {
@@ -247,10 +248,12 @@ export default function CreateOffer() {
   useEffect(() => {
     if (walletData) {
       const selectedCurrency = form.getValues("fiatCurrency");
-      const balance = updateAvailableBalance(selectedCurrency);
+      if (selectedCurrency) {
+        const balance = updateAvailableBalance(selectedCurrency);
 
-      if (balance !== undefined && !isEditMode) {
-        form.setValue("amount", balance);
+        if (balance !== undefined && !isEditMode) {
+          form.setValue("amount", balance);
+        }
       }
     }
   }, [walletData, form, isEditMode, updateAvailableBalance]);
@@ -258,10 +261,11 @@ export default function CreateOffer() {
   // Watch currency changes to update default amount
   const selectedCurrency = form.watch("fiatCurrency");
   useEffect(() => {
-    if (walletData && !isEditMode) {
+    if (walletData && selectedCurrency) {
       const balance = updateAvailableBalance(selectedCurrency);
 
-      if (balance !== undefined) {
+      // Only auto-set amount for new offers, not edit mode
+      if (balance !== undefined && !isEditMode) {
         form.setValue("amount", balance);
       }
     }
@@ -378,16 +382,27 @@ export default function CreateOffer() {
           // Force convert to proper number for safety
           const totalAmount = safeNumber(offerData.total_amount);
 
+          // Extract bank account ID from payment details for sell offers
+          let bankAccountId: string | undefined;
+          if (offerData.offer_type === "sell" && offerData.payment_details) {
+            const bankDetails =
+              typeof offerData.payment_details === "object"
+                ? offerData.payment_details
+                : {};
+            bankAccountId = bankDetails.bank_id
+              ? String(bankDetails.bank_id)
+              : undefined;
+          }
+
           const formValues = {
             type: offerData.offer_type as "buy" | "sell",
-            fiatCurrency: offerData.currency as FiatCurrency,
+            fiatCurrency: (offerData.currency?.toUpperCase() ||
+              "VND") as FiatCurrency,
             amount: totalAmount,
             price: safeNumber(offerData.price),
             minAmount: safeNumber(offerData.min_amount),
             maxAmount: safeNumber(offerData.max_amount),
-            bankAccountId: offerData.payment_method_id
-              ? String(offerData.payment_method_id)
-              : undefined,
+            bankAccountId: bankAccountId,
             paymentTime: safeNumber(offerData.payment_time),
             paymentDetails: paymentDetailsValue,
             countryCode: offerData.country_code || "VN",
@@ -399,9 +414,24 @@ export default function CreateOffer() {
           // Set form values with retrieved data
           form.reset(formValues);
 
-          // Force set total amount again after reset to ensure it's applied
+          // Force set all important values again after reset to ensure they're applied
           setTimeout(() => {
             form.setValue("amount", totalAmount);
+            // Ensure currency is uppercase for enum validation
+            const currency = offerData.currency?.toUpperCase() as FiatCurrency;
+            form.setValue("fiatCurrency", currency || "VND");
+            if (offerData.payment_method_id) {
+              form.setValue(
+                "paymentMethodId",
+                String(offerData.payment_method_id),
+              );
+            }
+            // Force set bank account ID if it's a sell offer
+            if (bankAccountId) {
+              form.setValue("bankAccountId", bankAccountId);
+            }
+            // Force validate form after setting values
+            form.trigger();
           }, 100);
 
           // Also need to set the selected payment method
@@ -412,31 +442,6 @@ export default function CreateOffer() {
 
             if (method) {
               setSelectedPaymentMethod(method);
-            }
-          }
-
-          // Also need to set selected bank account if it's a sell offer with payment details
-          if (offerData.offer_type === "sell" && offerData.payment_details) {
-            const bankDetails =
-              typeof offerData.payment_details === "object"
-                ? offerData.payment_details
-                : {};
-
-            if (bankDetails.bank_id) {
-              const bankAccount = {
-                id: String(bankDetails.bank_id),
-                bank_name: bankDetails.bank_name || "",
-                account_name: bankDetails.bank_account_name || "",
-                account_number: bankDetails.bank_account_number || "",
-                branch: "",
-                country_code: offerData.country_code || "VN",
-                is_primary: false,
-                verified: true,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              } as BankAccount;
-
-              setSelectedBankAccount(bankAccount);
             }
           }
 
@@ -756,6 +761,7 @@ export default function CreateOffer() {
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
+                          disabled={isEditMode}
                           data-testid="fiat-currency-select"
                         >
                           <FormControl>
@@ -794,6 +800,7 @@ export default function CreateOffer() {
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
+                          disabled={isEditMode}
                         >
                           <FormControl>
                             <SelectTrigger className="h-12">
