@@ -1192,21 +1192,18 @@ RSpec.describe Trade, type: :model do
         # Check if trade_memo is present
         expect(trade.trade_memo).to be_present
 
-        # Check trade_memo format: REF-BUYERSELLER-RND
-        # Format parts
-        parts = trade.trade_memo.split('-')
+        # Check trade_memo format: REFBUYERSELLERRND (concatenated format)
+        # Should be 10 characters total: 4 (ref) + 2 (buyer) + 2 (seller) + 2 (random)
+        expect(trade.trade_memo.length).to eq(10)
 
-        # Should have 3 parts
-        expect(parts.length).to eq(3)
+        # First 4 characters should be the last 4 chars of the ref
+        expect(trade.trade_memo[0, 4]).to eq(trade.ref.last(4).upcase)
 
-        # First part should be the last 4 chars of the ref
-        expect(parts[0]).to eq(trade.ref.last(4).upcase)
+        # Next 4 characters should be last 2 digits of buyer ID + last 2 digits of seller ID
+        expect(trade.trade_memo[4, 4]).to eq('4590')
 
-        # Second part should be last 2 digits of buyer ID + last 2 digits of seller ID
-        expect(parts[1]).to eq('4590')
-
-        # Third part should be a 2-digit number
-        expect(parts[2]).to match(/^\d{2}$/)
+        # Last 2 characters should be a 2-digit number
+        expect(trade.trade_memo[8, 2]).to match(/^\d{2}$/)
       end
 
       it 'does not override an existing trade_memo' do
