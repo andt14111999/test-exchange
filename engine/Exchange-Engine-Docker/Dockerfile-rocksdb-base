@@ -1,0 +1,33 @@
+FROM openjdk:17-slim
+RUN echo "===== STEP 1: Install RocksDB dependencies ====="
+
+# Install required packages and RocksDB CLI
+RUN apt-get update && apt-get install -y \
+  libsnappy1v5 \
+  liblz4-1 \
+  libzstd1 \
+  git \
+  build-essential \
+  libgflags-dev \
+  libsnappy-dev \
+  zlib1g-dev \
+  libbz2-dev \
+  liblz4-dev \
+  libzstd-dev \
+  cmake \
+  wget \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install prebuilt RocksDB CLI tools (ldb) in release mode
+RUN echo "===== STEP 2: Install RocksDB CLI tools ====="
+RUN mkdir -p /tmp/rocksdb && \
+  cd /tmp/rocksdb && \
+  wget -q https://github.com/facebook/rocksdb/archive/refs/tags/v9.7.3.tar.gz && \
+  tar xf v9.7.3.tar.gz && \
+  cd rocksdb-9.7.3 && \
+  DEBUG_LEVEL=0 make -j$(nproc) ldb && \
+  cp ./ldb /usr/local/bin/ && \
+  ln -s /usr/local/bin/ldb /usr/local/bin/rocksdb_ldb && \
+  chmod +x /usr/local/bin/ldb /usr/local/bin/rocksdb_ldb && \
+  cd / && \
+  rm -rf /tmp/rocksdb

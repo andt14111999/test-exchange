@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Sử dụng NopAppender để tắt hoàn toàn tất cả log -->
+    <appender name="NOP" class="ch.qos.logback.core.helpers.NOPAppender"/>
+
+    <!-- Thiết lập root logger ở mức OFF để không hiển thị bất kỳ log nào -->
+    <root level="OFF">
+        <appender-ref ref="NOP" />
+    </root>
+
+    <!-- Thiết lập tất cả các package ở mức OFF -->
+    <logger name="com.exchangeengine" level="OFF" />
+    <logger name="org.apache.kafka" level="OFF" />
+</configuration>

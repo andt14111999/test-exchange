@@ -48,3 +48,6 @@
 
 # Ignore client folder (frontend)
 /client/
+
+# Ignore engine folder
+/engine/

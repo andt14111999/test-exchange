@@ -1,0 +1,45 @@
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>tmp/logs/exchange-engine.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>tmp/logs/exchange-engine-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Rollbar Appender - Chỉ gửi ERROR -->
+    <appender name="ROLLBAR" class="com.exchangeengine.util.logging.RollbarAppender">
+        <accessToken>1a209c80c2eb4f9fb3cf9567e7fab65b</accessToken>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+    </appender>
+
+    <!-- Loggers -->
+    <logger name="com.exchangeengine" level="DEBUG" />
+
+    <!-- Set Kafka logging level to INFO -->
+    <logger name="org.apache.kafka" level="ERROR" />
+
+    <!-- Set RocksDB logging level to INFO -->
+    <logger name="org.rocksdb" level="DEBUG" />
+
+    <!-- Set LMAX Disruptor logging level to INFO -->
+    <logger name="com.lmax.disruptor" level="DEBUG" />
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <!-- Rollbar đã được fix để không retry spam -->
+        <appender-ref ref="ROLLBAR" />
+    </root>
+</configuration>

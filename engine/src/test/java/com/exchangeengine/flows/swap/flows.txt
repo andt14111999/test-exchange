@@ -1,0 +1,132 @@
+# Thiết kế Flow Test cho AMM Position Processors (VND-USDT)
+
+Dưới đây là thiết kế flow test chi tiết cho toàn bộ quy trình hoạt động của AMM Position với cặp VND-USDT, tỉ giá 26000 VND/1 USDT và fee 1%:
+
+## Phần 1: Khởi tạo và thiết lập môi trường
+1. Khởi tạo các cache services (AmmPoolCache, AmmPositionCache, AccountCache, TickCache, TickBitmapCache)
+2. Tạo token0 (VND)
+3. Tạo token1 (USDT)
+4. Tạo tài khoản cho người dùng với số dư ban đầu (10,000,000 VND, 1,000 USDT)
+5. Tạo AmmPool với cặp VND-USDT, fee 1%, và tick hiện tại (tick tương ứng với giá 26000 VND/1 USDT, khoảng tick 102930)
+6. Kiểm tra AmmPool được tạo thành công với các thông số đúng
+
+## Phần 2: Mở vị thế
+7. Tạo AmmPositionEvent cho việc mở vị thế với các thông số:
+   - TickLower: 102830 (tương ứng với giá khoảng 25740 VND/USDT)
+   - TickUpper: 103030 (tương ứng với giá khoảng 26260 VND/USDT)
+   - Liquidity: 5,000,000 (tương đương khoảng 5,000,000 VND và 192 USDT)
+8. Khởi tạo AmmPositionOpenProcessor với event đã tạo
+9. Gọi phương thức process() để xử lý mở vị thế
+10. Kiểm tra ProcessResult có status SUCCESS
+11. Kiểm tra Position được tạo với status OPEN và liquidity đúng
+12. Kiểm tra số dư tài khoản người dùng:
+    - VND giảm khoảng 5,000,000
+    - USDT giảm khoảng 192
+13. Kiểm tra Pool liquidity tăng và TVL tăng
+14. Kiểm tra Tick Lower (102830) và Upper (103030) được cập nhật với liquidity đúng
+15. Kiểm tra Bitmap được set đúng
+
+## Phần 3: Mô phỏng giao dịch để tạo phí
+16. Tạo sự kiện swap: Swap 1,000,000 VND sang USDT (khoảng 38.46 USDT)
+17. Xử lý swap và cập nhật pool:
+    - Phí thu được: 10,000 VND (1% của 1,000,000)
+18. Tạo sự kiện swap: Swap 50 USDT sang VND (khoảng 1,300,000 VND)
+19. Xử lý swap và cập nhật pool:
+    - Phí thu được: 0.5 USDT (1% của 50)
+20. Kiểm tra FeeGrowthGlobal0 (VND) và FeeGrowthGlobal1 (USDT) tăng sau các swap
+
+## Phần 4: Thu phí lần đầu
+21. Tạo AmmPositionEvent cho việc thu phí với PositionId
+22. Khởi tạo AmmPositionCollectFeeProcessor với event đã tạo
+23. Gọi phương thức process() để xử lý thu phí
+24. Kiểm tra ProcessResult có status SUCCESS
+25. Kiểm tra phí được thu:
+    - TokensOwed0 (VND): khoảng 10,000 VND
+    - TokensOwed1 (USDT): khoảng 0.5 USDT
+26. Kiểm tra số dư tài khoản người dùng tăng đúng với phí đã thu:
+    - VND tăng khoảng 10,000
+    - USDT tăng khoảng 0.5
+27. Kiểm tra Position được cập nhật: FeeGrowthInside0Last và FeeGrowthInside1Last
+
+## Phần 5: Mô phỏng thêm giao dịch
+28. Tạo sự kiện swap: Swap 2,000,000 VND sang USDT (khoảng 76.92 USDT)
+29. Xử lý swap và cập nhật pool:
+    - Phí thu được: 20,000 VND (1% của 2,000,000)
+30. Tạo sự kiện swap: Swap 100 USDT sang VND (khoảng 2,600,000 VND)
+31. Xử lý swap và cập nhật pool:
+    - Phí thu được: 1 USDT (1% của 100)
+32. Kiểm tra FeeGrowthGlobal0 và FeeGrowthGlobal1 tiếp tục tăng
+
+## Phần 6: Đóng vị thế
+33. Tạo AmmPositionEvent cho việc đóng vị thế với PositionId
+34. Khởi tạo AmmPositionCloseProcessor với event đã tạo
+35. Gọi phương thức process() để xử lý đóng vị thế
+36. Kiểm tra ProcessResult có status SUCCESS
+37. Kiểm tra Position có status CLOSED và liquidity = 0
+38. Kiểm tra phí còn lại được thu tự động:
+    - VND: khoảng 20,000
+    - USDT: khoảng 1
+39. Kiểm tra số dư tài khoản người dùng tăng đúng với số token đã deposit + phí còn lại:
+    - VND tăng khoảng 5,000,000 (deposit) + 20,000 (phí) = 5,020,000
+    - USDT tăng khoảng 192 (deposit) + 1 (phí) = 193
+40. Kiểm tra Pool liquidity giảm và TVL giảm
+41. Kiểm tra Tick Lower và Upper được cập nhật: liquidityGross giảm
+42. Kiểm tra Bitmap được cập nhật nếu cần
+
+## Phần 7: Kiểm tra trạng thái cuối cùng
+43. Kiểm tra trạng thái cuối cùng của vị thế: CLOSED, liquidity = 0
+44. Kiểm tra số dư cuối cùng của tài khoản người dùng:
+    - VND: khoảng 10,000,000 (ban đầu) - 5,000,000 (deposit) + 5,000,000 (rút) + 10,000 (phí đầu) + 20,000 (phí sau) = 10,030,000
+    - USDT: khoảng 1,000 (ban đầu) - 192 (deposit) + 192 (rút) + 0.5 (phí đầu) + 1 (phí sau) = 1,001.5
+45. Kiểm tra pool: liquidity và TVL đã trở về giá trị ban đầu
+
+## Phần 8: Các trường hợp lỗi cần kiểm tra
+46. Thử mở vị thế với số dư không đủ:
+    - Tạo tài khoản với số dư thấp: 1,000,000 VND, 10 USDT
+    - Tạo AmmPositionEvent với liquidity: 5,000,000
+    - Kiểm tra xử lý lỗi và số dư không thay đổi
+47. Thử thu phí từ vị thế không tồn tại:
+    - Tạo AmmPositionEvent với PositionId không tồn tại
+    - Kiểm tra xử lý lỗi
+48. Thử thu phí từ vị thế không có phí:
+    - Mở vị thế mới
+    - Thu phí ngay lập tức (không có swap)
+    - Kiểm tra kết quả: không có phí thu được
+49. Thử đóng vị thế đã đóng:
+    - Đóng vị thế đã đóng ở bước 36
+    - Kiểm tra xử lý lỗi
+50. Thử đóng vị thế không tồn tại:
+    - Tạo AmmPositionEvent với PositionId không tồn tại
+    - Kiểm tra xử lý lỗi
+
+## Phần 9: Kiểm tra cơ chế backup và rollback
+51. Tạo lỗi nhân tạo trong quá trình mở vị thế:
+    - Tạo vị thế bình thường nhưng inject lỗi trong processor
+    - Kiểm tra cơ chế rollback: số dư không thay đổi, không có vị thế được tạo
+52. Tạo lỗi nhân tạo trong quá trình thu phí:
+    - Thu phí bình thường nhưng inject lỗi trong processor
+    - Kiểm tra cơ chế rollback: số dư không thay đổi, vị thế không thay đổi
+53. Tạo lỗi nhân tạo trong quá trình đóng vị thế:
+    - Đóng vị thế bình thường nhưng inject lỗi trong processor
+    - Kiểm tra cơ chế rollback: số dư không thay đổi, vị thế không thay đổi
+
+## Phần 10: Kiểm tra các trường hợp đặc biệt
+54. Mở vị thế với tick hiện tại nằm ngoài range:
+    - Tạo vị thế với tickLower: 103100, tickUpper: 103300 (cao hơn giá hiện tại)
+    - Kiểm tra vị thế được tạo thành công nhưng không active (chỉ cung cấp một loại token)
+55. Mở vị thế với tick hiện tại nằm trong range:
+    - Đã kiểm tra ở phần 2
+56. Swap làm tick hiện tại chuyển từ trong range ra ngoài range:
+    - Swap lượng lớn USDT sang VND để đẩy giá xuống dưới tickLower
+    - Kiểm tra liquidity active giảm
+57. Swap làm tick hiện tại chuyển từ ngoài range vào trong range:
+    - Swap lượng lớn VND sang USDT để đẩy giá trở lại trong range
+    - Kiểm tra liquidity active tăng
+58. Đóng vị thế khi tick hiện tại nằm trong range:
+    - Đã kiểm tra ở phần 6
+59. Đóng vị thế khi tick hiện tại nằm ngoài range:
+    - Tạo vị thế mới với tickLower: 103100, tickUpper: 103300
+    - Đóng vị thế khi tick hiện tại vẫn ở dưới range
+    - Kiểm tra vị thế được đóng thành công và token được trả về đúng
+
+Mỗi phần trong flow này cần được implement trong code test với các assertion cụ thể để đảm bảo mọi thứ hoạt động đúng như mong đợi.
