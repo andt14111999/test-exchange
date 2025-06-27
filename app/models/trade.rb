@@ -556,9 +556,9 @@ class Trade < ApplicationRecord
     seller_part = seller_id.to_s.last(2)
     random_part = SecureRandom.random_number(100).to_s.rjust(2, '0')
 
-    # Final format: REF-BUYERSELLER-RND
-    # Example: ABC1-2345-67
-    self.trade_memo = "#{ref_part}-#{buyer_part}#{seller_part}-#{random_part}"
+    # Final format: REFBUYERSELLERRND
+    # Example: ABC1234567
+    self.trade_memo = "#{ref_part}#{buyer_part}#{seller_part}#{random_part}"
   end
 
   def set_initial_timestamps
