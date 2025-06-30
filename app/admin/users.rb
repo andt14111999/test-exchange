@@ -6,9 +6,9 @@ ActiveAdmin.register User do
   permit_params :email, :display_name, :avatar_url, :role,
     :phone_verified, :document_verified, :kyc_level, :status, :username
 
-  actions :all
+  actions :all, except: [ :destroy ]
 
-  before_action :ensure_superadmin_user, only: %i[create update destroy]
+  before_action :ensure_superadmin_user, only: %i[create update]
 
   filter :id
   filter :email

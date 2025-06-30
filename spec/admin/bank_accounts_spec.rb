@@ -19,7 +19,7 @@ RSpec.describe 'Admin::BankAccounts', type: :request do
 
       # Use more specific matchers to check for the content in the bank account row or table cell
       expect(response.body).to include(">#{bank_account.bank_name}<")
-      expect(response.body).to include(">#{bank_account.account_name}<")
+      expect(response.body).to include(CGI.escapeHTML(bank_account.account_name))
       expect(response.body).to include(">#{bank_account.account_number}<")
     end
 

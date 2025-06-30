@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register Notification do
+  actions :all, except: [ :destroy ]
+
   permit_params :user_id, :title, :content, :notification_type, :read, :delivered
 
   filter :user

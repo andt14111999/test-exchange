@@ -432,22 +432,8 @@ RSpec.describe 'Admin::Offers', type: :system do
       end
     end
 
-    describe 'PUT delete' do
-      it 'marks an offer as deleted' do
-        offer = create(:offer, deleted: false)
-
-        allow_any_instance_of(Offer).to receive(:delete!) do |instance|
-          instance.update(deleted: true)
-        end
-
-        put delete_admin_offer_path(offer)
-
-        follow_redirect!
-        expect(response.body).to include('Offer has been deleted')
-        offer.reload
-        expect(offer.deleted).to be true
-      end
-    end
+    # Delete action is not available in the admin configuration
+    # The admin config has `except: [:destroy]` which means no delete functionality
   end
 
   describe 'action items' do
@@ -475,12 +461,13 @@ RSpec.describe 'Admin::Offers', type: :system do
       expect(page).not_to have_link('Enable')
     end
 
-    it 'shows delete button for non-deleted offers' do
+    it 'does not show delete button' do
+      # Delete action is not available because admin config excludes destroy action
       offer = create(:offer, deleted: false)
 
       visit admin_offer_path(offer)
 
-      expect(page).to have_link('Delete')
+      expect(page).not_to have_link('Delete')
     end
 
     it 'does not show delete button for deleted offers' do

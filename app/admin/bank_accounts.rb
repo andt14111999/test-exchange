@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register BankAccount do
+  actions :all, except: [ :destroy ]
+
   permit_params :user_id, :bank_name, :account_name, :account_number,
                 :branch, :country_code, :verified, :is_primary
 

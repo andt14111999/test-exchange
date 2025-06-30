@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register Message do
+  actions :all, except: [ :destroy ]
+
   permit_params :trade_id, :user_id, :body, :is_receipt_proof, :is_system
 
   scope :all

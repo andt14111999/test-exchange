@@ -132,10 +132,11 @@ RSpec.describe 'Admin::SocialAccounts', type: :system do
   describe 'delete social account' do
     let(:social_account) { create(:social_account) }
 
-    it 'deletes a social account' do
+    it 'does not have delete functionality' do
+      # Delete action is not available because admin config excludes destroy action
       visit admin_social_account_path(social_account)
-      click_link 'Delete Social Account'
-      expect(page).to have_content('Social account was successfully destroyed')
+      expect(page).not_to have_link('Delete Social Account')
+      expect(page).not_to have_link('Delete')
     end
   end
 
