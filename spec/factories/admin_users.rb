@@ -10,6 +10,7 @@ FactoryBot.define do
     roles { 'superadmin' }
     authenticator_enabled { false }
     authenticator_key { nil }
+    deactivated { false }
 
     trait :operator do
       roles { 'operator' }
@@ -17,6 +18,10 @@ FactoryBot.define do
 
     trait :superadmin do
       roles { 'superadmin' }
+    end
+
+    trait :deactivated do
+      deactivated { true }
     end
   end
 end

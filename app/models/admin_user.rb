@@ -19,8 +19,30 @@ class AdminUser < ApplicationRecord
   encrypts :authenticator_key
   delegate :verify_otp, to: :otp_verifier
 
+  scope :active, -> { where(deactivated: false) }
+  scope :deactivated, -> { where(deactivated: true) }
+
   def self.disabled_ransackable_attributes
     %w[encrypted_password]
+  end
+
+  def self.ransackable_attributes(auth_object = nil)
+    super + %w[deactivated]
+  end
+
+  def active?
+    !deactivated?
+  end
+
+  # Devise method to check if user can authenticate
+  # Deactivated users cannot login
+  def active_for_authentication?
+    super && !deactivated?
+  end
+
+  # Devise method to customize the message for inactive users
+  def inactive_message
+    deactivated? ? :deactivated : super
   end
 
   def superadmin?

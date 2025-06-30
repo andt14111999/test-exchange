@@ -7,6 +7,9 @@ class AdminAbility
   def initialize(user)
     @current_user = user
 
+    # Deactivated admin users have no permissions at all
+    return if user.deactivated?
+
     if user.superadmin?
       # Superadmins can manage everything (includes all actions)
       can :manage, :all
