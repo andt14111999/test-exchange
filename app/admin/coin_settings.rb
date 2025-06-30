@@ -52,6 +52,8 @@ ActiveAdmin.register CoinSetting do
   end
 
   controller do
+    before_action :check_authorization, only: [ :new, :edit, :create, :update ]
+
     def edit
       @coin_setting = CoinSetting.find(params[:id])
       define_fake_layers_methods(@coin_setting)
@@ -78,6 +80,12 @@ ActiveAdmin.register CoinSetting do
     end
 
     private
+
+    def check_authorization
+      unless current_admin_user.superadmin?
+        redirect_to admin_root_path, alert: 'You are not authorized to perform this action.'
+      end
+    end
 
     def define_fake_layers_methods(coin_setting)
       coin_setting.define_singleton_method(:fake_layers) do

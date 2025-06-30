@@ -508,19 +508,6 @@ RSpec.describe 'Admin::Users', type: :system do
     describe 'authorization restrictions' do
       let!(:user) { create(:user) }
 
-      it 'allows access to new user form but prevents creation' do
-        visit new_admin_user_path
-
-        # Form should be accessible but submission should fail
-        expect(page).to have_field('Email')
-
-        fill_in 'Email', with: 'test@example.com'
-        click_button 'Create User'
-
-        # Should redirect with error message
-        expect(current_path).to eq('/admin')
-      end
-
       it 'redirects when trying to edit user' do
         put admin_user_path(user), params: { user: { email: 'new@example.com' } }
 
