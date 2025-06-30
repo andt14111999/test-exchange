@@ -123,7 +123,8 @@ public class Account {
     }
 
     if (this.availableBalance.compareTo(scaledAmount) < 0) {
-      throw new IllegalArgumentException("Available balance is not enough to lock");
+      throw new IllegalArgumentException(
+          "Available balance is not enough to lock available balance: " + this.availableBalance + " amount: " + scaledAmount);
     }
 
     this.availableBalance = this.availableBalance.subtract(scaledAmount).setScale(DEFAULT_SCALE, RoundingMode.HALF_UP);

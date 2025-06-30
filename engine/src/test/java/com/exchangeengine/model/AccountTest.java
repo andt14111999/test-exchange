@@ -275,7 +275,13 @@ class AccountTest {
     account.setAvailableBalance(available);
 
     // Verify
-    assertThrows(IllegalArgumentException.class, () -> account.increaseFrozenBalance(amount, "txn123"));
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, 
+        () -> account.increaseFrozenBalance(amount, "txn123"));
+    
+    String expectedMessage = "Available balance is not enough to lock available balance: " + 
+        available.setScale(DEFAULT_SCALE, RoundingMode.HALF_UP) + " amount: " + 
+        amount.setScale(DEFAULT_SCALE, RoundingMode.HALF_UP);
+    assertEquals(expectedMessage, exception.getMessage());
   }
 
   @Test
