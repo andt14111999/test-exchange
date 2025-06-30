@@ -54,4 +54,34 @@ RSpec.describe AdminAbility do
       expect(ability).not_to be_able_to(:manage, AmmPool)
     end
   end
+
+  context 'when user is deactivated' do
+    it 'has no permissions at all' do
+      deactivated_superadmin = create(:admin_user, :superadmin, deactivated: true)
+      deactivated_operator = create(:admin_user, :operator, deactivated: true)
+
+      superadmin_ability = described_class.new(deactivated_superadmin)
+      operator_ability = described_class.new(deactivated_operator)
+
+      # Test that deactivated superadmin has no permissions
+      expect(superadmin_ability).not_to be_able_to(:read, :all)
+      expect(superadmin_ability).not_to be_able_to(:create, :all)
+      expect(superadmin_ability).not_to be_able_to(:update, :all)
+      expect(superadmin_ability).not_to be_able_to(:destroy, :all)
+      expect(superadmin_ability).not_to be_able_to(:manage, :all)
+
+      # Test that deactivated operator has no permissions
+      expect(operator_ability).not_to be_able_to(:read, User)
+      expect(operator_ability).not_to be_able_to(:read, AmmPool)
+      expect(operator_ability).not_to be_able_to(:read, Trade)
+      expect(operator_ability).not_to be_able_to(:read, ActiveAdmin::Page, name: 'Dashboard')
+      expect(operator_ability).not_to be_able_to(:manage, ActiveAdmin::Page, name: 'Setup 2FA')
+
+      # Test specific models
+      expect(superadmin_ability).not_to be_able_to(:read, CoinDeposit)
+      expect(superadmin_ability).not_to be_able_to(:read, FiatDeposit)
+      expect(operator_ability).not_to be_able_to(:read, CoinDeposit)
+      expect(operator_ability).not_to be_able_to(:read, FiatDeposit)
+    end
+  end
 end

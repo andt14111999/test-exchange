@@ -194,6 +194,73 @@ RSpec.describe AdminUser, type: :model do
     it 'excludes encrypted_password from ransackable attributes' do
       expect(described_class.disabled_ransackable_attributes).to include('encrypted_password')
     end
+
+    it 'includes deactivated in ransackable attributes' do
+      expect(described_class.ransackable_attributes).to include('deactivated')
+    end
+  end
+
+  describe 'deactivated functionality' do
+    describe 'default values' do
+      it 'defaults deactivated to false' do
+        admin_user = build(:admin_user)
+        expect(admin_user.deactivated).to be false
+      end
+    end
+
+    describe 'scopes' do
+      it 'returns active admin users' do
+        active_admin = create(:admin_user, deactivated: false)
+        create(:admin_user, deactivated: true)
+
+        expect(described_class.active).to include(active_admin)
+        expect(described_class.active.count).to eq(1)
+      end
+
+      it 'returns deactivated admin users' do
+        create(:admin_user, deactivated: false)
+        deactivated_admin = create(:admin_user, deactivated: true)
+
+        expect(described_class.deactivated).to include(deactivated_admin)
+        expect(described_class.deactivated.count).to eq(1)
+      end
+    end
+
+    describe '#active?' do
+      it 'returns true when not deactivated' do
+        admin_user = build(:admin_user, deactivated: false)
+        expect(admin_user.active?).to be true
+      end
+
+      it 'returns false when deactivated' do
+        admin_user = build(:admin_user, deactivated: true)
+        expect(admin_user.active?).to be false
+      end
+    end
+
+    describe '#active_for_authentication?' do
+      it 'returns true for active admin user' do
+        admin_user = build(:admin_user, deactivated: false)
+        expect(admin_user.active_for_authentication?).to be true
+      end
+
+      it 'returns false for deactivated admin user' do
+        admin_user = build(:admin_user, deactivated: true)
+        expect(admin_user.active_for_authentication?).to be false
+      end
+    end
+
+    describe '#inactive_message' do
+      it 'returns :deactivated for deactivated admin user' do
+        admin_user = build(:admin_user, deactivated: true)
+        expect(admin_user.inactive_message).to eq(:deactivated)
+      end
+
+      it 'returns default message for active admin user' do
+        admin_user = build(:admin_user, deactivated: false)
+        expect(admin_user.inactive_message).not_to eq(:deactivated)
+      end
+    end
   end
 
   describe '#verify_otp' do

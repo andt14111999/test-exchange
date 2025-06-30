@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_30_030724) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_30_090816) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -80,6 +80,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_30_030724) do
     t.string "roles", default: ""
     t.boolean "authenticator_enabled", default: false, null: false
     t.string "authenticator_key"
+    t.boolean "deactivated", default: false, null: false
     t.index ["email"], name: "index_admin_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_admin_users_on_reset_password_token", unique: true
   end

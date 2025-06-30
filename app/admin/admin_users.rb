@@ -3,27 +3,36 @@
 ActiveAdmin.register AdminUser do
   extend ActiveAdmin::BaseAdminHelper
 
-  permit_params :email, :fullname, :roles
+  permit_params :email, :fullname, :roles, :deactivated
 
   before_action :ensure_superadmin_user, only: %i[create update destroy]
+
+  scope :all, default: true
+  scope :active
+  scope :deactivated
 
   index do
     id_column
     column :email
     column :fullname
     column :roles
+    column :deactivated do |admin_user|
+      inline_edit_field(admin_user, :deactivated, type: :boolean)
+    end
     column :created_at
   end
 
   filter :email
   filter :roles
   filter :fullname
+  filter :deactivated
   filter :created_at
 
   form do |f|
     f.inputs do
       f.input :email
       f.input :roles, as: :select, collection: AdminUser::ROLES
+      f.input :deactivated if current_admin_user.superadmin?
     end
     f.actions
   end
@@ -34,6 +43,9 @@ ActiveAdmin.register AdminUser do
       row :email
       row :fullname
       row :roles
+      row :deactivated do
+        inline_edit_field(admin_user, :deactivated, type: :boolean)
+      end
       row :created_at
       row :updated_at
       row :authenticator_enabled
