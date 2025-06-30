@@ -1,0 +1,77 @@
+// Inline Edit Styles for ActiveAdmin
+.inline-edit-container {
+  display: inline-block;
+  position: relative;
+  
+  .inline-edit-trigger {
+    text-decoration: none;
+    opacity: 1; // Always visible
+    transition: opacity 0.2s;
+    margin-left: 5px;
+    font-size: 14px;
+    
+    &:hover {
+      text-decoration: none;
+    }
+  }
+  
+  .inline-edit-form {
+    display: inline-block;
+    
+    .inline-edit-input {
+      padding: 2px 5px;
+      border: 1px solid #c7c7c7;
+      border-radius: 3px;
+      font-size: 13px;
+      
+      &[type="checkbox"] {
+        margin: 0 5px;
+        vertical-align: middle;
+      }
+    }
+    
+    button {
+      background: none;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 2px 5px;
+      vertical-align: middle;
+      
+      &.inline-edit-save {
+        color: #5e6469;
+        
+        &:hover {
+          color: #3c763d;
+        }
+      }
+      
+      &.inline-edit-cancel {
+        color: #5e6469;
+        
+        &:hover {
+          color: #a94442;
+        }
+      }
+    }
+    
+    .inline-edit-spinner {
+      font-size: 14px;
+      animation: spin 1s linear infinite;
+    }
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// Make status tags within inline edit clickable
+.inline-edit-container .status_tag {
+  cursor: pointer;
+  
+  &:hover {
+    opacity: 0.8;
+  }
+} 

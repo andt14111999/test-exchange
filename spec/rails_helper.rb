@@ -11,6 +11,8 @@ abort("The Rails environment is running in production mode!") if Rails.env.produ
 # return unless Rails.env.test?
 require 'rspec/rails'
 require 'capybara/rspec'
+# Selenium 4.x includes Selenium Manager for automatic driver management
+# No need for webdrivers gem
 # Add additional requires below this line. Rails is not loaded until this point!
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
@@ -66,7 +68,12 @@ RSpec.configure do |config|
   end
 
   config.before(:each, :js, type: :system) do
-    driven_by :selenium_chrome_headless
+    # Use appropriate driver based on CI environment
+    if ENV['CI'].present?
+      driven_by :selenium_chrome_headless, screen_size: [ 1400, 1400 ]
+    else
+      driven_by :selenium_chrome, screen_size: [ 1400, 1400 ]
+    end
   end
 
   # You can uncomment this line to turn off ActiveRecord support entirely.
@@ -97,4 +104,4 @@ RSpec.configure do |config|
   config.include FactoryBot::Syntax::Methods
 end
 
-Capybara.default_max_wait_time = 5
+# Capybara configuration is in spec/support/capybara.rb
