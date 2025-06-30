@@ -23,6 +23,7 @@ import { useUserStore } from "@/lib/store/user-store";
 import { TwoFactorAuthInput } from "@/components/two-factor-auth-input";
 import { useTranslations } from "next-intl";
 import { useDeviceTrust } from "@/hooks/use-device-trust";
+import { MINIMUM_WITHDRAWAL_USDT } from "@/lib/constants/withdrawal";
 
 // Import new components
 import { WithdrawTabs } from "./components/withdraw-tabs";
@@ -140,8 +141,8 @@ export default function WithdrawUSDTPage() {
         return false;
       }
 
-      if (parsedAmount < 0.01) {
-        setAmountError("Minimum amount is 0.01 USDT");
+      if (parsedAmount < MINIMUM_WITHDRAWAL_USDT) {
+        setAmountError(`Minimum amount is ${MINIMUM_WITHDRAWAL_USDT} USDT`);
         return false;
       }
 
