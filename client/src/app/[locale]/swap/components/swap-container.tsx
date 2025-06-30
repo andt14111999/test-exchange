@@ -100,10 +100,10 @@ export function SwapContainer() {
     if (!state.inputToken || !state.outputToken) return true;
 
     const inputSetting = coinSettings.find(
-      (s) => s.currency.toLowerCase() === state.inputToken.toLowerCase()
+      (s) => s.currency.toLowerCase() === state.inputToken.toLowerCase(),
     );
     const outputSetting = coinSettings.find(
-      (s) => s.currency.toLowerCase() === state.outputToken.toLowerCase()
+      (s) => s.currency.toLowerCase() === state.outputToken.toLowerCase(),
     );
 
     // If either token is not found in settings, default to enabled
@@ -131,7 +131,7 @@ export function SwapContainer() {
         const newPair = findPoolPair(
           activePools,
           tempOutputToken,
-          tempInputToken
+          tempInputToken,
         );
         if (newPair) {
           newPoolPair = newPair.pair;
@@ -170,7 +170,7 @@ export function SwapContainer() {
     const usdtPool = activePools.find(
       (pool) =>
         pool.token0.toLowerCase() === "usdt" ||
-        pool.token1.toLowerCase() === "usdt"
+        pool.token1.toLowerCase() === "usdt",
     );
 
     if (usdtPool) {
@@ -244,13 +244,13 @@ export function SwapContainer() {
         // Kiểm tra trong coin_accounts
         const coinAccount = walletData.coin_accounts.find(
           (account) =>
-            account.coin_currency.toLowerCase() === token.toLowerCase()
+            account.coin_currency.toLowerCase() === token.toLowerCase(),
         );
         if (coinAccount) return coinAccount.balance.toString();
 
         // Kiểm tra trong fiat_accounts
         const fiatAccount = walletData.fiat_accounts.find(
-          (account) => account.currency.toLowerCase() === token.toLowerCase()
+          (account) => account.currency.toLowerCase() === token.toLowerCase(),
         );
         if (fiatAccount) return fiatAccount.balance.toString();
 
@@ -260,7 +260,7 @@ export function SwapContainer() {
         return "0";
       }
     },
-    [walletData]
+    [walletData],
   );
 
   // Hàm để format số dư hiển thị, sử dụng formatCurrency từ utils
@@ -285,7 +285,7 @@ export function SwapContainer() {
         return "0";
       }
     },
-    []
+    [],
   );
 
   // Hàm lấy max balance cho token (làm tròn hợp lý)
@@ -311,7 +311,7 @@ export function SwapContainer() {
         return "0";
       }
     },
-    [walletData, getTokenBalance]
+    [walletData, getTokenBalance],
   );
 
   // Hàm xử lý khi thay đổi token đầu vào
@@ -358,7 +358,7 @@ export function SwapContainer() {
         zeroForOne,
       }));
     },
-    [activePools, state.outputToken, state.inputToken, handleSwapDirection]
+    [activePools, state.outputToken, state.inputToken, handleSwapDirection],
   );
 
   // Hàm xử lý khi thay đổi token đầu ra
@@ -406,7 +406,7 @@ export function SwapContainer() {
         zeroForOne,
       }));
     },
-    [activePools, state.inputToken, state.outputToken, handleSwapDirection]
+    [activePools, state.inputToken, state.outputToken, handleSwapDirection],
   );
 
   // Hàm xử lý khi thay đổi input amount
@@ -457,7 +457,7 @@ export function SwapContainer() {
           inputAmountAdjusted.toNumber(),
           state.zeroForOne,
           ticks, // Truyền dữ liệu ticks vào hàm estimateSwapV3
-          false // exactOutput = false (exact input mode)
+          false, // exactOutput = false (exact input mode)
         );
 
         // Làm tròn dựa trên decimal của token output
@@ -477,7 +477,7 @@ export function SwapContainer() {
           // Tỷ giá thực tế là số lượng token nhận được chia cho số lượng token đầu vào
           // Đây là tỷ giá thực tế sau khi tính toán với dữ liệu ticks
           setExchangeRate(
-            new BigNumber(result.amountOut).div(inputAmountAdjusted)
+            new BigNumber(result.amountOut).div(inputAmountAdjusted),
           );
         }
       } catch (error) {
@@ -490,7 +490,7 @@ export function SwapContainer() {
         setPriceImpact(0);
       }
     },
-    [state.poolPair, state.zeroForOne, state.outputToken, poolDetail, ticks]
+    [state.poolPair, state.zeroForOne, state.outputToken, poolDetail, ticks],
   );
 
   // Hàm xử lý khi thay đổi output amount
@@ -542,7 +542,7 @@ export function SwapContainer() {
           outputAmountAdjusted.toNumber(),
           state.zeroForOne,
           ticks, // Truyền dữ liệu ticks vào hàm estimateSwapV3
-          true // exactOutput = true
+          true, // exactOutput = true
         );
 
         // Làm tròn dựa trên decimal của token input
@@ -572,7 +572,7 @@ export function SwapContainer() {
         setPriceImpact(0);
       }
     },
-    [state.poolPair, state.zeroForOne, state.inputToken, poolDetail, ticks]
+    [state.poolPair, state.zeroForOne, state.inputToken, poolDetail, ticks],
   );
 
   // Hàm xử lý khi user click nút Max cho input amount
@@ -712,7 +712,7 @@ export function SwapContainer() {
               disabled={isSwapping || !isSwapEnabled}
               tokenBalance={formatBalance(
                 getTokenBalance(state.inputToken),
-                state.inputToken
+                state.inputToken,
               )}
               onMaxClick={handleInputMaxClick}
             />
@@ -739,7 +739,7 @@ export function SwapContainer() {
               disabled={isSwapping || !isSwapEnabled}
               tokenBalance={formatBalance(
                 getTokenBalance(state.outputToken),
-                state.outputToken
+                state.outputToken,
               )}
               onMaxClick={handleOutputMaxClick}
             />

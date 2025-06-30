@@ -38,7 +38,7 @@ export function estimateSwap0to1(
     current_tick_index?: number;
   },
   amountIn: number,
-  ticks: Tick[] = []
+  ticks: Tick[] = [],
 ): {
   amountOut: number;
   amountIn: number;
@@ -77,7 +77,7 @@ export function estimateSwap0to1(
   // Tính liquidity chính xác hơn từ cả hai token
   let liquidity = Math.min(
     tvl0 * sqrtPrice, // L = tvl0 * √P
-    tvl1 / sqrtPrice // L = tvl1 / √P
+    tvl1 / sqrtPrice, // L = tvl1 / √P
   );
 
   // Check if calculated liquidity is too low or invalid
@@ -114,7 +114,7 @@ export function estimateSwap0to1(
     console.log("Current tick index in estimateSwap0to1:", currentTickIndex);
     console.log(
       "Available ticks:",
-      sortedTicks.map((t) => t.tick_index)
+      sortedTicks.map((t) => t.tick_index),
     );
 
     // Tìm các ticks nhỏ hơn tick hiện tại (khi swap 0->1, giá giảm, nên chúng ta cần các tick nhỏ hơn)
@@ -124,7 +124,7 @@ export function estimateSwap0to1(
 
     console.log(
       "Relevant ticks:",
-      relevantTicks.map((t) => t.tick_index)
+      relevantTicks.map((t) => t.tick_index),
     );
 
     console.log("Direction: USDT → VND (0→1)");
@@ -132,14 +132,14 @@ export function estimateSwap0to1(
     console.log(
       "Filtered ticks:",
       relevantTicks.map(
-        (t) => `${t.tick_index} (liquidity: ${t.liquidity_net})`
-      )
+        (t) => `${t.tick_index} (liquidity: ${t.liquidity_net})`,
+      ),
     );
     console.log(
       "Initial amountIn:",
       amountInAfterFee,
       "Initial liquidity:",
-      liquidity
+      liquidity,
     );
     // debugger;
 
@@ -295,7 +295,7 @@ export function estimateSwap1to0(
     current_tick_index?: number;
   },
   amountIn: number,
-  ticks: Tick[] = []
+  ticks: Tick[] = [],
 ): {
   amountOut: number;
   amountIn: number;
@@ -334,7 +334,7 @@ export function estimateSwap1to0(
   // Tính liquidity chính xác hơn từ cả hai token
   let liquidity = Math.min(
     tvl0 * sqrtPrice, // L = tvl0 * √P
-    tvl1 / sqrtPrice // L = tvl1 / √P
+    tvl1 / sqrtPrice, // L = tvl1 / √P
   );
 
   // Check if calculated liquidity is too low or invalid
@@ -371,7 +371,7 @@ export function estimateSwap1to0(
     console.log("Current tick index in estimateSwap1to0:", currentTickIndex);
     console.log(
       "Available ticks:",
-      sortedTicks.map((t) => t.tick_index)
+      sortedTicks.map((t) => t.tick_index),
     );
 
     // In estimateSwap1to0 (VND→USDT - price increases)
@@ -382,7 +382,7 @@ export function estimateSwap1to0(
 
     console.log(
       "Relevant ticks:",
-      relevantTicks.map((t) => t.tick_index)
+      relevantTicks.map((t) => t.tick_index),
     );
 
     console.log("Direction: VND → USDT (1→0)");
@@ -390,14 +390,14 @@ export function estimateSwap1to0(
     console.log(
       "Filtered ticks:",
       relevantTicks.map(
-        (t) => `${t.tick_index} (liquidity: ${t.liquidity_net})`
-      )
+        (t) => `${t.tick_index} (liquidity: ${t.liquidity_net})`,
+      ),
     );
     console.log(
       "Initial amountIn:",
       amountInAfterFee,
       "Initial liquidity:",
-      liquidity
+      liquidity,
     );
 
     // Nếu không có ticks phù hợp hoặc ticks không đúng, sử dụng Uniswap V3 math chính xác
@@ -550,7 +550,7 @@ export function estimateSwapV3(
   amount: number,
   zeroForOne: boolean,
   ticks: Tick[] = [],
-  exactOutput: boolean = false
+  exactOutput: boolean = false,
 ): {
   amountOut: number;
   amountIn: number;
@@ -566,7 +566,7 @@ export function estimateSwapV3(
     amount,
     zeroForOne,
     ticks,
-    exactOutput
+    exactOutput,
   );
 
   if (!exactOutput) {
@@ -604,7 +604,7 @@ function estimateSwap0to1ExactOutput(
     current_tick_index?: number;
   },
   amountOut: number,
-  ticks: Tick[] = []
+  ticks: Tick[] = [],
 ): {
   amountOut: number;
   amountIn: number;
@@ -760,7 +760,7 @@ function estimateSwap1to0ExactOutput(
     current_tick_index?: number;
   },
   amountOut: number,
-  ticks: Tick[] = []
+  ticks: Tick[] = [],
 ): {
   amountOut: number;
   amountIn: number;

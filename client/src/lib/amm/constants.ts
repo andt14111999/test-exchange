@@ -44,7 +44,7 @@ export function getTokenDecimals(tokenSymbol: string): number {
     (t) =>
       t.id.toLowerCase() === tokenSymbol.toLowerCase() ||
       t.symbol === tokenSymbol ||
-      t.name.toLowerCase().includes(tokenSymbol.toLowerCase())
+      t.name.toLowerCase().includes(tokenSymbol.toLowerCase()),
   );
 
   return token?.decimals ?? 6; // Default to 6 if token not found

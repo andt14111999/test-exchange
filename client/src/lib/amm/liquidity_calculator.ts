@@ -43,7 +43,7 @@ export class LiquidityCalculator {
 
     if (tickLower >= tickUpper) {
       console.error(
-        "Invalid tick range: tickLower must be less than tickUpper"
+        "Invalid tick range: tickLower must be less than tickUpper",
       );
       return { amount0: "0", amount1: "0", liquidity: "0" };
     }
@@ -91,7 +91,7 @@ export class LiquidityCalculator {
           .mul(sqrtPriceUpper)
           .div(sqrtPriceUpper.minus(sqrtPriceCurrent));
         calculatedAmount1 = liquidity.mul(
-          sqrtPriceCurrent.minus(sqrtPriceLower)
+          sqrtPriceCurrent.minus(sqrtPriceLower),
         );
       } else if (amount1 !== null && amount1 > 0) {
         const amt1 = new BigDecimal(amount1.toString());
