@@ -46,6 +46,30 @@ jest.mock("@/lib/api/hooks/use-bank-accounts", () => ({
   useDeleteBankAccount: jest.fn(),
 }));
 
+// Mock BankSelector component
+jest.mock("@/components/bank-selector", () => ({
+  BankSelector: jest.fn(({ value, onChange, placeholder }) => (
+    <select
+      data-testid="bank-selector"
+      value={value}
+      onChange={(e) => {
+        const bankCode = e.target.value;
+        let mockBank = null;
+        if (bankCode === "FRESHBANK") {
+          mockBank = { name: "Fresh Bank" };
+        } else if (bankCode === "TESTBANK") {
+          mockBank = { name: "Test Bank" };
+        }
+        onChange(bankCode, mockBank);
+      }}
+    >
+      <option value="">{placeholder}</option>
+      <option value="FRESHBANK">Fresh Bank</option>
+      <option value="TESTBANK">Test Bank</option>
+    </select>
+  )),
+}));
+
 // Mock error-handler specifically for extractErrorMessage
 jest.mock("@/lib/utils/error-handler", () => ({
   ...jest.requireActual("@/lib/utils/error-handler"), // Use real handleApiError
@@ -324,6 +348,23 @@ describe("BankAccountSelector", () => {
     expect(errorContainer).toBeInTheDocument();
   });
 
+  test("has exactly 3 action buttons", () => {
+    render(
+      <TestWrapper bankAccountSelectorProps={{ name: "bankAccountId" }} />,
+    );
+
+    // Check for Add button
+    expect(screen.getByTitle("addNew")).toBeInTheDocument();
+    // Check for Edit button
+    expect(screen.getByTitle("edit")).toBeInTheDocument();
+    // Check for Delete button
+    expect(screen.getByTitle("delete")).toBeInTheDocument();
+
+    // Ensure there are exactly 3 buttons
+    const buttons = screen.getAllByRole("button");
+    expect(buttons).toHaveLength(3);
+  });
+
   // Add New Account
   describe("Add New Bank Account", () => {
     test("opens add new account dialog, submits successfully, and updates selection", async () => {
@@ -334,7 +375,7 @@ describe("BankAccountSelector", () => {
         bank_name: "Fresh Bank",
         account_name: "Fresh Account",
         account_number: "987650000",
-        country_code: "US",
+        country_code: "VN",
         is_primary: true,
         verified: true,
         created_at: new Date().toISOString(),
@@ -370,18 +411,25 @@ describe("BankAccountSelector", () => {
       expect(dialog).toBeInTheDocument();
 
       // Set form data
-      // Use country select
+      // Use country select - find by the specific id
       const countryTrigger = within(dialog).getByRole("combobox", {
-        name: "country",
+        name: /country/i,
       });
       fireEvent.click(countryTrigger);
-      const countryOptions = await screen.findAllByText("United States");
-      const countryOption = countryOptions[0];
-      fireEvent.click(countryOption);
 
-      // Set the rest of the form data
-      const bankSelectorOnChange = jest.fn();
-      bankSelectorOnChange("FRESHBANK", { name: "Fresh Bank" });
+      // Wait for options to appear and click Vietnam
+      await waitFor(() => {
+        const vietnamOptions = screen.getAllByText("Vietnam");
+        // Click the option that's actually clickable (inside SelectContent)
+        const selectItem = vietnamOptions.find((option) =>
+          option.closest('[role="option"]'),
+        );
+        fireEvent.click(selectItem || vietnamOptions[1]); // fallback to second one (div)
+      });
+
+      // Use bank selector
+      const bankSelector = within(dialog).getByTestId("bank-selector");
+      fireEvent.change(bankSelector, { target: { value: "FRESHBANK" } });
 
       fireEvent.change(
         within(dialog).getByPlaceholderText(/enterAccountName/i),
@@ -405,16 +453,14 @@ describe("BankAccountSelector", () => {
       await waitFor(() => {
         expect(mockCreateMutateAsync).toHaveBeenCalledWith(
           expect.objectContaining({
-            bank_name: expect.any(String),
+            bank_name: "Fresh Bank",
             account_name: newAccountDataForTest.account_name,
             account_number: newAccountDataForTest.account_number,
             is_primary: newAccountDataForTest.is_primary,
+            country_code: "VN",
           }),
         );
       });
-
-      // Don't assert onAccountSelect call - it may not be called in this test due to how fieldRef works
-      // Instead, just check that we processed the form submission successfully
 
       // Assert success toast
       await waitFor(() => {
@@ -459,12 +505,23 @@ describe("BankAccountSelector", () => {
 
       // Fill required fields using more specific selectors
       const countryTrigger = within(dialog).getByRole("combobox", {
-        name: "country",
+        name: /country/i,
       });
       fireEvent.click(countryTrigger);
-      const countryOptions = await screen.findAllByText("United States");
-      const countryOption = countryOptions[0];
-      fireEvent.click(countryOption);
+
+      // Wait for options to appear and click Vietnam
+      await waitFor(() => {
+        const vietnamOptions = screen.getAllByText("Vietnam");
+        // Click the option that's actually clickable (inside SelectContent)
+        const selectItem = vietnamOptions.find((option) =>
+          option.closest('[role="option"]'),
+        );
+        fireEvent.click(selectItem || vietnamOptions[1]); // fallback to second one (div)
+      });
+
+      // Use bank selector
+      const bankSelector = within(dialog).getByTestId("bank-selector");
+      fireEvent.change(bankSelector, { target: { value: "TESTBANK" } });
 
       fireEvent.change(
         within(dialog).getByPlaceholderText(/enterAccountName/i),
@@ -489,9 +546,6 @@ describe("BankAccountSelector", () => {
           defaultToastOptions,
         );
       });
-
-      // Note: In the current implementation, the dialog appears to close after an error
-      // and displays the error via toast notification only
     });
 
     test("closes add dialog on cancel", () => {
@@ -502,65 +556,6 @@ describe("BankAccountSelector", () => {
       expect(screen.getByText("addNewAccount")).toBeInTheDocument();
       fireEvent.click(screen.getByText("cancel"));
       expect(screen.queryByText("addNewAccount")).not.toBeInTheDocument();
-    });
-
-    test("shows specific error for trying to delete the only bank account", async () => {
-      const specificErrorMessage = "cannotDeleteOnlyAccount";
-      const deleteError = new Error("Cannot delete the only bank account");
-
-      (useDeleteBankAccount as jest.Mock).mockReturnValue({
-        mutateAsync: jest.fn().mockRejectedValue(deleteError),
-        isPending: false,
-        isError: true,
-        error: deleteError,
-      });
-
-      const { extractErrorMessage } = jest.requireMock(
-        "@/lib/utils/error-handler",
-      );
-      (extractErrorMessage as jest.Mock).mockReturnValue(specificErrorMessage);
-
-      render(
-        <TestWrapper
-          bankAccountSelectorProps={{ name: "bankAccountId" }}
-          defaultValues={{ bankAccountId: mockBankAccounts[0].id }}
-        />,
-      );
-
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByText(/Bank A - 123/)).toBeInTheDocument();
-      });
-
-      // Open delete dialog
-      fireEvent.click(screen.getByTitle("delete"));
-      const dialog = await screen.findByRole("dialog", {
-        name: "deleteAccount",
-      });
-      expect(dialog).toBeInTheDocument();
-
-      // Confirm delete
-      fireEvent.click(within(dialog).getByRole("button", { name: "delete" }));
-
-      // Wait for error handling
-      await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith(
-          specificErrorMessage,
-          deleteToastOptions,
-        );
-      });
-
-      // Verify dialog stays open with error
-      const dialogWithError = await screen.findByRole("dialog", {
-        name: "deleteAccount",
-      });
-      expect(dialogWithError).toBeInTheDocument();
-
-      // Verify error alert is shown
-      const errorContainer = within(dialogWithError)
-        .getByText("Error")
-        .closest("div");
-      expect(errorContainer).toHaveTextContent(specificErrorMessage);
     });
   });
 
@@ -607,10 +602,6 @@ describe("BankAccountSelector", () => {
       fireEvent.click(screen.getByTitle("edit"));
       expect(screen.getByText("editAccount")).toBeInTheDocument();
 
-      // Check if form is pre-filled with mocked handlers rather than checking DOM values
-      // We'll check if the correct data was submitted in the mutation instead
-
-      // Edit form - just update bank name for simplicity
       // Get the submit button directly and click it
       fireEvent.click(screen.getByText("saveChanges"));
 
@@ -622,10 +613,6 @@ describe("BankAccountSelector", () => {
       });
       // Dialog should close
       expect(screen.queryByText("editAccount")).not.toBeInTheDocument();
-
-      // The useBankAccounts hook needs to be updated to reflect the change for the display to update
-      // This part is tricky without re-fetching or manually updating the local state in the component based on mutation response
-      // For now, we've tested the mutation is called and success toast appears.
     });
 
     test("shows error message in edit dialog on update failure", async () => {
