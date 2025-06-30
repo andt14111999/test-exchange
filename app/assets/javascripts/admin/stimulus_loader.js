@@ -78,19 +78,74 @@
             body: JSON.stringify({
               [this.resourceNameValue]: {
                 [this.fieldValue]: value
-              },
-              inline_edit: true
+              }
             })
           });
 
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+          // Handle 204 No Content (successful update with no body)
+          if (response.status === 204) {
+            // Update was successful, update the display with the value we sent
+            this.updateDisplay(value);
+            
+            // Hide form and show display
+            this.cancel();
+            
+            // Show success message
+            this.showFlash('success', 'Updated successfully');
+            return;
+          }
+          
+          // Parse JSON response for other status codes
+          let data;
+          try {
+            data = await response.json();
+          } catch (e) {
+            // If JSON parsing fails on error response
+            if (!response.ok) {
+              this.showFlash('error', 'Failed to update. Server returned an invalid response.');
+              return;
+            }
           }
 
-          const data = await response.json();
+          if (!response.ok) {
+            // Handle error responses
+            let errorMessage = 'Failed to update.';
+            
+            if (response.status === 403 || response.status === 401) {
+              errorMessage = 'You are not authorized to update this field.';
+            } else if (data && data.errors) {
+              // Handle validation errors
+              if (typeof data.errors === 'object' && !Array.isArray(data.errors)) {
+                // Rails format: { errors: { field: ["error1", "error2"] } }
+                const fieldErrors = data.errors[this.fieldValue];
+                if (fieldErrors && fieldErrors.length > 0) {
+                  errorMessage = fieldErrors.join(', ');
+                } else {
+                  // Get first error from any field
+                  const firstError = Object.values(data.errors).flat()[0];
+                  errorMessage = firstError || errorMessage;
+                }
+              } else if (Array.isArray(data.errors)) {
+                // Simple array format: { errors: ["error1", "error2"] }
+                errorMessage = data.errors.join(', ');
+              }
+            }
+            
+            this.showFlash('error', errorMessage);
+            return;
+          }
           
-          // Update display value
-          this.updateDisplay(data[this.fieldValue]);
+          // If we got JSON response with data, use it to update display
+          if (data) {
+            const updatedValue = data[this.resourceNameValue] ? 
+              data[this.resourceNameValue][this.fieldValue] : 
+              data[this.fieldValue];
+            
+            this.updateDisplay(updatedValue);
+          } else {
+            // Fallback to the value we sent
+            this.updateDisplay(value);
+          }
           
           // Hide form and show display
           this.cancel();
@@ -99,7 +154,8 @@
           this.showFlash('success', 'Updated successfully');
         } catch (error) {
           console.error('Error:', error);
-          this.showFlash('error', 'Failed to update. Please try again.');
+          // Handle network errors or JSON parsing errors
+          this.showFlash('error', 'Failed to update. Please check your connection and try again.');
         } finally {
           // Hide spinner
           if (this.hasSpinnerTarget) {

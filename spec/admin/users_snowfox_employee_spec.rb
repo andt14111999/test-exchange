@@ -43,37 +43,35 @@ RSpec.describe 'Admin::Users snowfox_employee field', type: :request do
     end
   end
 
-  describe 'PUT /admin/users/:id with inline edit' do
-    it 'updates the snowfox_employee field via inline edit' do
+  describe 'PUT /admin/users/:id with JSON API' do
+    it 'updates the snowfox_employee field via JSON API' do
       admin_user = create(:admin_user, :superadmin)
       sign_in admin_user, scope: :admin_user
       user = create(:user, email: 'test@example.com', display_name: 'Test User', snowfox_employee: false)
 
       put admin_user_path(user),
-          params: { user: { snowfox_employee: true }, inline_edit: true },
+          params: { user: { snowfox_employee: true } },
           headers: { 'Accept' => 'application/json' }
 
-      expect(response).to have_http_status(:success)
-      expect(response.content_type).to match(/json/)
-
-      json_response = JSON.parse(response.body)
-      expect(json_response['snowfox_employee']).to be true
+      # ActiveAdmin returns 204 No Content for successful JSON updates
+      expect(response).to have_http_status(:no_content)
 
       # Verify the database was updated
       expect(user.reload.snowfox_employee).to be true
     end
 
-    it 'returns only the updated field in JSON response' do
+    it 'returns 204 No Content for successful updates' do
       admin_user = create(:admin_user, :superadmin)
       sign_in admin_user, scope: :admin_user
       user = create(:user, email: 'test@example.com', display_name: 'Test User', snowfox_employee: false)
 
       put admin_user_path(user),
-          params: { user: { snowfox_employee: true }, inline_edit: true },
+          params: { user: { snowfox_employee: true } },
           headers: { 'Accept' => 'application/json' }
 
-      json_response = JSON.parse(response.body)
-      expect(json_response.keys).to eq([ 'snowfox_employee' ])
+      # ActiveAdmin returns 204 No Content with empty body for successful JSON updates
+      expect(response).to have_http_status(:no_content)
+      expect(response.body).to be_empty
     end
 
     it 'handles validation errors properly' do
@@ -83,13 +81,14 @@ RSpec.describe 'Admin::Users snowfox_employee field', type: :request do
 
       # Simulate a validation error by trying to update with invalid email
       put admin_user_path(user),
-          params: { user: { email: 'invalid-email' }, inline_edit: true },
+          params: { user: { email: 'invalid-email' } },
           headers: { 'Accept' => 'application/json' }
 
       expect(response).to have_http_status(:unprocessable_entity)
 
       json_response = JSON.parse(response.body)
-      expect(json_response['errors']).to include('Email is invalid')
+      # ActiveAdmin returns errors in the format: { errors: { field: ["error message"] } }
+      expect(json_response['errors']['email']).to include('is invalid')
     end
   end
 
@@ -111,26 +110,26 @@ RSpec.describe 'Admin::Users snowfox_employee field', type: :request do
   end
 
   describe 'Permission restrictions for snowfox_employee field' do
-    it 'allows superadmin to update snowfox_employee via inline edit' do
+    it 'allows superadmin to update snowfox_employee via JSON API' do
       admin_user = create(:admin_user, :superadmin)
       sign_in admin_user, scope: :admin_user
       user = create(:user, email: 'test@example.com', display_name: 'Test User', snowfox_employee: false)
 
       put admin_user_path(user),
-          params: { user: { snowfox_employee: true }, inline_edit: true },
+          params: { user: { snowfox_employee: true } },
           headers: { 'Accept' => 'application/json' }
 
-      expect(response).to have_http_status(:success)
+      expect(response).to have_http_status(:no_content)
       expect(user.reload.snowfox_employee).to be true
     end
 
-    it 'prevents operator from updating snowfox_employee via inline edit' do
+    it 'prevents operator from updating snowfox_employee via JSON API' do
       operator = create(:admin_user, :operator)
       sign_in operator, scope: :admin_user
       user = create(:user, email: 'test@example.com', display_name: 'Test User', snowfox_employee: false)
 
       put admin_user_path(user),
-          params: { user: { snowfox_employee: true }, inline_edit: true },
+          params: { user: { snowfox_employee: true } },
           headers: { 'Accept' => 'application/json' }
 
       # ActiveAdmin returns 401 for CanCan authorization failures in JSON requests
@@ -160,7 +159,7 @@ RSpec.describe 'Admin::Users snowfox_employee field', type: :request do
       user = create(:user, email: 'test@example.com', display_name: 'Test User', snowfox_employee: false)
 
       put admin_user_path(user),
-          params: { user: { display_name: 'Updated by Operator' }, inline_edit: true },
+          params: { user: { display_name: 'Updated by Operator' } },
           headers: { 'Accept' => 'application/json' }
 
       # ActiveAdmin returns 401 for CanCan authorization failures in JSON requests

@@ -4,7 +4,14 @@ This document explains how to use the inline edit feature in ActiveAdmin.
 
 ## Overview
 
-The inline edit feature allows you to edit fields directly in the admin interface without navigating to the edit form. It uses Stimulus JS for interactivity and supports various field types.
+The inline edit feature allows you to edit fields directly in the admin interface without navigating to the edit form. It uses Stimulus JS for interactivity, leverages ActiveAdmin's standard JSON API, and supports various field types.
+
+## Key Benefits
+
+- **No custom controller code required** - Uses ActiveAdmin's built-in JSON API
+- **Automatic permission handling** - Respects CanCanCan authorization
+- **Scalable** - Works with any ActiveAdmin resource without modification
+- **Standard REST API** - Uses standard HTTP PATCH with JSON
 
 ## Setup
 
@@ -13,7 +20,7 @@ The inline edit feature is already configured and ready to use. It includes:
 1. **Stimulus Controller** (`inline_edit_controller.js`) - Handles the interactive behavior
 2. **Helper Module** (`InlineEditHelper`) - Generates the HTML for inline editing
 3. **CSS Styles** (`inline_edit.scss`) - Provides visual styling
-4. **Controller Support** - Admin controllers handle JSON requests for inline updates
+4. **No custom controller code needed** - Works with ActiveAdmin's standard JSON API
 
 ## Usage
 
@@ -65,48 +72,31 @@ end
 
 To add inline editing to other ActiveAdmin resources:
 
-1. The helper is already available globally through ApplicationHelper, so you can use it directly.
-
-2. Update the controller to handle inline edits:
-   ```ruby
-   controller do
-     def update
-       if params[:inline_edit]
-         resource.assign_attributes(permitted_params[:your_model])
-         
-         if resource.save
-           render json: resource.attributes.slice(*permitted_params[:your_model].keys.map(&:to_s))
-         else
-           render json: { errors: resource.errors.full_messages }, status: :unprocessable_entity
-         end
-       else
-         super
-       end
-     end
-   end
-   ```
-
-3. Add the field to permitted params:
+1. Add the field to permitted params:
    ```ruby
    permit_params :your_field_name
    ```
 
-4. Use the helper in your views:
+2. Use the helper in your views:
    ```ruby
    row :your_field do |resource|
      inline_edit_field(resource, :your_field)
    end
    ```
 
+That's it! The inline edit feature automatically uses ActiveAdmin's standard JSON API, so no custom controller code is needed.
+
 ## Features
 
-- **Hover to Edit**: Edit icon appears on hover
+- **Always Visible Edit Icon**: Edit icon is always visible for better discoverability
 - **Keyboard Support**: 
   - `Enter` to save
   - `Escape` to cancel
 - **Visual Feedback**: Loading spinner and flash messages
 - **Auto-detection**: Automatically detects field types (boolean, text, number)
 - **Customizable**: Can specify field type and collections for selects
+- **Standard API**: Uses ActiveAdmin's built-in JSON API (returns 204 No Content on success)
+- **Automatic Permission Checks**: Hides edit icon for users without update permission
 
 ## Field Types
 
@@ -138,45 +128,15 @@ can :read, User
 can :manage, :all
 ```
 
-### Field-Level Permissions
+### Permission Behavior
 
-For more granular control, you can restrict specific fields:
+When using the inline edit feature with CanCanCan permissions:
 
-1. Define a custom ability in `AdminAbility`:
-   ```ruby
-   # Allow operators to manage users but not specific fields
-   can :manage, User
-   cannot :update_snowfox_employee, User
-   ```
+- **Without update permission**: The edit icon is automatically hidden
+- **Unauthorized API calls**: ActiveAdmin returns 401 (Unauthorized) status
+- **Normal form submissions**: ActiveAdmin redirects to admin root with error message
 
-2. Check the permission in the controller:
-   ```ruby
-   controller do
-     # Handle CanCan access denied for AJAX/JSON requests
-     rescue_from CanCan::AccessDenied do |exception|
-       if request.format.json? || params[:inline_edit]
-         render json: { errors: [ exception.message ] }, status: :forbidden
-       else
-         redirect_to admin_user_path(resource), alert: exception.message
-       end
-     end
-
-     def update
-       # Check specific field permission if needed
-       if params[:user] && params[:user].key?(:snowfox_employee)
-         authorize! :update_snowfox_employee, resource
-       end
-       # ... rest of update logic
-     end
-   end
-   ```
-
-### Response Behavior
-
-- **AJAX/JSON requests**: Return 401 (Unauthorized) status with error message
-- **Normal form submissions**: Redirect to admin root with error message
-
-This approach allows fine-grained control over who can edit specific models or fields while maintaining ActiveAdmin's standard permission system.
+The inline edit feature fully respects your existing CanCanCan permissions without requiring any custom controller code.
 
 ## Testing
 

@@ -200,7 +200,6 @@ ActiveAdmin.register User do
         f.inputs do
           f.input :phone_verified
           f.input :document_verified
-
         end
       end
     end
@@ -306,33 +305,8 @@ ActiveAdmin.register User do
   end
 
   controller do
-    # Handle CanCan access denied for AJAX/JSON requests
-    rescue_from CanCan::AccessDenied do |exception|
-      if request.format.json? || params[:inline_edit]
-        render json: { errors: [ exception.message ] }, status: :forbidden
-      else
-        redirect_to admin_user_path(resource), alert: exception.message
-      end
-    end
-
     def scoped_collection
       super.includes(:social_accounts)
-    end
-
-    def update
-      if params[:inline_edit]
-        # Handle inline edit requests
-        resource.assign_attributes(permitted_params[:user])
-
-        if resource.save
-          render json: resource.attributes.slice(*permitted_params[:user].keys.map(&:to_s))
-        else
-          render json: { errors: resource.errors.full_messages }, status: :unprocessable_entity
-        end
-      else
-        # Default update behavior - ActiveAdmin handles general authorization
-        super
-      end
     end
 
     private
