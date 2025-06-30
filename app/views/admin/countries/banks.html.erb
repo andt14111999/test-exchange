@@ -1,0 +1,69 @@
+<div class="title_bar">
+  <h2 id="page_title">Banks in <%= @country.name %></h2>
+  <div class="action_items">
+    <%= link_to 'Add New Bank', new_admin_bank_path(bank: { country_id: @country.id }), class: 'button' %>
+    <%= link_to 'Back to Country', admin_country_path(@country), class: 'button' %>
+  </div>
+</div>
+
+<div class="paginated_collection_contents">
+  <div class="index_content">
+    <% if @banks.any? %>
+      <table class="index_table index" id="index_table_banks">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Code</th>
+            <th>BIN</th>
+            <th>Short Name</th>
+            <th>Transfer Support</th>
+            <th>Lookup Support</th>
+            <th>Is Transfer</th>
+            <th>Support Level</th>
+            <th class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @banks.each do |bank| %>
+            <tr class="<%= cycle('odd', 'even') %>">
+              <td><%= link_to bank.name, admin_bank_path(bank) %></td>
+              <td><%= bank.code %></td>
+              <td><%= bank.bin %></td>
+              <td><%= bank.short_name %></td>
+              <td>
+                <span class="status_tag <%= bank.transfer_supported ? 'ok' : '' %>">
+                  <%= bank.transfer_supported ? 'Yes' : 'No' %>
+                </span>
+              </td>
+              <td>
+                <span class="status_tag <%= bank.lookup_supported ? 'ok' : '' %>">
+                  <%= bank.lookup_supported ? 'Yes' : 'No' %>
+                </span>
+              </td>
+              <td>
+                <span class="status_tag <%= bank.is_transfer ? 'ok' : '' %>">
+                  <%= bank.is_transfer ? 'Yes' : 'No' %>
+                </span>
+              </td>
+              <td><%= bank.support %>%</td>
+              <td class="col-actions">
+                <%= link_to 'View', admin_bank_path(bank), class: 'member_link' %>
+                <%= link_to 'Edit', edit_admin_bank_path(bank), class: 'member_link' %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <div class="blank_slate_container" id="collection_is_empty">
+        <span class="blank_slate">
+          <span class="blank_slate_content">
+            <h1>No Banks Found</h1>
+            <p>There are no banks registered for <%= @country.name %> yet.</p>
+            <%= link_to 'Add First Bank', new_admin_bank_path(bank: { country_id: @country.id }), class: 'button' %>
+          </span>
+        </span>
+      </div>
+    <% end %>
+  </div>
+</div>

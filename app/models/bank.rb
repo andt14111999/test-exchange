@@ -14,4 +14,12 @@ class Bank < ApplicationRecord
   scope :by_country, ->(country_code) { joins(:country).where(countries: { code: country_code }) }
   scope :transfer_supported, -> { where(transfer_supported: true) }
   scope :lookup_supported, -> { where(lookup_supported: true) }
+
+  def self.ransackable_attributes(_auth_object = nil)
+    %w[name code bin short_name transfer_supported lookup_supported support is_transfer country_id]
+  end
+
+  def self.ransackable_associations(_auth_object = nil)
+    %w[country]
+  end
 end
