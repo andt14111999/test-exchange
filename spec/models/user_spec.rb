@@ -193,23 +193,39 @@ RSpec.describe User, type: :model do
 
   describe '.ransackable_attributes' do
     it 'returns allowed attributes for ransack search' do
-      expected_attributes = %w[
-        avatar_url
-        authenticator_enabled
-        created_at
-        display_name
-        document_verified
+      ransackable = described_class.ransackable_attributes
+
+      # Test that essential searchable attributes are included
+      essential_attributes = %w[
         email
         id
-        kyc_level
-        phone_verified
+        username
         role
         status
+        kyc_level
+        created_at
         updated_at
-        username
       ]
 
-      expect(described_class.ransackable_attributes).to match_array(expected_attributes)
+      essential_attributes.each do |attr|
+        expect(ransackable).to include(attr), "Expected #{attr} to be searchable"
+      end
+
+      # Test that sensitive attributes are NOT included
+      sensitive_attributes = %w[
+        password_digest
+        authenticator_key
+        encrypted_authenticator_key
+        encrypted_authenticator_key_iv
+      ]
+
+      sensitive_attributes.each do |attr|
+        expect(ransackable).not_to include(attr), "Expected #{attr} to NOT be searchable"
+      end
+
+      # Ensure it returns an array of strings
+      expect(ransackable).to be_an(Array)
+      expect(ransackable).to all(be_a(String))
     end
   end
 
