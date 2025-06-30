@@ -901,16 +901,14 @@ RSpec.describe 'Admin::CoinSettings', type: :system do
       expect(page).to have_content('Yes')
     end
 
-    it 'can create new coin settings' do
+    it 'cannot access new coin settings form' do
       visit new_admin_coin_setting_path
-      expect(page).to have_content('New Coin Setting')
-      expect(page).to have_field('Currency')
+      expect(page).to have_content('You are not authorized to perform this action')
     end
 
-    it 'can edit coin settings' do
+    it 'cannot access edit coin settings form' do
       visit edit_admin_coin_setting_path(usdt_setting)
-      expect(page).to have_content('Edit Coin Setting')
-      expect(page).to have_field('Currency')
+      expect(page).to have_content('You are not authorized to perform this action')
     end
   end
 

@@ -8,7 +8,10 @@ class AdminAbility
     @current_user = user
 
     if user.superadmin?
+      # Superadmins can manage everything (includes all actions)
       can :manage, :all
+      # But explicitly cannot destroy anything
+      cannot :destroy, :all
     elsif user.operator?
       apply_operator_permissions
     end
@@ -25,41 +28,41 @@ class AdminAbility
 
   def apply_operator_permissions
     # User Management
-    can :manage, User
-    can :manage, SocialAccount
-    can :manage, ApiKey
+    can :read, User
+    can :read, SocialAccount
+    can :read, ApiKey
 
     # Coin Management
-    can :manage, CoinAccount
-    can :manage, CoinDeposit
-    can :manage, CoinDepositOperation
-    can :manage, CoinWithdrawal
-    can :manage, CoinWithdrawalOperation
-    can :manage, CoinTransaction
-    can :manage, BalanceLock
-    can :manage, BalanceLockOperation
-    can :manage, Setting
-    can :manage, CoinSetting
+    can :read, CoinAccount
+    can :read, CoinDeposit
+    can :read, CoinDepositOperation
+    can :read, CoinWithdrawal
+    can :read, CoinWithdrawalOperation
+    can :read, CoinTransaction
+    can :read, BalanceLock
+    can :read, BalanceLockOperation
+    can :read, Setting
+    can :read, CoinSetting
 
     # Fiat Management
-    can :manage, FiatDeposit
-    can :manage, FiatWithdrawal
-    can :manage, FiatTransaction
-    can :manage, BankAccount
-    can :manage, PaymentMethod
+    can :read, FiatDeposit
+    can :read, FiatWithdrawal
+    can :read, FiatTransaction
+    can :read, BankAccount
+    can :read, PaymentMethod
 
     # Trade Management
-    can :manage, Trade
-    can :manage, Message
-    can :manage, Offer
+    can :read, Trade
+    can :read, Message
+    can :read, Offer
 
     # AMM Management
-    can :manage, AmmPool
-    can :manage, AmmPosition
-    can :manage, AmmOrder
+    can :read, AmmPool
+    can :read, AmmPosition
+    can :read, AmmOrder
 
     # System
-    can :manage, Notification
+    can :read, Notification
     can :read, KafkaEvent
   end
 end
