@@ -1,0 +1,12 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test_suite:
+    uses: ./.github/workflows/run-tests.yml
+
+  cucumber_suite:
+    uses: ./.github/workflows/run-cucumbers.yml

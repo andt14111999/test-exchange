@@ -10,6 +10,7 @@ on:
     paths:
       - "client/**"
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   build:
@@ -46,4 +47,4 @@ jobs:
             echo "Build failed: .next directory not found"
             exit 1
           fi
-          echo "Build successful: .next directory exists" 
+          echo "Build successful: .next directory exists"

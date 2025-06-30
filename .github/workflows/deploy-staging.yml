@@ -1,0 +1,603 @@
+name: Deploy to Staging Environment anvo.dev
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch: # Allow manual triggering
+
+# Add permissions for the workflow - required for AWS and Rollbar actions
+permissions:
+  contents: read
+  actions: read
+  checks: write
+  pull-requests: write
+  id-token: write # This is required for requesting the JWT for AWS
+
+env:
+  AWS_REGION: us-west-2
+  # Backend services
+  ECR_REPOSITORY_BACKEND: exchange-backend-f899186
+  ECS_CLUSTER: arn:aws:ecs:us-west-2:920373024600:cluster/exchange-base-cluster-prod2
+  ECS_SERVICE_BACKEND_WEB: arn:aws:ecs:us-west-2:920373024600:service/exchange-base-cluster-prod2/exchange-backend-web-prod2-svc
+  ECS_SERVICE_BACKEND_SIDEKIQ: arn:aws:ecs:us-west-2:920373024600:service/exchange-base-cluster-prod2/exchange-backend-sidekiq-prod2-svc
+  ECS_SERVICE_BACKEND_CLOCKWORK: arn:aws:ecs:us-west-2:920373024600:service/exchange-base-cluster-prod2/exchange-backend-clockwork-prod2-svc
+  ECS_SERVICE_BACKEND_KAFKA_CONSUMER: arn:aws:ecs:us-west-2:920373024600:service/exchange-base-cluster-prod2/exchange-backend-kafka-consumer-prod2-svc
+  # Client services
+  ECR_REPOSITORY_CLIENT: exchange-client-59deea6
+  ECS_SERVICE_CLIENT: arn:aws:ecs:us-west-2:920373024600:service/exchange-base-cluster-prod2/exchange-client-prod2-svc
+  # Engine services
+  ECR_REPOSITORY_ENGINE: exchange-engine-0480f75
+  ECS_SERVICE_ENGINE: arn:aws:ecs:us-west-2:920373024600:service/exchange-base-cluster-prod2/exchange-engine-prod2-svc
+
+jobs:
+  client-build:
+    uses: ./.github/workflows/client-build.yml
+
+  client-code-quality:
+    uses: ./.github/workflows/client-code-quality.yml
+
+  client-jest-tests:
+    uses: ./.github/workflows/client-jest-tests.yml
+
+  client-tests:
+    uses: ./.github/workflows/client-tests.yml
+
+  client-translations:
+    uses: ./.github/workflows/client-translations.yml
+
+  engine-tests:
+    uses: ./.github/workflows/engine-tests.yml
+
+  wait-for-checks:
+    name: Wait for other checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for other checks to complete
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.ref }}
+          check-name: "RSpec"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+      - name: Wait for Rubocop
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.ref }}
+          check-name: "Rubocop"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+      - name: Wait for Security Scan
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.ref }}
+          check-name: "Brakeman Scan"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+      - name: Wait for Bundle Audit
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.ref }}
+          check-name: "Bundle Audit"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+      - name: Wait for Zeitwerk Check
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.ref }}
+          check-name: "Zeitwerk Check"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+      - name: Wait for ERB Lint
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.ref }}
+          check-name: "ERB Lint"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+      - name: Wait for Database Consistency
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.ref }}
+          check-name: "Database Consistency Check"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+      - name: Wait for Asset Precompilation
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.ref }}
+          check-name: "Asset Precompilation"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+
+  # Manual approval gate for staging deployment
+  staging-deployment-approval:
+    name: 🚨 Staging Deployment Approval Required
+    needs:
+      [
+        wait-for-checks,
+        client-build,
+        client-code-quality,
+        client-jest-tests,
+        client-tests,
+        client-translations,
+        engine-tests,
+      ]
+    runs-on: ubuntu-latest
+    environment:
+      name: staging-approval
+      url: https://anvo.dev
+    steps:
+      - name: 📋 Approval Summary
+        run: |
+          echo "## 🚨 Manual Approval Required for Staging Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Author:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Ref:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Staging (prod2)" >> $GITHUB_STEP_SUMMARY
+          echo "**Target URLs:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 🌐 Frontend: https://anvo.dev" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔧 Backend: https://backend.anvo.dev" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **All automated checks have passed. Manual approval is required to proceed with staging deployment.**" >> $GITHUB_STEP_SUMMARY
+
+      - name: ✅ Deployment approved
+        run: |
+          echo "✅ Staging deployment has been manually approved by ${{ github.actor }}"
+          echo "🚀 Proceeding with staging deployment..."
+
+  # Phase 1: Backend Deployment
+  deploy-backend:
+    needs: staging-deployment-approval
+    runs-on: ubuntu-latest
+    environment:
+      name: prod2
+      url: https://backend.anvo.dev/up # Backend health check URL
+    outputs:
+      backend-image: ${{ steps.build-backend-image.outputs.image }}
+      rollbar_deploy_id: ${{ steps.rollbar_pre_deploy.outputs.deploy_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 📋 Deployment Summary
+        run: |
+          echo "## 🚀 Backend Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Author:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Ref:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Services to deploy:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 🌐 Backend Web (Rails API)" >> $GITHUB_STEP_SUMMARY
+          echo "- ⚙️ Sidekiq (Background Jobs)" >> $GITHUB_STEP_SUMMARY
+          echo "- ⏰ Clockwork (Scheduled Jobs)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📨 Kafka Consumer" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Production (prod2)" >> $GITHUB_STEP_SUMMARY
+          echo "**AWS Region:** ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: "true"
+
+      - name: Download backend task definitions
+        id: backend-task-definitions
+        run: |
+          # Get backend web task definition
+          aws ecs describe-task-definition \
+            --task-definition exchange-backend-web-prod2-task \
+            --query 'taskDefinition' > backend-web-task-definition.json
+
+          # Extract REDIS_URL and set as output
+          echo "redis_url=$(jq -r '.containerDefinitions[0].environment[] | select(.name == "REDIS_URL") | .value' backend-web-task-definition.json)" >> $GITHUB_OUTPUT
+
+          # Get backend clockwork task definition
+          aws ecs describe-task-definition \
+            --task-definition exchange-backend-clockwork-prod2-task \
+            --query 'taskDefinition' > backend-clockwork-task-definition.json
+
+          # Get backend sidekiq task definition
+          aws ecs describe-task-definition \
+            --task-definition exchange-backend-sidekiq-prod2-task \
+            --query 'taskDefinition' > backend-sidekiq-task-definition.json
+
+          # Get backend kafka consumer task definition
+          aws ecs describe-task-definition \
+            --task-definition exchange-backend-kafka-consumer-prod2-task \
+            --query 'taskDefinition' > backend-kafka-consumer-task-definition.json
+
+      - name: Build, tag, and push backend image to Amazon ECR
+        id: build-backend-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            --platform=linux/amd64 \
+            --build-arg RAILS_MASTER_KEY=${{ secrets.RAILS_MASTER_KEY }} \
+            --build-arg RAILS_ENV=production \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:latest \
+            .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:latest
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Notify start deploy to Rollbar
+        uses: rollbar/github-deploy-action@2.1.2
+        id: rollbar_pre_deploy
+        with:
+          environment: "production"
+          version: ${{ github.sha }}
+          status: "started"
+        env:
+          ROLLBAR_ACCESS_TOKEN: ${{ secrets.ROLLBAR_SERVER_ACCESS_TOKEN }}
+          ROLLBAR_USERNAME: ${{ github.actor }}
+
+      - name: BACKEND WEB - Fill in the new image ID in the backend web task definition
+        id: backend-web-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: backend-web-task-definition.json
+          container-name: exchange-backend
+          image: ${{ steps.build-backend-image.outputs.image }}
+
+      # - name: WEB - Deploy web service
+      #     uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+      #     with:
+      #       task-definition: ${{ steps.web-task-def.outputs.task-definition }}
+      #       service: ${{ env.ECS_SERVICE_WEB }}
+      #       cluster: ${{ env.ECS_CLUSTER }}
+      #       wait-for-service-stability: true
+      - name: BACKEND WEB - Register and deploy new task definition
+        run: |
+          # Register the new task definition - remove fields that AWS CLI doesn't accept
+          BACKEND_WEB_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --family $(jq -r '.family' ${{ steps.backend-web-task-def.outputs.task-definition }}) \
+            --execution-role-arn $(jq -r '.executionRoleArn' ${{ steps.backend-web-task-def.outputs.task-definition }}) \
+            --task-role-arn $(jq -r '.taskRoleArn' ${{ steps.backend-web-task-def.outputs.task-definition }}) \
+            --network-mode $(jq -r '.networkMode' ${{ steps.backend-web-task-def.outputs.task-definition }}) \
+            --container-definitions "$(jq '.containerDefinitions' ${{ steps.backend-web-task-def.outputs.task-definition }})" \
+            --volumes "$(jq '.volumes' ${{ steps.backend-web-task-def.outputs.task-definition }})" \
+            --requires-compatibilities "$(jq -r '.requiresCompatibilities[]' ${{ steps.backend-web-task-def.outputs.task-definition }})" \
+            --cpu $(jq -r '.cpu' ${{ steps.backend-web-task-def.outputs.task-definition }}) \
+            --memory $(jq -r '.memory' ${{ steps.backend-web-task-def.outputs.task-definition }}) \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          # Update the service to use the new task definition
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE_BACKEND_WEB }} \
+            --task-definition $BACKEND_WEB_TASK_DEF_ARN \
+            --force-new-deployment
+
+          # Wait for service to be stable
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE_BACKEND_WEB }}
+
+      - name: BACKEND CLOCKWORK - Fill in the new image ID in the clockwork task definition
+        id: backend-clockwork-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: backend-clockwork-task-definition.json
+          container-name: exchange-backend-clockwork
+          image: ${{ steps.build-backend-image.outputs.image }}
+
+      - name: BACKEND CLOCKWORK - Register and deploy new task definition
+        run: |
+          # Register the new task definition - remove fields that AWS CLI doesn't accept
+          BACKEND_CLOCKWORK_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --family $(jq -r '.family' ${{ steps.backend-clockwork-task-def.outputs.task-definition }}) \
+            --execution-role-arn $(jq -r '.executionRoleArn' ${{ steps.backend-clockwork-task-def.outputs.task-definition }}) \
+            --task-role-arn $(jq -r '.taskRoleArn' ${{ steps.backend-clockwork-task-def.outputs.task-definition }}) \
+            --network-mode $(jq -r '.networkMode' ${{ steps.backend-clockwork-task-def.outputs.task-definition }}) \
+            --container-definitions "$(jq '.containerDefinitions' ${{ steps.backend-clockwork-task-def.outputs.task-definition }})" \
+            --volumes "$(jq '.volumes' ${{ steps.backend-clockwork-task-def.outputs.task-definition }})" \
+            --requires-compatibilities "$(jq -r '.requiresCompatibilities[]' ${{ steps.backend-clockwork-task-def.outputs.task-definition }})" \
+            --cpu $(jq -r '.cpu' ${{ steps.backend-clockwork-task-def.outputs.task-definition }}) \
+            --memory $(jq -r '.memory' ${{ steps.backend-clockwork-task-def.outputs.task-definition }}) \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          # Update the service to use the new task definition
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE_BACKEND_CLOCKWORK }} \
+            --task-definition $BACKEND_CLOCKWORK_TASK_DEF_ARN \
+            --force-new-deployment
+
+          # Wait for service to be stable
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE_BACKEND_CLOCKWORK }}
+
+      - name: BACKEND SIDEKIQ - Fill in the new image ID in the sidekiq task definition
+        id: backend-sidekiq-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: backend-sidekiq-task-definition.json
+          container-name: exchange-backend-sidekiq
+          image: ${{ steps.build-backend-image.outputs.image }}
+
+      - name: BACKEND SIDEKIQ - Register and deploy new task definition
+        run: |
+          # Register the new task definition - remove fields that AWS CLI doesn't accept
+          BACKEND_SIDEKIQ_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --family $(jq -r '.family' ${{ steps.backend-sidekiq-task-def.outputs.task-definition }}) \
+            --execution-role-arn $(jq -r '.executionRoleArn' ${{ steps.backend-sidekiq-task-def.outputs.task-definition }}) \
+            --task-role-arn $(jq -r '.taskRoleArn' ${{ steps.backend-sidekiq-task-def.outputs.task-definition }}) \
+            --network-mode $(jq -r '.networkMode' ${{ steps.backend-sidekiq-task-def.outputs.task-definition }}) \
+            --container-definitions "$(jq '.containerDefinitions' ${{ steps.backend-sidekiq-task-def.outputs.task-definition }})" \
+            --volumes "$(jq '.volumes' ${{ steps.backend-sidekiq-task-def.outputs.task-definition }})" \
+            --requires-compatibilities "$(jq -r '.requiresCompatibilities[]' ${{ steps.backend-sidekiq-task-def.outputs.task-definition }})" \
+            --cpu $(jq -r '.cpu' ${{ steps.backend-sidekiq-task-def.outputs.task-definition }}) \
+            --memory $(jq -r '.memory' ${{ steps.backend-sidekiq-task-def.outputs.task-definition }}) \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          # Update the service to use the new task definition
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE_BACKEND_SIDEKIQ }} \
+            --task-definition $BACKEND_SIDEKIQ_TASK_DEF_ARN \
+            --force-new-deployment
+
+          # Wait for service to be stable
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE_BACKEND_SIDEKIQ }}
+
+      - name: BACKEND KAFKA CONSUMER - Fill in the new image ID in the kafka consumer task definition
+        id: backend-kafka-consumer-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: backend-kafka-consumer-task-definition.json
+          container-name: exchange-backend-kafka-consumer
+          image: ${{ steps.build-backend-image.outputs.image }}
+
+      - name: BACKEND KAFKA CONSUMER - Register and deploy new task definition
+        run: |
+          # Register the new task definition - remove fields that AWS CLI doesn't accept
+          BACKEND_KAFKA_CONSUMER_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --family $(jq -r '.family' ${{ steps.backend-kafka-consumer-task-def.outputs.task-definition }}) \
+            --execution-role-arn $(jq -r '.executionRoleArn' ${{ steps.backend-kafka-consumer-task-def.outputs.task-definition }}) \
+            --task-role-arn $(jq -r '.taskRoleArn' ${{ steps.backend-kafka-consumer-task-def.outputs.task-definition }}) \
+            --network-mode $(jq -r '.networkMode' ${{ steps.backend-kafka-consumer-task-def.outputs.task-definition }}) \
+            --container-definitions "$(jq '.containerDefinitions' ${{ steps.backend-kafka-consumer-task-def.outputs.task-definition }})" \
+            --volumes "$(jq '.volumes' ${{ steps.backend-kafka-consumer-task-def.outputs.task-definition }})" \
+            --requires-compatibilities "$(jq -r '.requiresCompatibilities[]' ${{ steps.backend-kafka-consumer-task-def.outputs.task-definition }})" \
+            --cpu $(jq -r '.cpu' ${{ steps.backend-kafka-consumer-task-def.outputs.task-definition }}) \
+            --memory $(jq -r '.memory' ${{ steps.backend-kafka-consumer-task-def.outputs.task-definition }}) \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          # Update the service to use the new task definition
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE_BACKEND_KAFKA_CONSUMER }} \
+            --task-definition $BACKEND_KAFKA_CONSUMER_TASK_DEF_ARN \
+            --force-new-deployment
+
+          # Wait for service to be stable
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE_BACKEND_KAFKA_CONSUMER }}
+
+  # Phase 2: Client Deployment
+  deploy-client:
+    needs: staging-deployment-approval
+    runs-on: ubuntu-latest
+    environment:
+      name: prod2
+      url: https://anvo.dev # Client application URL
+    outputs:
+      client-image: ${{ steps.build-client-image.outputs.image }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: 📋 Deployment Summary
+        run: |
+          echo "## 🌐 Client Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Author:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Ref:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Service to deploy:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 💻 Next.js Frontend Application" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Production (prod2)" >> $GITHUB_STEP_SUMMARY
+          echo "**AWS Region:** ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Public URL:** https://anvo.dev" >> $GITHUB_STEP_SUMMARY
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: "true"
+
+      - name: Download client task definition
+        id: client-task-definitions
+        run: |
+          # Get client task definition
+          aws ecs describe-task-definition \
+            --task-definition exchange-client-prod2-task \
+            --query 'taskDefinition' > client-task-definition.json
+
+      - name: Build, tag, and push client image to Amazon ECR
+        id: build-client-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            --platform=linux/amd64 \
+            --build-arg NEXT_PUBLIC_API_BASE_URL=https://backend.anvo.dev/api/v1 \
+            --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
+            --build-arg NEXT_PUBLIC_WS_URL=wss://backend.anvo.dev \
+            --build-arg NEXT_PUBLIC_BACKEND_HOSTNAME=backend.anvo.dev \
+            --build-arg NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN=${{ secrets.ROLLBAR_CLIENT_ACCESS_TOKEN }} \
+            --build-arg NEXT_PUBLIC_ROLLBAR_ENVIRONMENT=prod2 \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY_CLIENT:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY_CLIENT:latest \
+            ./client
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_CLIENT:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_CLIENT:latest
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY_CLIENT:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: CLIENT - Fill in the new image ID in the client task definition
+        id: client-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: client-task-definition.json
+          container-name: exchange-client
+          image: ${{ steps.build-client-image.outputs.image }}
+
+      - name: CLIENT - Register and deploy new task definition
+        run: |
+          # Register the new task definition
+          CLIENT_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --family $(jq -r '.family' ${{ steps.client-task-def.outputs.task-definition }}) \
+            --execution-role-arn $(jq -r '.executionRoleArn' ${{ steps.client-task-def.outputs.task-definition }}) \
+            --task-role-arn $(jq -r '.taskRoleArn' ${{ steps.client-task-def.outputs.task-definition }}) \
+            --network-mode $(jq -r '.networkMode' ${{ steps.client-task-def.outputs.task-definition }}) \
+            --container-definitions "$(jq '.containerDefinitions' ${{ steps.client-task-def.outputs.task-definition }})" \
+            --volumes "$(jq '.volumes' ${{ steps.client-task-def.outputs.task-definition }})" \
+            --requires-compatibilities "$(jq -r '.requiresCompatibilities[]' ${{ steps.client-task-def.outputs.task-definition }})" \
+            --cpu $(jq -r '.cpu' ${{ steps.client-task-def.outputs.task-definition }}) \
+            --memory $(jq -r '.memory' ${{ steps.client-task-def.outputs.task-definition }}) \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          # Update the service to use the new task definition
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE_CLIENT }} \
+            --task-definition $CLIENT_TASK_DEF_ARN \
+            --force-new-deployment
+
+          # Wait for service to be stable
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE_CLIENT }}
+
+  # Phase 3: Engine Deployment
+  deploy-engine:
+    needs: staging-deployment-approval
+    runs-on: ubuntu-latest
+    environment:
+      name: prod2
+      url: https://backend.anvo.dev # Engine monitoring URL (can be adjusted)
+    outputs:
+      engine-image: ${{ steps.build-engine-image.outputs.image }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: 📋 Deployment Summary
+        run: |
+          echo "## ⚡ Engine Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Author:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Ref:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Service to deploy:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏭 Java Trading Engine" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Production (prod2)" >> $GITHUB_STEP_SUMMARY
+          echo "**AWS Region:** ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: "true"
+
+      - name: Download engine task definition
+        id: engine-task-definitions
+        run: |
+          # Get engine task definition
+          aws ecs describe-task-definition \
+            --task-definition exchange-engine-prod2-task \
+            --query 'taskDefinition' > engine-task-definition.json
+
+      - name: Build, tag, and push engine image to Amazon ECR
+        id: build-engine-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            --platform=linux/amd64 \
+            --file ./engine/Exchange-Engine-Docker/Dockerfile \
+            --build-arg BUILD_VERSION=${{ github.sha }} \
+            --build-arg BUILD_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY_ENGINE:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY_ENGINE:latest \
+            ./engine
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_ENGINE:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_ENGINE:latest
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY_ENGINE:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: ENGINE - Fill in the new image ID in the engine task definition
+        id: engine-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: engine-task-definition.json
+          container-name: exchange-engine-container
+          image: ${{ steps.build-engine-image.outputs.image }}
+
+      - name: ENGINE - Register and deploy new task definition
+        run: |
+          # Register the new task definition
+          ENGINE_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --family $(jq -r '.family' ${{ steps.engine-task-def.outputs.task-definition }}) \
+            --execution-role-arn $(jq -r '.executionRoleArn' ${{ steps.engine-task-def.outputs.task-definition }}) \
+            --task-role-arn $(jq -r '.taskRoleArn' ${{ steps.engine-task-def.outputs.task-definition }}) \
+            --network-mode $(jq -r '.networkMode' ${{ steps.engine-task-def.outputs.task-definition }}) \
+            --container-definitions "$(jq '.containerDefinitions' ${{ steps.engine-task-def.outputs.task-definition }})" \
+            --volumes "$(jq '.volumes' ${{ steps.engine-task-def.outputs.task-definition }})" \
+            --requires-compatibilities "$(jq -r '.requiresCompatibilities[]' ${{ steps.engine-task-def.outputs.task-definition }})" \
+            --cpu $(jq -r '.cpu' ${{ steps.engine-task-def.outputs.task-definition }}) \
+            --memory $(jq -r '.memory' ${{ steps.engine-task-def.outputs.task-definition }}) \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          # Update the service to use the new task definition
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE_ENGINE }} \
+            --task-definition $ENGINE_TASK_DEF_ARN \
+            --force-new-deployment
+
+          # Wait for service to be stable
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE_ENGINE }}
+
+      - name: Notify finish deploy to Rollbar
+        uses: rollbar/github-deploy-action@2.1.2
+        id: rollbar_post_deploy
+        with:
+          environment: "prod2"
+          version: ${{ github.sha }}
+          status: "succeeded"
+        env:
+          ROLLBAR_ACCESS_TOKEN: ${{ secrets.ROLLBAR_SERVER_ACCESS_TOKEN }}
+          ROLLBAR_USERNAME: ${{ github.actor }}
+          DEPLOY_ID: ${{ needs.deploy-backend.outputs.rollbar_deploy_id }}
