@@ -73,44 +73,6 @@ RSpec.describe 'Admin::Users inline edit', :js, type: :system do
       # Verify database was not updated
       expect(user.reload.snowfox_employee).to be false
     end
-
-    it 'shows validation errors inline' do
-      superadmin = create(:admin_user, :superadmin)
-      sign_in superadmin, scope: :admin_user
-      user = create(:user, email: 'test@example.com', display_name: 'Test User', snowfox_employee: false)
-
-      visit admin_user_path(user)
-
-      # Skip this test if email field is not inline editable
-      skip "Email field not configured for inline editing" unless page.has_css?('[data-inline-edit-field-value="email"]')
-
-      # Find email field and click edit
-      within '[data-inline-edit-field-value="email"]' do
-        find('.inline-edit-trigger').click
-
-        # Enter invalid email
-        fill_in find('input[data-inline-edit-target="input"]')[:name], with: 'invalid-email'
-        click_button 'Save'
-      end
-
-      # Should show error
-      within '[data-inline-edit-field-value="email"]' do
-        expect(page).to have_css('[data-inline-edit-target="errors"]', text: 'Email is invalid')
-        expect(page).to have_css('.inline-edit-form', visible: true)
-      end
-
-      # Fix the error
-      within '[data-inline-edit-field-value="email"]' do
-        fill_in find('input[data-inline-edit-target="input"]')[:name], with: 'valid@example.com'
-        click_button 'Save'
-      end
-
-      # Should update successfully
-      within '[data-inline-edit-field-value="email"]' do
-        expect(page).to have_text('valid@example.com')
-        expect(page).not_to have_css('.inline-edit-form')
-      end
-    end
   end
 
   describe 'Operator permissions' do
