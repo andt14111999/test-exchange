@@ -40,6 +40,7 @@ export interface SwapSummaryProps {
   buttonText: string;
   errorMessage?: string;
   priceImpact: number;
+  poolFee?: number;
 }
 
 export function SwapSummary({
@@ -51,6 +52,7 @@ export function SwapSummary({
   buttonText,
   errorMessage,
   priceImpact,
+  poolFee,
 }: SwapSummaryProps) {
   const t = useTranslations("swap");
 
@@ -84,6 +86,13 @@ export function SwapSummary({
           <div>
             1 {inputToken} = {formattedRate} {outputToken}
           </div>
+        </div>
+      )}
+
+      {poolFee !== undefined && poolFee > 0 && (
+        <div className="flex justify-between text-sm text-muted-foreground">
+          <div>{t("poolFee")}</div>
+          <div>{(poolFee * 100).toFixed(3)}%</div>
         </div>
       )}
 

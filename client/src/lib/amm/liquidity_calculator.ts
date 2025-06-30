@@ -1,4 +1,5 @@
 import Decimal from "decimal.js";
+import { getTokenDecimals } from "./constants";
 
 const BigDecimal = Decimal;
 
@@ -15,13 +16,7 @@ export class LiquidityCalculator {
   }
 
   static getDecimalScale(symbol: string): number {
-    const SUPPORTED_COINS: Record<string, number> = {
-      USDT: 6,
-      VND: 2,
-      PHP: 2,
-      NGN: 2,
-    };
-    return SUPPORTED_COINS[symbol.toUpperCase()] ?? 6;
+    return getTokenDecimals(symbol);
   }
 
   static calculateAmounts(params: {
@@ -48,7 +43,7 @@ export class LiquidityCalculator {
 
     if (tickLower >= tickUpper) {
       console.error(
-        "Invalid tick range: tickLower must be less than tickUpper",
+        "Invalid tick range: tickLower must be less than tickUpper"
       );
       return { amount0: "0", amount1: "0", liquidity: "0" };
     }
@@ -96,7 +91,7 @@ export class LiquidityCalculator {
           .mul(sqrtPriceUpper)
           .div(sqrtPriceUpper.minus(sqrtPriceCurrent));
         calculatedAmount1 = liquidity.mul(
-          sqrtPriceCurrent.minus(sqrtPriceLower),
+          sqrtPriceCurrent.minus(sqrtPriceLower)
         );
       } else if (amount1 !== null && amount1 > 0) {
         const amt1 = new BigDecimal(amount1.toString());

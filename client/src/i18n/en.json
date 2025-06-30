@@ -515,6 +515,7 @@
     "outputAmount": "You receive",
     "exchangeRate": "Exchange Rate",
     "priceImpact": "Price Impact",
+    "poolFee": "Pool Fee",
     "balance": "Balance",
     "loading": "Loading pools...",
     "error": "Failed to load pools",
