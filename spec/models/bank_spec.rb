@@ -29,14 +29,14 @@ RSpec.describe Bank, type: :model do
 
     describe '.ordered' do
       it 'returns banks ordered by name' do
-        expect(Bank.ordered).to eq([ bank_ng, bank_vn ])
+        expect(described_class.ordered).to eq([ bank_ng, bank_vn ])
       end
     end
 
     describe '.by_country' do
       it 'returns banks for specific country' do
-        expect(Bank.by_country('VN')).to eq([ bank_vn ])
-        expect(Bank.by_country('NG')).to eq([ bank_ng ])
+        expect(described_class.by_country('VN')).to eq([ bank_vn ])
+        expect(described_class.by_country('NG')).to eq([ bank_ng ])
       end
     end
 
@@ -45,8 +45,8 @@ RSpec.describe Bank, type: :model do
       let!(:bank_no_transfer) { create(:bank, country: vietnam, transfer_supported: false) }
 
       it 'returns only banks with transfer support' do
-        expect(Bank.transfer_supported).to include(bank_transfer)
-        expect(Bank.transfer_supported).not_to include(bank_no_transfer)
+        expect(described_class.transfer_supported).to include(bank_transfer)
+        expect(described_class.transfer_supported).not_to include(bank_no_transfer)
       end
     end
 
@@ -55,8 +55,8 @@ RSpec.describe Bank, type: :model do
       let!(:bank_no_lookup) { create(:bank, country: vietnam, lookup_supported: false) }
 
       it 'returns only banks with lookup support' do
-        expect(Bank.lookup_supported).to include(bank_lookup)
-        expect(Bank.lookup_supported).not_to include(bank_no_lookup)
+        expect(described_class.lookup_supported).to include(bank_lookup)
+        expect(described_class.lookup_supported).not_to include(bank_no_lookup)
       end
     end
   end

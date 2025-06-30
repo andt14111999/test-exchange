@@ -284,7 +284,6 @@ export default function WithdrawPage() {
         bank_name: selectedBankAccount.bank_name,
         bank_account_name: selectedBankAccount.account_name,
         bank_account_number: selectedBankAccount.account_number,
-        bank_branch: selectedBankAccount.branch,
       });
 
       // Redirect to trade detail page

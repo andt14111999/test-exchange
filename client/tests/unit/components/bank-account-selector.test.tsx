@@ -82,7 +82,6 @@ const mockBankAccounts: BankAccount[] = [
     account_name: "Account A",
     country_code: "VN",
     is_primary: true,
-    branch: "Branch A",
     verified: true,
     created_at: "2023-01-01T00:00:00Z",
     updated_at: "2023-01-01T00:00:00Z",
@@ -94,7 +93,6 @@ const mockBankAccounts: BankAccount[] = [
     account_name: "Account B",
     country_code: "US",
     is_primary: false,
-    branch: "Branch B",
     verified: true,
     created_at: "2023-01-02T00:00:00Z",
     updated_at: "2023-01-02T00:00:00Z",
@@ -336,7 +334,6 @@ describe("BankAccountSelector", () => {
         bank_name: "Fresh Bank",
         account_name: "Fresh Account",
         account_number: "987650000",
-        branch: "Fresh Branch",
         country_code: "US",
         is_primary: true,
         verified: true,
@@ -398,9 +395,7 @@ describe("BankAccountSelector", () => {
           target: { value: newAccountDataForTest.account_number },
         },
       );
-      fireEvent.change(within(dialog).getByPlaceholderText(/enterBranch/i), {
-        target: { value: newAccountDataForTest.branch },
-      });
+
       fireEvent.click(within(dialog).getByText("setPrimaryAccount"));
 
       // Submit form
@@ -413,7 +408,6 @@ describe("BankAccountSelector", () => {
             bank_name: expect.any(String),
             account_name: newAccountDataForTest.account_name,
             account_number: newAccountDataForTest.account_number,
-            branch: newAccountDataForTest.branch,
             is_primary: newAccountDataForTest.is_primary,
           }),
         );

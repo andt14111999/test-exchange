@@ -18,7 +18,7 @@ RSpec.describe Country, type: :model do
 
     describe '.ordered' do
       it 'returns countries ordered by name' do
-        expect(Country.ordered).to eq([ ghana, nigeria, vietnam ])
+        expect(described_class.ordered).to eq([ ghana, nigeria, vietnam ])
       end
     end
   end

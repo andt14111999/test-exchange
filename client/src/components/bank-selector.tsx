@@ -54,7 +54,7 @@ export function BankSelector({
       (bank) =>
         bank.name.toLowerCase().includes(lowerSearchTerm) ||
         bank.code.toLowerCase().includes(lowerSearchTerm) ||
-        bank.shortName.toLowerCase().includes(lowerSearchTerm)
+        bank.shortName.toLowerCase().includes(lowerSearchTerm),
     );
   }, [banks, searchTerm]);
 

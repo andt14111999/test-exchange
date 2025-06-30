@@ -21,13 +21,18 @@ export interface GetBanksResponse {
   data: Bank[];
 }
 
-export const getBanks = async (countryCode?: string): Promise<GetBanksResponse> => {
+export const getBanks = async (
+  countryCode?: string,
+): Promise<GetBanksResponse> => {
   try {
-    const response = await apiClient.get<GetBanksResponse>(API_ENDPOINTS.banks, {
-      params: {
-        country_code: countryCode,
+    const response = await apiClient.get<GetBanksResponse>(
+      API_ENDPOINTS.banks,
+      {
+        params: {
+          country_code: countryCode,
+        },
       },
-    });
+    );
     return response.data;
   } catch (error) {
     throw error;

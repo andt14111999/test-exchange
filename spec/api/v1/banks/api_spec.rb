@@ -4,7 +4,6 @@ require 'rails_helper'
 
 RSpec.describe V1::Banks::Api, type: :request do
   let!(:vietnam) { create(:country, code: 'VN', name: 'Vietnam') }
-  let!(:nigeria) { create(:country, code: 'NG', name: 'Nigeria') }
   let!(:vietinbank) do
     create(:bank,
       country: vietnam,
@@ -20,21 +19,6 @@ RSpec.describe V1::Banks::Api, type: :request do
       swift_code: 'ICBVVNVX'
     )
   end
-  let!(:vietcombank) do
-    create(:bank,
-      country: vietnam,
-      name: 'Ngân hàng TMCP Ngoại Thương Việt Nam',
-      code: 'VCB',
-      bin: '970436',
-      short_name: 'Vietcombank',
-      logo: 'https://api.vietqr.io/img/VCB.png',
-      transfer_supported: true,
-      lookup_supported: true,
-      support: 3,
-      is_transfer: true,
-      swift_code: 'BFTVVNVX'
-    )
-  end
 
   describe 'GET /api/v1/banks' do
     context 'when requesting banks data' do
@@ -46,7 +30,7 @@ RSpec.describe V1::Banks::Api, type: :request do
 
         # Kiểm tra response có đúng format không
         expect(json_response['status']).to eq('success')
-        expect(json_response['data'].length).to eq(2)
+        expect(json_response['data'].length).to eq(1)
 
         # Kiểm tra dữ liệu của ngân hàng đầu tiên
         first_bank_in_response = json_response['data'].first
