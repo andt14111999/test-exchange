@@ -21,6 +21,7 @@ interface BankSelectorProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  countryCode?: string;
 }
 
 export function BankSelector({
@@ -29,13 +30,14 @@ export function BankSelector({
   placeholder,
   className,
   disabled = false,
+  countryCode,
 }: BankSelectorProps) {
   const t = useTranslations("bankAccounts");
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   // Fetch banks data
-  const { data: banksResponse, isLoading, error } = useBanks();
+  const { data: banksResponse, isLoading, error } = useBanks(countryCode);
   const banks = useMemo(() => banksResponse?.data || [], [banksResponse?.data]);
 
   // Find the selected bank
@@ -52,8 +54,7 @@ export function BankSelector({
       (bank) =>
         bank.name.toLowerCase().includes(lowerSearchTerm) ||
         bank.code.toLowerCase().includes(lowerSearchTerm) ||
-        bank.shortName.toLowerCase().includes(lowerSearchTerm) ||
-        bank.short_name.toLowerCase().includes(lowerSearchTerm),
+        bank.shortName.toLowerCase().includes(lowerSearchTerm)
     );
   }, [banks, searchTerm]);
 

@@ -6,7 +6,6 @@ export interface BankAccount {
   bank_code?: string;
   account_name: string;
   account_number: string;
-  branch?: string;
   country_code: string;
   is_primary: boolean;
   verified: boolean;
@@ -19,7 +18,6 @@ export interface CreateBankAccountParams {
   bank_code?: string;
   account_name: string;
   account_number: string;
-  branch?: string;
   country_code: string;
   is_primary?: boolean;
 }
@@ -29,7 +27,6 @@ export interface UpdateBankAccountParams {
   bank_code?: string;
   account_name?: string;
   account_number?: string;
-  branch?: string;
   country_code?: string;
   is_primary?: boolean;
 }

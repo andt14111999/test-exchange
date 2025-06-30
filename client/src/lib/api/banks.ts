@@ -9,10 +9,11 @@ export interface Bank {
   logo: string;
   transferSupported: number;
   lookupSupported: number;
-  short_name: string;
   support: number;
   isTransfer: number;
-  swift_code: string;
+  swiftCode: string;
+  countryCode: string;
+  countryName: string;
 }
 
 export interface GetBanksResponse {
@@ -20,9 +21,13 @@ export interface GetBanksResponse {
   data: Bank[];
 }
 
-export const getBanks = async (): Promise<GetBanksResponse> => {
+export const getBanks = async (countryCode?: string): Promise<GetBanksResponse> => {
   try {
-    const response = await apiClient.get<GetBanksResponse>(API_ENDPOINTS.banks);
+    const response = await apiClient.get<GetBanksResponse>(API_ENDPOINTS.banks, {
+      params: {
+        country_code: countryCode,
+      },
+    });
     return response.data;
   } catch (error) {
     throw error;
