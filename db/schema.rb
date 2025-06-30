@@ -10,7 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
+<<<<<<< HEAD
 ActiveRecord::Schema[8.0].define(version: 2025_06_30_090816) do
+=======
+ActiveRecord::Schema[8.0].define(version: 2025_06_30_073840) do
+>>>>>>> 04cdc48 (create new bank and country models)
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -244,6 +248,23 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_30_090816) do
     t.index ["user_id"], name: "index_bank_accounts_on_user_id"
   end
 
+  create_table "banks", force: :cascade do |t|
+    t.string "name"
+    t.string "code"
+    t.string "bin"
+    t.string "short_name"
+    t.string "logo"
+    t.boolean "transfer_supported"
+    t.boolean "lookup_supported"
+    t.integer "support"
+    t.boolean "is_transfer"
+    t.string "swift_code"
+    t.bigint "country_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["country_id"], name: "index_banks_on_country_id"
+  end
+
   create_table "coin_accounts", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "coin_currency", null: false
@@ -416,6 +437,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_30_090816) do
     t.index ["user_id"], name: "index_coin_withdrawals_on_user_id"
     t.index ["vpn"], name: "index_coin_withdrawals_on_vpn", where: "(vpn = true)"
     t.index ["withdrawable_type", "withdrawable_id"], name: "index_coin_withdrawals_on_withdrawable", unique: true
+  end
+
+  create_table "countries", force: :cascade do |t|
+    t.string "name"
+    t.string "code"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "fiat_accounts", force: :cascade do |t|
@@ -828,6 +856,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_30_090816) do
   add_foreign_key "balance_lock_operations", "balance_locks"
   add_foreign_key "balance_locks", "users"
   add_foreign_key "bank_accounts", "users"
+  add_foreign_key "banks", "countries"
   add_foreign_key "coin_accounts", "users"
   add_foreign_key "coin_deposit_operations", "coin_accounts"
   add_foreign_key "coin_deposit_operations", "coin_deposits"
