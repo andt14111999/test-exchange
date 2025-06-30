@@ -23,7 +23,10 @@ import { useUserStore } from "@/lib/store/user-store";
 import { TwoFactorAuthInput } from "@/components/two-factor-auth-input";
 import { useTranslations } from "next-intl";
 import { useDeviceTrust } from "@/hooks/use-device-trust";
-import { MINIMUM_WITHDRAWAL_USDT } from "@/lib/constants/withdrawal";
+import {
+  MINIMUM_WITHDRAWAL_USDT,
+  MAX_WITHDRAWAL_AMOUNT,
+} from "@/lib/constants/withdrawal";
 
 // Import new components
 import { WithdrawTabs } from "./components/withdraw-tabs";
@@ -70,19 +73,25 @@ export default function WithdrawUSDTPage() {
   // Initialize when both networks and fees are available
   useEffect(() => {
     // Wait for both networks and fees to be available
-    if (rawNetworks.length > 0 && Object.keys(networkFees).length > 0 && !selectedNetwork) {
+    if (
+      rawNetworks.length > 0 &&
+      Object.keys(networkFees).length > 0 &&
+      !selectedNetwork
+    ) {
       // First try to find ERC20 (Ethereum)
-      let initialNetwork = rawNetworks.find((n) => n.id === "erc20" && n.enabled);
-      
+      let initialNetwork = rawNetworks.find(
+        (n) => n.id === "erc20" && n.enabled,
+      );
+
       // If ERC20 not available, fall back to first enabled
       if (!initialNetwork) {
         initialNetwork = rawNetworks.find((n) => n.enabled);
       }
-      
+
       if (initialNetwork) {
         const feeKey = `usdt_${initialNetwork.id}`;
         const networkFee = networkFees[feeKey] || 0;
-        
+
         setSelectedNetwork({
           ...initialNetwork,
           fee: networkFee,
@@ -103,7 +112,7 @@ export default function WithdrawUSDTPage() {
           toast.error("Failed to load withdrawal fees. Using default values.");
         }
       };
-      
+
       loadFees();
     }
   }, [rawNetworks, networkFees]);
@@ -146,13 +155,21 @@ export default function WithdrawUSDTPage() {
         return false;
       }
 
-      if (parsedAmount > 100000) {
-        setAmountError("Maximum amount is 100,000 USDT");
+      if (parsedAmount > MAX_WITHDRAWAL_AMOUNT) {
+        setAmountError(`Maximum amount is ${MAX_WITHDRAWAL_AMOUNT} USDT`);
         return false;
       }
 
-      // Check if amount exceeds available balance
-      if (parsedAmount > usdtBalance) {
+      // Calculate withdrawal fee based on withdrawal type and selected network
+      const withdrawalFee =
+        withdrawalType === "external"
+          ? parseFloat(selectedNetwork?.fee.toString() || "0")
+          : 0;
+
+      const totalRequired = parsedAmount + withdrawalFee;
+
+      // Check if total amount (amount + fee) exceeds available balance
+      if (totalRequired > usdtBalance) {
         setAmountError(
           `Insufficient balance. Available: ${formatNumber(usdtBalance)} USDT`,
         );
@@ -162,7 +179,7 @@ export default function WithdrawUSDTPage() {
       setAmountError(null);
       return true;
     },
-    [usdtBalance],
+    [usdtBalance, withdrawalType, selectedNetwork],
   );
 
   const validateAddress = useCallback(
@@ -232,7 +249,7 @@ export default function WithdrawUSDTPage() {
       if (network) {
         const feeKey = `usdt_${network.id}`;
         const networkFee = networkFees[feeKey] || 0;
-        
+
         setSelectedNetwork({
           ...network,
           fee: networkFee,
@@ -385,8 +402,9 @@ export default function WithdrawUSDTPage() {
       return;
     }
 
-    // Check balance before proceeding
-    if (parsedAmount > usdtBalance) {
+    // Check total required amount (amount + fee) before proceeding
+    const totalRequired = parsedAmount + withdrawalFee;
+    if (totalRequired > usdtBalance) {
       setAmountError(
         `Insufficient balance. Available: ${formatNumber(usdtBalance)} USDT`,
       );
@@ -440,8 +458,9 @@ export default function WithdrawUSDTPage() {
   const isFormValid = () => {
     if (parsedAmount <= 0 || amountError) return false;
 
-    // Check balance for both external and internal withdrawals
-    if (parsedAmount > usdtBalance) return false;
+    // Check total required amount (amount + fee) for both external and internal withdrawals
+    const totalRequired = parsedAmount + withdrawalFee;
+    if (totalRequired > usdtBalance) return false;
 
     if (withdrawalType === "external") {
       return address && !addressError;

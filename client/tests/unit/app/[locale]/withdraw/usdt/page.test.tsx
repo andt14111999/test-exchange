@@ -136,10 +136,14 @@ describe("WithdrawUSDTPage", () => {
 
     // Check main elements
     expect(screen.getAllByText("Withdraw USDT").length).toBeGreaterThan(0);
-    expect(screen.getByText("translated.withdrawalDetails")).toBeInTheDocument();
+    expect(
+      screen.getByText("translated.withdrawalDetails"),
+    ).toBeInTheDocument();
     expect(screen.getByText("translated.network")).toBeInTheDocument();
     expect(screen.getByText("translated.amount")).toBeInTheDocument();
-    expect(screen.getByText("translated.destinationAddress")).toBeInTheDocument();
+    expect(
+      screen.getByText("translated.destinationAddress"),
+    ).toBeInTheDocument();
   });
 
   it("selects ERC20 (Ethereum) as default network", async () => {
@@ -155,9 +159,12 @@ describe("WithdrawUSDTPage", () => {
     });
 
     // Check that ERC20 is selected by default by looking for the display text
-    await waitFor(() => {
-      expect(screen.getByText("Ethereum (ERC20)")).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText("Ethereum (ERC20)")).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
   });
 
   it("loads withdrawal fees and applies them to networks", async () => {
@@ -181,7 +188,7 @@ describe("WithdrawUSDTPage", () => {
 
   it("handles fee loading error gracefully", async () => {
     (getWithdrawalFees as jest.Mock).mockRejectedValue(new Error("API Error"));
-    
+
     render(
       <TestWrapper>
         <WithdrawUSDTPage />
@@ -190,7 +197,7 @@ describe("WithdrawUSDTPage", () => {
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith(
-        "Failed to load withdrawal fees. Using default values."
+        "Failed to load withdrawal fees. Using default values.",
       );
     });
 
@@ -218,7 +225,7 @@ describe("WithdrawUSDTPage", () => {
     fireEvent.change(addressInput, {
       target: { value: "invalid-address" },
     });
-    
+
     await waitFor(() => {
       expect(
         screen.getByText("Invalid Ethereum (ERC20) address format"),
@@ -229,7 +236,7 @@ describe("WithdrawUSDTPage", () => {
     fireEvent.change(addressInput, {
       target: { value: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" },
     });
-    
+
     await waitFor(() => {
       expect(
         screen.queryByText("Invalid Ethereum (ERC20) address format"),
@@ -300,7 +307,7 @@ describe("WithdrawUSDTPage", () => {
     // Check confirmation dialog
     expect(screen.getByText("Confirm Withdrawal")).toBeInTheDocument();
     expect(screen.getAllByText(/100\.00 USDT$/).length).toBeGreaterThan(0);
-    
+
     // Check that the total includes ERC20 fee (100 + 10 = 110)
     await waitFor(() => {
       expect(screen.getAllByText(/110\.00 USDT/).length).toBeGreaterThan(0);
@@ -405,5 +412,181 @@ describe("WithdrawUSDTPage", () => {
     expect(
       screen.queryByText("Invalid TRON (TRC20) address format"),
     ).not.toBeInTheDocument();
+  });
+
+  it("validates insufficient balance including withdrawal fees", async () => {
+    // Set up a wallet with limited balance
+    (useWallet as jest.Mock).mockReturnValue({
+      data: {
+        coin_accounts: [
+          {
+            coin_currency: "USDT",
+            balance: 105, // Only 105 USDT available
+          },
+        ],
+      },
+      isLoading: false,
+    });
+
+    render(
+      <TestWrapper>
+        <WithdrawUSDTPage />
+      </TestWrapper>,
+    );
+
+    // Wait for ERC20 to be selected by default (10 USDT fee)
+    await waitFor(() => {
+      expect(screen.getByText("Ethereum (ERC20)")).toBeInTheDocument();
+    });
+
+    const amountInput = screen.getByPlaceholderText("translated.enterAmount");
+    const addressInput = screen.getByPlaceholderText("translated.enterAddress");
+
+    // Enter valid address first
+    fireEvent.change(addressInput, {
+      target: { value: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" },
+    });
+
+    // Try to withdraw 100 USDT (total needed: 100 + 10 fee = 110 USDT, but only 105 available)
+    fireEvent.change(amountInput, { target: { value: "100" } });
+
+    // Should show insufficient balance error
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Insufficient balance\. Available: 105.*USDT/),
+      ).toBeInTheDocument();
+    });
+
+    // Submit button should be disabled
+    const submitButton = screen.getByRole("button", { name: /Withdraw.*USDT/ });
+    expect(submitButton).toBeDisabled();
+  });
+
+  it("allows withdrawal when balance covers amount plus fees", async () => {
+    // Set up a wallet with sufficient balance
+    (useWallet as jest.Mock).mockReturnValue({
+      data: {
+        coin_accounts: [
+          {
+            coin_currency: "USDT",
+            balance: 120, // 120 USDT available
+          },
+        ],
+      },
+      isLoading: false,
+    });
+
+    render(
+      <TestWrapper>
+        <WithdrawUSDTPage />
+      </TestWrapper>,
+    );
+
+    // Wait for ERC20 to be selected by default (10 USDT fee)
+    await waitFor(() => {
+      expect(screen.getByText("Ethereum (ERC20)")).toBeInTheDocument();
+    });
+
+    const amountInput = screen.getByPlaceholderText("translated.enterAmount");
+    const addressInput = screen.getByPlaceholderText("translated.enterAddress");
+
+    // Enter valid address
+    fireEvent.change(addressInput, {
+      target: { value: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" },
+    });
+
+    // Withdraw 100 USDT (total needed: 100 + 10 fee = 110 USDT, 120 available)
+    fireEvent.change(amountInput, { target: { value: "100" } });
+
+    // Should not show insufficient balance error
+    await waitFor(() => {
+      expect(
+        screen.queryByText(/Insufficient balance/),
+      ).not.toBeInTheDocument();
+    });
+
+    // Submit button should be enabled
+    await waitFor(() => {
+      const submitButton = screen.getByRole("button", {
+        name: /Withdraw.*USDT/,
+      });
+      expect(submitButton).not.toBeDisabled();
+    });
+  });
+
+  it("validates balance correctly with different network fees", async () => {
+    // Set up a wallet with limited balance
+    (useWallet as jest.Mock).mockReturnValue({
+      data: {
+        coin_accounts: [
+          {
+            coin_currency: "USDT",
+            balance: 103, // 103 USDT available
+          },
+        ],
+      },
+      isLoading: false,
+    });
+
+    render(
+      <TestWrapper>
+        <WithdrawUSDTPage />
+      </TestWrapper>,
+    );
+
+    // Wait for ERC20 to be selected by default (10 USDT fee)
+    await waitFor(() => {
+      expect(screen.getByText("Ethereum (ERC20)")).toBeInTheDocument();
+    });
+
+    const amountInput = screen.getByPlaceholderText("translated.enterAmount");
+    const addressInput = screen.getByPlaceholderText("translated.enterAddress");
+
+    // Enter valid address
+    fireEvent.change(addressInput, {
+      target: { value: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" },
+    });
+
+    // Try to withdraw 100 USDT with ERC20 (total needed: 100 + 10 = 110 USDT, but only 103 available)
+    fireEvent.change(amountInput, { target: { value: "100" } });
+
+    // Should show insufficient balance error
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Insufficient balance\. Available: 103.*USDT/),
+      ).toBeInTheDocument();
+    });
+
+    // Change network to TRC20 (2 USDT fee)
+    fireEvent.click(screen.getByRole("combobox"));
+    fireEvent.click(screen.getAllByText("TRON (TRC20)")[0]);
+
+    // Wait for network change
+    await waitFor(() => {
+      expect(screen.getByText("TRON (TRC20)")).toBeInTheDocument();
+    });
+
+    // Enter valid TRC20 address
+    fireEvent.change(addressInput, {
+      target: { value: "TKQpQkMWRvTJpQgYrGp8wKgJSHV3DqNHJ3" },
+    });
+
+    // Now withdraw 100 USDT with TRC20 (total needed: 100 + 2 = 102 USDT, 103 available)
+    fireEvent.change(amountInput, { target: { value: "100" } });
+
+    // Should not show insufficient balance error since 102 <= 103
+    await waitFor(() => {
+      expect(
+        screen.queryByText(/Insufficient balance/),
+      ).not.toBeInTheDocument();
+    });
+
+    // Submit button should be enabled
+    await waitFor(() => {
+      const submitButton = screen.getByRole("button", {
+        name: /Withdraw.*USDT/,
+      });
+      expect(submitButton).not.toBeDisabled();
+    });
   });
 });
