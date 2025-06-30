@@ -58,3 +58,6 @@ globs:
 - Write clear commit messages
 - Make small, focused commits
 - Use meaningful branch names 
+
+## RSpec Test
+- Do not use let in rspec test, instead move every declaration to specific test method
