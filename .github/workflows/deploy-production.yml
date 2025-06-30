@@ -403,7 +403,7 @@ jobs:
     outputs:
       client-image: ${{ steps.build-client-image.outputs.image }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: 📋 Deployment Summary
         run: |
@@ -504,7 +504,7 @@ jobs:
     outputs:
       engine-image: ${{ steps.build-engine-image.outputs.image }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: 📋 Deployment Summary
         run: |
