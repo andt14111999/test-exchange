@@ -48,6 +48,7 @@ class User < ApplicationRecord
   scope :banned, -> { where(status: 'banned') }
   scope :phone_verified, -> { where(phone_verified: true) }
   scope :document_verified, -> { where(document_verified: true) }
+  scope :snowfox_employees, -> { where(snowfox_employee: true) }
 
   # Required for Ransack search in ActiveAdmin
   def self.ransackable_attributes(_auth_object = nil)
@@ -65,6 +66,7 @@ class User < ApplicationRecord
       updated_at
       username
       authenticator_enabled
+      snowfox_employee
     ]
   end
 

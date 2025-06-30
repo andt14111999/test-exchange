@@ -4,11 +4,10 @@ ActiveAdmin.register User do
   menu priority: 2, label: 'Users'
 
   permit_params :email, :display_name, :avatar_url, :role,
-    :phone_verified, :document_verified, :kyc_level, :status, :username
+                :phone_verified, :document_verified, :kyc_level, :status, :username, :snowfox_employee
 
   actions :all, except: [ :destroy ]
 
-  before_action :ensure_superadmin_user, only: %i[create update]
 
   filter :id
   filter :email
@@ -19,6 +18,7 @@ ActiveAdmin.register User do
   filter :kyc_level, as: :select, collection: [ 0, 1, 2 ]
   filter :phone_verified
   filter :document_verified
+  filter :snowfox_employee
   filter :created_at
   filter :updated_at
 
@@ -30,6 +30,7 @@ ActiveAdmin.register User do
   scope('Banned Users') { |scope| scope.where(status: 'banned') }
   scope('Phone Verified') { |scope| scope.where(phone_verified: true) }
   scope('Document Verified') { |scope| scope.where(document_verified: true) }
+  scope('Snowfox Employees') { |scope| scope.where(snowfox_employee: true) }
 
   index do
     selectable_column
@@ -96,6 +97,9 @@ ActiveAdmin.register User do
           row :document_verified do |user|
             status_tag user.document_verified ? 'Verified' : 'Unverified',
               class: user.document_verified ? 'ok' : 'error'
+          end
+          row :snowfox_employee do |user|
+            inline_edit_field(user, :snowfox_employee, type: :boolean)
           end
           row :created_at
           row :updated_at
@@ -176,6 +180,7 @@ ActiveAdmin.register User do
             f.input :current_avatar, required: false, as: :file,
               hint: image_tag(f.object.avatar_url, style: 'max-width: 200px; max-height: 200px;')
           end
+          f.input :snowfox_employee, label: 'Snowfox Employee', hint: 'Mark this user as a Snowfox employee'
         end
       end
 
@@ -195,6 +200,7 @@ ActiveAdmin.register User do
         f.inputs do
           f.input :phone_verified
           f.input :document_verified
+
         end
       end
     end
@@ -300,8 +306,33 @@ ActiveAdmin.register User do
   end
 
   controller do
+    # Handle CanCan access denied for AJAX/JSON requests
+    rescue_from CanCan::AccessDenied do |exception|
+      if request.format.json? || params[:inline_edit]
+        render json: { errors: [ exception.message ] }, status: :forbidden
+      else
+        redirect_to admin_user_path(resource), alert: exception.message
+      end
+    end
+
     def scoped_collection
       super.includes(:social_accounts)
+    end
+
+    def update
+      if params[:inline_edit]
+        # Handle inline edit requests
+        resource.assign_attributes(permitted_params[:user])
+
+        if resource.save
+          render json: resource.attributes.slice(*permitted_params[:user].keys.map(&:to_s))
+        else
+          render json: { errors: resource.errors.full_messages }, status: :unprocessable_entity
+        end
+      else
+        # Default update behavior - ActiveAdmin handles general authorization
+        super
+      end
     end
 
     private

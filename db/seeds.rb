@@ -11,13 +11,12 @@
 #   end
 if Rails.env.development?
   AdminUser::ROLES.each do |role|
-    AdminUser.create!(
-      email: "#{role}@snowfoxglobal.org",
-      password: '123456',
-      password_confirmation: '123456',
-      fullname: 'Test User',
-      roles: role
-    )
+    AdminUser.find_or_create_by!(email: "#{role}@snowfoxglobal.org") do |admin|
+      admin.password = '123456'
+      admin.password_confirmation = '123456'
+      admin.fullname = 'Test User'
+      admin.roles = role
+    end
   end
 end
 
