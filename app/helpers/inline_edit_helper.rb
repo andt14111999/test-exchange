@@ -39,12 +39,19 @@ module InlineEditHelper
                 class: 'inline-edit-container' do
       display = content_tag :span, data: { inline_edit_target: 'display' } do
         display_value = format_value(current_value, field_type)
-        edit_link = link_to '✏️', '#',
-                            class: 'inline-edit-trigger',
-                            data: { action: 'click->inline-edit#edit' },
-                            title: 'Click to edit'
-
-        safe_join([ display_value, ' ', edit_link ])
+        
+        # Only show edit trigger if user can update the resource
+        # Check if we're in ActiveAdmin context and user can update
+        ability = defined?(current_admin_user) && current_admin_user ? AdminAbility.new(current_admin_user) : nil
+        if ability && ability.can?(:update, resource)
+          edit_link = link_to '✏️', '#',
+                              class: 'inline-edit-trigger',
+                              data: { action: 'click->inline-edit#edit' },
+                              title: 'Click to edit'
+          safe_join([ display_value, ' ', edit_link ])
+        else
+          display_value
+        end
       end
 
       form = content_tag :span,

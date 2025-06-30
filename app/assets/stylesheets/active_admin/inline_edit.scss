@@ -5,7 +5,7 @@
   
   .inline-edit-trigger {
     text-decoration: none;
-    opacity: 0;
+    opacity: 1; // Always visible
     transition: opacity 0.2s;
     margin-left: 5px;
     font-size: 14px;
@@ -13,10 +13,6 @@
     &:hover {
       text-decoration: none;
     }
-  }
-  
-  &:hover .inline-edit-trigger {
-    opacity: 1;
   }
   
   .inline-edit-form {

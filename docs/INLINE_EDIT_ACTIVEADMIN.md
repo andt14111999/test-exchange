@@ -176,4 +176,51 @@ For more granular control, you can restrict specific fields:
 - **AJAX/JSON requests**: Return 401 (Unauthorized) status with error message
 - **Normal form submissions**: Redirect to admin root with error message
 
-This approach allows fine-grained control over who can edit specific models or fields while maintaining ActiveAdmin's standard permission system. 
+This approach allows fine-grained control over who can edit specific models or fields while maintaining ActiveAdmin's standard permission system.
+
+## Testing
+
+The inline edit functionality includes comprehensive tests:
+
+1. **Unit/Integration Tests** (`spec/admin/users_snowfox_employee_spec.rb`):
+   - Permission checks for different user roles
+   - JSON response handling
+   - Validation error handling
+   - CanCanCan integration
+
+2. **Acceptance/System Tests** (`spec/admin/users_inline_edit_spec.rb`):
+   - Full browser-based tests with JavaScript
+   - User interaction simulation
+   - Visual state changes
+   - Permission-based UI changes
+   - Edge cases (rapid clicks, form cancellation)
+
+To run the tests:
+```bash
+bundle exec rspec spec/admin/users_snowfox_employee_spec.rb
+bundle exec rspec spec/admin/users_inline_edit_spec.rb
+```
+
+### Test Modes
+
+The system tests (with JavaScript) support two modes:
+
+1. **Visible Browser Mode** (default for local development):
+   - Browser window opens and shows test execution
+   - Useful for debugging and development
+   - Automatically used when `CI` environment variable is not set
+
+2. **Headless Mode** (for CI environments):
+   - Tests run without visible browser window
+   - Faster and suitable for CI/CD pipelines
+   - Automatically used when `CI` environment variable is set
+
+```bash
+# Run tests with visible browser (local development)
+bundle exec rspec spec/admin/users_inline_edit_spec.rb
+
+# Run tests in headless mode (CI environment)
+CI=true bundle exec rspec spec/admin/users_inline_edit_spec.rb
+```
+
+**Note**: If you encounter timeout errors in visible browser mode during local development, try running the tests in headless mode with `CI=true`, or increase the wait timeout in `spec/support/capybara.rb`. 

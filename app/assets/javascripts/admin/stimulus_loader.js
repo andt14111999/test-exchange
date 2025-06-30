@@ -53,12 +53,26 @@
         const value = this.getValue();
         const url = this.urlValue || `/admin/${this.resourceNameValue}/${this.resourceIdValue}`;
         
+        // Get CSRF token - ActiveAdmin might use different methods
+        let csrfToken = '';
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        if (csrfMeta) {
+          csrfToken = csrfMeta.content;
+        } else {
+          // Try to get from form
+          const csrfParam = document.querySelector('meta[name="csrf-param"]')?.content || 'authenticity_token';
+          const csrfInput = document.querySelector(`input[name="${csrfParam}"]`);
+          if (csrfInput) {
+            csrfToken = csrfInput.value;
+          }
+        }
+        
         try {
           const response = await fetch(url, {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
-              'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+              'X-CSRF-Token': csrfToken,
               'Accept': 'application/json'
             },
             body: JSON.stringify({
@@ -110,7 +124,7 @@
         
         if (this.fieldValue === 'snowfox_employee' || typeof value === 'boolean') {
           // For boolean fields
-          displayElement.textContent = value ? 'Yes' : 'No';
+          displayElement.textContent = value ? 'YES' : 'NO';
           displayElement.className = 'status_tag ' + (value ? 'yes' : 'no');
         } else {
           // For other fields
