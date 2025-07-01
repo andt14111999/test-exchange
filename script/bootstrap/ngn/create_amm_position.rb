@@ -1,11 +1,11 @@
 def create_amm_position
   # Calculate tick indices for price range 950-1050
-# Using Uniswap V3 tick calculation: tick = log(price) * 2^96 / log(1.0001)
+  # Using Uniswap V3 tick calculation: tick = log(price) * 2^96 / log(1.0001)
   # We'll use the actual Uniswap V3 formula: tick = log(price) / log(1.0001)
 
   # Admin-provided tick values
-  admin_tick_lower = 138420  # Approximately 950 NGN/USDT
-  admin_tick_upper = 138900  # Approximately 1050 NGN/USDT
+  admin_tick_lower = 68568   # Approximately 950 NGN/USDT
+  admin_tick_upper = 69569   # Approximately 1050 NGN/USDT
 
   # Calculate tick values using Uniswap V3 formula: tick = log(price) / log(1.0001)
   price_lower = 950   # NGN per USDT
@@ -70,4 +70,4 @@ amm_position.save!
 end
 
 # Execute the method
-create_amm_position 
+create_amm_position

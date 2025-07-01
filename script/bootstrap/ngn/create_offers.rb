@@ -44,4 +44,4 @@ sell_offer = Offer.create!(
   terms_of_trade: 'Fixed fee: 5,000 NGN per transaction'
 )
 
-puts "Created NGN buy offer (ID: #{buy_offer.id}) and sell offer (ID: #{sell_offer.id})" 
+puts "Created NGN buy offer (ID: #{buy_offer.id}) and sell offer (ID: #{sell_offer.id})"

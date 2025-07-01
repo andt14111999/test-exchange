@@ -1,10 +1,10 @@
 def setup_amm_pool
   # Add 100k liquidity USDT/NGN from price range 950-1050
-# First create AMM pool if not exists
+  # First create AMM pool if not exists
 
   # Admin-provided tick values
-  admin_tick_lower = 138420  # Approximately 950 NGN/USDT
-  admin_tick_upper = 138900  # Approximately 1050 NGN/USDT
+  admin_tick_lower = 68568   # Approximately 950 NGN/USDT
+  admin_tick_upper = 69569   # Approximately 1050 NGN/USDT
   admin_init_price = 1_000   # Initial price in NGN
 
   # Calculate tick values using Uniswap V3 formula: tick = log(price) / log(1.0001)
@@ -71,8 +71,8 @@ amm_pool.send_event_update_amm_pool(
     init_price: admin_init_price
 )
 
-puts "Created/activated AMM pool: #{amm_pool.pair} (ID: #{amm_pool.id})" 
+puts "Created/activated AMM pool: #{amm_pool.pair} (ID: #{amm_pool.id})"
 end
 
 # Execute the method
-setup_amm_pool 
+setup_amm_pool

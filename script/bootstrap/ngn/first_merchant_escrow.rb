@@ -17,4 +17,4 @@ merchant_escrow = MerchantEscrow.create!(
 # Send Kafka event for merchant escrow creation
 merchant_escrow.send(:send_kafka_event_create)
 
-puts "Created first merchant escrow: #{merchant_escrow.usdt_amount} USDT -> #{merchant_escrow.fiat_amount} NGN" 
+puts "Created first merchant escrow: #{merchant_escrow.usdt_amount} USDT -> #{merchant_escrow.fiat_amount} NGN"

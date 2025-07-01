@@ -3,8 +3,8 @@ def setup_amm_pool
   # First create AMM pool if not exists
 
   # Admin-provided tick values
-  admin_tick_lower = 101660  # Approximately 26000 VND/USDT
-  admin_tick_upper = 101850  # Approximately 26500 VND/USDT
+  admin_tick_lower = 101664  # Approximately 26000 VND/USDT
+  admin_tick_upper = 101854  # Approximately 26500 VND/USDT
   admin_init_price = 26_100  # Initial price in VND
 
   # Calculate tick values using Uniswap V3 formula: tick = log(price) / log(1.0001)
@@ -53,26 +53,26 @@ def setup_amm_pool
   puts "✅ All tick values validated successfully!"
   puts ""
 
-  amm_pool = AmmPool.find_or_create_by!(
-    pair: 'usdt_vnd',  # Using underscore instead of slash
-    token0: 'USDT',
-    token1: 'VND',
-    tick_spacing: 10,
-    fee_percentage: 0.003, # 0.3%
-    fee_protocol_percentage: 0.0005, # 0.05%
+amm_pool = AmmPool.find_or_create_by!(
+  pair: 'usdt_vnd',  # Using underscore instead of slash
+  token0: 'USDT',
+  token1: 'VND',
+  tick_spacing: 10,
+  fee_percentage: 0.003, # 0.3%
+  fee_protocol_percentage: 0.0005, # 0.05%
     init_price: admin_init_price # Initial price in VND
-  )
+)
 
-  # Activate the AMM pool and send update event
-  amm_pool.send_event_update_amm_pool(
-    status: 'active',
-    fee_percentage: 0.003,
-    fee_protocol_percentage: 0.0005,
+# Activate the AMM pool and send update event
+amm_pool.send_event_update_amm_pool(
+  status: 'active',
+  fee_percentage: 0.003,
+  fee_protocol_percentage: 0.0005,
     init_price: admin_init_price
-  )
+)
 
-  puts "Created/activated AMM pool: #{amm_pool.pair} (ID: #{amm_pool.id})"
+puts "Created/activated AMM pool: #{amm_pool.pair} (ID: #{amm_pool.id})"
 end
 
 # Execute the method
-setup_amm_pool 
+setup_amm_pool

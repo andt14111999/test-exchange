@@ -83,27 +83,40 @@ rails runner script/bootstrap/ngn/setup_amm_pool.rb
 - AMM price range: 950 - 1,050 NGN per USDT
 - AMM initial price: 1,000 NGN per USDT
 
-## Troubleshooting
+## Technical Details
 
-### dyld: missing symbol called Error
+### Tick Value Validation
 
-If you encounter `dyld[xxxxx]: missing symbol called` errors when running the scripts, this is typically caused by the `ruby-kafka` gem having compatibility issues on macOS (especially Apple Silicon).
-
-**Solution**: The merchant user creation scripts have been patched to temporarily bypass Kafka notifications during development. The scripts override the `AccountCreationService` methods to skip Kafka calls:
+The AMM setup scripts include mathematical validation to ensure tick values are calculated correctly using the Uniswap V3 formula:
 
 ```ruby
-class AccountCreationService
-  def notify_coin_kafka_service(account)
-    Rails.logger.info "Skipping Kafka notification for coin account #{account.id} in development"
-  end
-
-  def notify_fiat_kafka_service(account)
-    Rails.logger.info "Skipping Kafka notification for fiat account #{account.id} in development"
-  end
-end
+tick = (Math.log(price) / Math.log(1.0001)).round
 ```
 
-This allows user creation to proceed without triggering the native library issues in the Kafka client.
+If admin-provided tick values don't match the formula results, the scripts will panic and exit with detailed error messages.
+
+### Kafka Integration
+
+The application uses **rdkafka** (librdkafka Ruby bindings) for reliable Kafka integration with better native library management on macOS. This resolves previous `dyld: missing symbol called` errors that occurred with the `ruby-kafka` gem.
+
+## Troubleshooting
+
+### ✅ dyld: missing symbol called Error (RESOLVED)
+
+~~If you encounter `dyld[xxxxx]: missing symbol called` errors when running the scripts, this is typically caused by the `ruby-kafka` gem having compatibility issues on macOS (especially Apple Silicon).~~
+
+**✅ RESOLVED**: The application has been successfully migrated from `ruby-kafka` to `rdkafka` which provides better native library management and resolves the dyld errors on macOS.
+
+### Tick Value Validation Errors
+
+If you see tick validation errors like:
+```
+❌ PANIC: Lower tick mismatch!
+   Expected (formula): 101664
+   Got (admin): 101660
+```
+
+This means the hardcoded tick values don't match the mathematical formula. Update the admin-provided values to match the formula results.
 
 ## Notes
 
@@ -112,4 +125,4 @@ This allows user creation to proceed without triggering the native library issue
 - AMM positions provide liquidity in tight price ranges for efficient trading
 - Offers are set to automatic and online for immediate availability
 - Each currency market is completely independent with separate users and pools
-- Kafka notifications are bypassed in development environment to avoid native library issues 
+- Kafka integration uses rdkafka for reliable cross-platform compatibility 

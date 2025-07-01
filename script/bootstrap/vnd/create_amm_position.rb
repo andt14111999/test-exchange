@@ -4,8 +4,8 @@ def create_amm_position
   # We'll use the actual Uniswap V3 formula: tick = log(price) / log(1.0001)
 
   # Admin-provided tick values
-  admin_tick_lower = 101660  # Approximately 26000 VND/USDT
-  admin_tick_upper = 101850  # Approximately 26500 VND/USDT
+  admin_tick_lower = 101664  # Approximately 26000 VND/USDT
+  admin_tick_upper = 101854  # Approximately 26500 VND/USDT
 
   # Calculate tick values using Uniswap V3 formula: tick = log(price) / log(1.0001)
   price_lower = 26_000  # VND per USDT
@@ -48,26 +48,26 @@ def create_amm_position
   puts "✅ AMM position tick values validated successfully!"
   puts ""
 
-  user = User.find_by!(email: 'mikevn@example.com')
-  amm_pool = AmmPool.find_by!(pair: 'usdt_vnd')
+user = User.find_by!(email: 'mikevn@example.com')
+amm_pool = AmmPool.find_by!(pair: 'usdt_vnd')
 
-  # Create AMM position
-  amm_position = AmmPosition.new(
-    user: user,
-    amm_pool: amm_pool,
+# Create AMM position
+amm_position = AmmPosition.new(
+  user: user,
+  amm_pool: amm_pool,
     tick_lower_index: admin_tick_lower,
     tick_upper_index: admin_tick_upper,
-    amount0_initial: 100_000, # USDT
-    amount1_initial: 2_652_485_667.11, # VND
-    slippage: 1 # 1% slippage
-  )
+  amount0_initial: 100_000, # USDT
+  amount1_initial: 2_652_485_667.11, # VND
+  slippage: 1 # 1% slippage
+)
 
-  # Generate identifier before saving
-  amm_position.generate_identifier
-  amm_position.save!
+# Generate identifier before saving
+amm_position.generate_identifier
+amm_position.save!
 
-  puts "Created AMM position: #{amm_position.amount0_initial} USDT / #{amm_position.amount1_initial} VND (ID: #{amm_position.id})"
+puts "Created AMM position: #{amm_position.amount0_initial} USDT / #{amm_position.amount1_initial} VND (ID: #{amm_position.id})"
 end
 
 # Execute the method
-create_amm_position 
+create_amm_position

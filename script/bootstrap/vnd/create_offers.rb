@@ -44,4 +44,4 @@ sell_offer = Offer.create!(
   terms_of_trade: 'Fixed fee: 100,000 VND per transaction'
 )
 
-puts "Created VND buy offer (ID: #{buy_offer.id}) and sell offer (ID: #{sell_offer.id})" 
+puts "Created VND buy offer (ID: #{buy_offer.id}) and sell offer (ID: #{sell_offer.id})"

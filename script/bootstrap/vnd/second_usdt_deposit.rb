@@ -24,4 +24,4 @@ CoinDepositOperation.create!(
   out_index: 0
 )
 
-puts "Created second USDT deposit: #{coin_deposit.coin_amount} USDT (TX: #{coin_deposit.tx_hash})" 
+puts "Created second USDT deposit: #{coin_deposit.coin_amount} USDT (TX: #{coin_deposit.tx_hash})"

@@ -21,7 +21,7 @@ scripts = [
 scripts.each_with_index do |script, index|
   puts "\n[#{index + 1}/#{scripts.length}] Running #{script}..."
   puts "-" * 30
-  
+
   begin
     load File.join(__dir__, script)
     puts "✓ #{script} completed successfully"
@@ -34,4 +34,4 @@ end
 
 puts "\n" + "=" * 50
 puts "VND bootstrap process completed successfully!"
-puts "VND merchant user 'mikevn@example.com' is now ready for trading." 
+puts "VND merchant user 'mikevn@example.com' is now ready for trading."
