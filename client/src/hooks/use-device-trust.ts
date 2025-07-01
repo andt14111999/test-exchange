@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getCurrentDevice } from "@/lib/api/device";
 import { useUserStore } from "@/lib/store/user-store";
 
@@ -18,7 +18,7 @@ export function useDeviceTrust(): DeviceTrustState {
   const [isDeviceTrusted, setIsDeviceTrusted] = useState<boolean>(false);
   const [isCheckingDevice, setIsCheckingDevice] = useState<boolean>(true);
 
-  const checkDeviceTrust = async () => {
+  const checkDeviceTrust = useCallback(async () => {
     // If user doesn't have 2FA enabled, consider device as trusted
     if (!user?.authenticatorEnabled) {
       setIsDeviceTrusted(true);
@@ -36,13 +36,13 @@ export function useDeviceTrust(): DeviceTrustState {
     } finally {
       setIsCheckingDevice(false);
     }
-  };
+  }, [user?.authenticatorEnabled]);
 
   // Check device trust status when component mounts or user 2FA status changes
   useEffect(() => {
     setIsCheckingDevice(true);
     checkDeviceTrust();
-  }, [user?.authenticatorEnabled]);
+  }, [checkDeviceTrust]);
 
   // Function to manually recheck device trust (useful after trusting device)
   const recheckDeviceTrust = async () => {

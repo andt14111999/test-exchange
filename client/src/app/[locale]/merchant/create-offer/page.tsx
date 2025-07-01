@@ -255,7 +255,7 @@ export default function CreateOffer() {
         }
       }
     }
-  }, [walletData, isEditMode, updateAvailableBalance]);
+  }, [walletData, isEditMode, updateAvailableBalance, form]);
 
   // Watch currency changes to update default amount
   const selectedCurrency = form.watch("fiatCurrency");
@@ -272,7 +272,7 @@ export default function CreateOffer() {
         form.setValue("amount", balance);
       }
     }
-  }, [selectedCurrency, walletData, isEditMode, updateAvailableBalance]);
+  }, [selectedCurrency, walletData, isEditMode, updateAvailableBalance, form]);
 
   // Watch amount changes to update maxAmount based on the 300 million rule
   const amount = form.watch("amount");
@@ -282,7 +282,7 @@ export default function CreateOffer() {
     } else {
       form.setValue("maxAmount", MAX_AMOUNT_PER_TRANSACTION);
     }
-  }, [amount]);
+  }, [amount, form]);
 
   // Watch offer type changes to clear amount fields when switching from sell to buy
   const watchedOfferType = form.watch("type");
@@ -294,7 +294,7 @@ export default function CreateOffer() {
       form.setValue("minAmount", P2P_AMOUNT_LIMITS.MIN);
       form.setValue("maxAmount", P2P_AMOUNT_LIMITS.MAX);
     }
-  }, [watchedOfferType, isEditMode]);
+  }, [watchedOfferType, isEditMode, form]);
 
   // Fetch payment methods
   const { data: paymentMethodsResponse, isLoading: isLoadingPaymentMethods } =
@@ -471,7 +471,7 @@ export default function CreateOffer() {
         setIsLoading(false);
       }
     },
-    [t, paymentMethods],
+    [t, paymentMethods, form],
   );
 
   // Update default paymentMethodId when payment methods are loaded
@@ -485,7 +485,7 @@ export default function CreateOffer() {
       });
       setSelectedPaymentMethod(paymentMethods[0]);
     }
-  }, [paymentMethods]);
+  }, [paymentMethods, form]);
 
   // Fetch offer data if in edit mode
   useEffect(() => {
@@ -514,17 +514,20 @@ export default function CreateOffer() {
 
   // Memoize handlers to prevent infinite loops
 
-  const handleBankAccountChange = useCallback((bankAccount: BankAccount) => {
-    setSelectedBankAccount(bankAccount);
-    if (bankAccount?.id) {
-      // Set the value and force form validation
-      form.setValue("bankAccountId", bankAccount.id, {
-        shouldValidate: true,
-        shouldDirty: true,
-        shouldTouch: true,
-      });
-    }
-  }, []);
+  const handleBankAccountChange = useCallback(
+    (bankAccount: BankAccount) => {
+      setSelectedBankAccount(bankAccount);
+      if (bankAccount?.id) {
+        // Set the value and force form validation
+        form.setValue("bankAccountId", bankAccount.id, {
+          shouldValidate: true,
+          shouldDirty: true,
+          shouldTouch: true,
+        });
+      }
+    },
+    [form],
+  );
 
   async function onSubmit(values: FormValues) {
     try {

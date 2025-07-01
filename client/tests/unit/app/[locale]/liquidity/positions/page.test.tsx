@@ -44,6 +44,34 @@ jest.mock("@/lib/api/positions", () => ({
   fetchPositions: jest.fn(),
 }));
 
+// Mock ConfirmCloseDialog
+jest.mock(
+  "@/app/[locale]/liquidity/positions/components/ConfirmCloseDialog",
+  () => {
+    return function ConfirmCloseDialog({
+      isOpen,
+      onConfirm,
+      onClose,
+    }: {
+      isOpen: boolean;
+      onConfirm: () => void;
+      onClose: () => void;
+    }) {
+      if (!isOpen) return null;
+      return (
+        <div data-testid="confirm-close-dialog">
+          <button onClick={onConfirm} data-testid="confirm-close-btn">
+            Confirm Close
+          </button>
+          <button onClick={onClose} data-testid="cancel-close-btn">
+            Cancel
+          </button>
+        </div>
+      );
+    };
+  },
+);
+
 describe("PositionsPage", () => {
   const mockT = (key: string) => key;
   const mockQueryClient = {
@@ -173,6 +201,16 @@ describe("PositionsPage", () => {
     );
     expect(actionCloseButton).toBeDefined();
     fireEvent.click(actionCloseButton!);
+
+    // Should show confirm dialog
+    await waitFor(() => {
+      expect(screen.getByTestId("confirm-close-dialog")).toBeInTheDocument();
+    });
+
+    // Click confirm in the dialog
+    const confirmButton = screen.getByTestId("confirm-close-btn");
+    fireEvent.click(confirmButton);
+
     expect(mockClosePosition).toHaveBeenCalledWith(mockPosition);
   });
 
@@ -217,6 +255,16 @@ describe("PositionsPage", () => {
     );
     expect(actionCloseButton).toBeDefined();
     fireEvent.click(actionCloseButton!);
+
+    // Should show confirm dialog
+    await waitFor(() => {
+      expect(screen.getByTestId("confirm-close-dialog")).toBeInTheDocument();
+    });
+
+    // Click confirm in the dialog
+    const confirmButton = screen.getByTestId("confirm-close-btn");
+    fireEvent.click(confirmButton);
+
     expect(mockClosePosition).toHaveBeenCalledWith(mockPosition);
     await waitFor(() => {}); // Let the promise settle
   });
