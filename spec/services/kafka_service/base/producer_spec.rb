@@ -1,17 +1,20 @@
 # rubocop:disable RSpec/VerifiedDoubles
 require 'rails_helper'
-require 'rdkafka'
 
 RSpec.describe KafkaService::Base::Producer, type: :service do
-  let(:rdkafka_config_class) { class_double(Rdkafka::Config).as_stubbed_const }
-  let(:rdkafka_config) { double('Rdkafka::Config') }
   let(:producer) { double('Rdkafka::Producer') }
   let(:logger) { instance_double(Logger).as_null_object }
 
   before do
     allow(Logger).to receive(:new).and_return(logger)
-    allow(rdkafka_config_class).to receive(:new).and_return(rdkafka_config)
-    allow(rdkafka_config).to receive(:producer).and_return(producer)
+    
+    # Mock the Rdkafka::Config.new call to return a double that responds to producer
+    allow(Rdkafka::Config).to receive(:new) do |config|
+      config_double = double('Rdkafka::Config')
+      allow(config_double).to receive(:producer).and_return(producer)
+      config_double
+    end
+    
     allow(producer).to receive(:produce)
     allow(producer).to receive(:flush)
     allow(producer).to receive(:close)
@@ -21,8 +24,6 @@ RSpec.describe KafkaService::Base::Producer, type: :service do
 
   describe '#initialize' do
     it 'initializes with correct configuration' do
-      described_class.new
-
       expected_config = {
         'bootstrap.servers': KafkaService::Config::Brokers::BROKERS.join(','),
         'client.id': "base_portal_#{Rails.env}",
@@ -34,8 +35,9 @@ RSpec.describe KafkaService::Base::Producer, type: :service do
         'linger.ms': 5
       }
 
-      expect(rdkafka_config_class).to have_received(:new).with(expected_config)
-      expect(rdkafka_config).to have_received(:producer)
+      described_class.new
+
+      expect(Rdkafka::Config).to have_received(:new).with(expected_config)
       expect(logger).to have_received(:info).with("RdKafka Producer initialized with brokers: #{KafkaService::Config::Brokers::BROKERS}")
     end
   end

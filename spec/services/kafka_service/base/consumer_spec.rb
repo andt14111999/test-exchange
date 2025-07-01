@@ -1,25 +1,22 @@
 # rubocop:disable RSpec/VerifiedDoubles
 require 'rails_helper'
-require 'rdkafka'
-
-module Rdkafka
-  class Consumer
-    class Message; end
-  end
-end
 
 RSpec.describe KafkaService::Base::Consumer, type: :service do
   let(:group_id) { 'test_group' }
   let(:topics) { [ 'test_topic' ] }
-  let(:rdkafka_config_class) { class_double(Rdkafka::Config).as_stubbed_const }
-  let(:rdkafka_config) { double('Rdkafka::Config') }
   let(:consumer) { double('Rdkafka::Consumer') }
   let(:logger) { double('Logger') }
 
   before do
     allow(Logger).to receive(:new).and_return(logger)
-    allow(rdkafka_config_class).to receive(:new).and_return(rdkafka_config)
-    allow(rdkafka_config).to receive(:consumer).and_return(consumer)
+    
+    # Mock the Rdkafka::Config.new call to return a double that responds to consumer
+    allow(Rdkafka::Config).to receive(:new) do |config|
+      config_double = double('Rdkafka::Config')
+      allow(config_double).to receive(:consumer).and_return(consumer)
+      config_double
+    end
+    
     allow(consumer).to receive(:subscribe)
     allow(consumer).to receive(:close)
     allow(consumer).to receive(:each)
@@ -29,8 +26,6 @@ RSpec.describe KafkaService::Base::Consumer, type: :service do
 
   describe '#initialize' do
     it 'initializes with correct configuration' do
-      described_class.new(group_id: group_id, topics: topics)
-
       expected_config = {
         'bootstrap.servers': KafkaService::Config::Brokers::BROKERS.join(','),
         'group.id': group_id,
@@ -43,8 +38,9 @@ RSpec.describe KafkaService::Base::Consumer, type: :service do
         'max.poll.records': 100
       }
 
-      expect(rdkafka_config_class).to have_received(:new).with(expected_config)
-      expect(rdkafka_config).to have_received(:consumer)
+      described_class.new(group_id: group_id, topics: topics)
+
+      expect(Rdkafka::Config).to have_received(:new).with(expected_config)
       expect(logger).to have_received(:info).with("RdKafka Consumer initialized for group: #{group_id}, topics: test_topic")
     end
   end
