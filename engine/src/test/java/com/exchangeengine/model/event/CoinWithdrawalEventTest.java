@@ -221,11 +221,9 @@ public class CoinWithdrawalEventTest {
     assertEquals(identifier, withdrawalEvent.getIdentifier());
     assertEquals(sourceEvent.getAccountKey(), withdrawalEvent.getAccountKey());
 
-    // Trong parserData, số được lưu dưới dạng double trong JsonNode, sau đó được
-    // chuyển đổi trở lại thành BigDecimal
-    // Điều này có thể gây ra sự khác biệt nhỏ, chỉ kiểm tra rằng chúng gần bằng
-    // nhau
-    assertTrue(Math.abs(sourceEvent.getAmount().doubleValue() - withdrawalEvent.getAmount().doubleValue()) < 0.0001);
+    // Sau khi fix floating point precision issue: amount phải chính xác 100%
+    assertEquals(sourceEvent.getAmount(), withdrawalEvent.getAmount(), 
+        "Amount should be exactly equal after fixing precision issue");
 
     // parserData explicitly converts to lowercase
     assertEquals("usdt", withdrawalEvent.getCoin());
@@ -238,8 +236,9 @@ public class CoinWithdrawalEventTest {
     assertEquals(sourceEvent.getActionId(), withdrawalEvent.getActionId());
     assertEquals(sourceEvent.getOperationType(), withdrawalEvent.getOperationType());
 
-    // Tương tự cho fee, kiểm tra gần bằng nhau thay vì bằng chính xác
-    assertTrue(Math.abs(sourceEvent.getFee().doubleValue() - withdrawalEvent.getFee().doubleValue()) < 0.0001);
+    // Tương tự cho fee: phải chính xác 100%
+    assertEquals(sourceEvent.getFee(), withdrawalEvent.getFee(), 
+        "Fee should be exactly equal after fixing precision issue");
   }
 
   @Test
@@ -470,5 +469,87 @@ public class CoinWithdrawalEventTest {
     assertNull(withdrawalEvent.getRecipientAccountKey());
     assertEquals("test-withdrawal-id", withdrawalEvent.getIdentifier());
     assertEquals("btc", withdrawalEvent.getCoin()); // Should be converted to lowercase
+  }
+
+  @Test
+  @DisplayName("Test parse data with exact amount 21.21 - floating point precision issue")
+  public void testParserDataWithExactAmount21_21() throws Exception {
+    // Given - JSON string giống như trong production log
+    String jsonString = "{"
+        + "\"eventId\":\"test-event-id\","
+        + "\"identifier\":\"75\","
+        + "\"actionType\":\"CoinTransaction\","
+        + "\"actionId\":\"b91651aa-fd9e-4760-9655-86ce7f263ddd\","
+        + "\"operationType\":\"coin_withdrawal_create\","
+        + "\"accountKey\":\"12-coin-133\","
+        + "\"amount\":\"21.21\","
+        + "\"coin\":\"usdt\","
+        + "\"txHash\":\"tx-ee9deb1aba88ab17278f8497bc584225\","
+        + "\"layer\":\"L1\","
+        + "\"destinationAddress\":\"address-b0b017d52f80177698002a45f83f058c\","
+        + "\"fee\":\"0.0\","
+        + "\"status\":\"verified\","
+        + "\"statusExplanation\":\"\","
+        + "\"recipientAccountKey\":\"8-coin-85\""
+        + "}";
+
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode jsonNode = mapper.readTree(jsonString);
+
+    // When
+    CoinWithdrawalEvent withdrawalEvent = new CoinWithdrawalEvent();
+    withdrawalEvent.parserData(jsonNode);
+
+    // Then
+    // Sau khi fix: amount phải chính xác 100%
+    String actualAmountString = withdrawalEvent.getAmount().toString();
+    System.out.println("Expected amount: 21.21");
+    System.out.println("Actual amount: " + actualAmountString);
+    
+    // Với implementation đã fix (sử dụng asText()), amount phải chính xác
+    assertEquals(new BigDecimal("21.21"), withdrawalEvent.getAmount(), 
+        "Amount should be exactly 21.21 after fixing floating point precision issue");
+    
+    // Verify identifier và các field khác đúng
+    assertEquals("75", withdrawalEvent.getIdentifier());
+    assertEquals("12-coin-133", withdrawalEvent.getAccountKey());
+    assertEquals("usdt", withdrawalEvent.getCoin());
+  }
+
+  @Test
+  @DisplayName("Test parse data preserves exact decimal precision after fix")
+  public void testParserDataPreservesExactDecimalPrecision() throws Exception {
+    // Given - Test với nhiều decimal places khác nhau
+    String[] testAmounts = {"21.21", "100.50", "0.01", "999.99", "1000000.123456"};
+    
+    for (String expectedAmount : testAmounts) {
+      String jsonString = "{"
+          + "\"eventId\":\"test-event-id\","
+          + "\"identifier\":\"test-id\","
+          + "\"actionType\":\"CoinTransaction\","
+          + "\"actionId\":\"test-action-id\","
+          + "\"operationType\":\"coin_withdrawal_create\","
+          + "\"accountKey\":\"test-account\","
+          + "\"amount\":\"" + expectedAmount + "\","
+          + "\"coin\":\"usdt\","
+          + "\"txHash\":\"tx123\","
+          + "\"layer\":\"L1\","
+          + "\"destinationAddress\":\"addr123\","
+          + "\"fee\":\"0.1\","
+          + "\"status\":\"verified\","
+          + "\"statusExplanation\":\"\""
+          + "}";
+
+      ObjectMapper mapper = new ObjectMapper();
+      JsonNode jsonNode = mapper.readTree(jsonString);
+
+      // When
+      CoinWithdrawalEvent withdrawalEvent = new CoinWithdrawalEvent();
+      withdrawalEvent.parserData(jsonNode);
+
+      // Then - Sau khi fix, amount phải chính xác 100%
+      assertEquals(new BigDecimal(expectedAmount), withdrawalEvent.getAmount(), 
+          "Amount should be exact for input: " + expectedAmount);
+    }
   }
 }

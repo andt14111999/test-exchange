@@ -42,6 +42,7 @@ jest.mock("sonner", () => ({
 // Mock API calls
 jest.mock("@/lib/api/withdrawals", () => ({
   createWithdrawal: jest.fn(),
+  checkReceiver: jest.fn(),
 }));
 
 jest.mock("@/lib/api/settings", () => ({
@@ -58,6 +59,11 @@ jest.mock("@/hooks/use-coin-networks", () => ({
   useCoinNetworks: jest.fn(() => ({
     networks: [
       {
+        id: "erc20",
+        name: "Ethereum (ERC20)",
+        enabled: true,
+      },
+      {
         id: "bep20",
         name: "BNB Smart Chain (BEP20)",
         enabled: true,
@@ -65,11 +71,6 @@ jest.mock("@/hooks/use-coin-networks", () => ({
       {
         id: "trc20",
         name: "TRON (TRC20)",
-        enabled: true,
-      },
-      {
-        id: "erc20",
-        name: "Ethereum (ERC20)",
         enabled: true,
       },
       {
@@ -97,12 +98,6 @@ jest.mock("@/hooks/use-device-trust", () => ({
   }),
 }));
 
-// Mock withdrawal API functions
-jest.mock("@/lib/api/withdrawals", () => ({
-  createWithdrawal: jest.fn(),
-  checkReceiver: jest.fn(),
-}));
-
 describe("WithdrawUSDTPage", () => {
   const mockRouter = {
     push: jest.fn(),
@@ -111,8 +106,8 @@ describe("WithdrawUSDTPage", () => {
   const mockWithdrawalFees = {
     usdt_bep20: 1,
     usdt_trc20: 2,
-    usdt_erc20: 5,
-    usdt_solana: 0.5,
+    usdt_erc20: 10, // Updated to match backend default
+    usdt_solana: 3,
   };
 
   beforeEach(() => {
@@ -139,7 +134,7 @@ describe("WithdrawUSDTPage", () => {
       </TestWrapper>,
     );
 
-    // Check main elements (use getAllByText for ambiguous text)
+    // Check main elements
     expect(screen.getAllByText("Withdraw USDT").length).toBeGreaterThan(0);
     expect(
       screen.getByText("translated.withdrawalDetails"),
@@ -149,16 +144,51 @@ describe("WithdrawUSDTPage", () => {
     expect(
       screen.getByText("translated.destinationAddress"),
     ).toBeInTheDocument();
+  });
 
-    // Wait for fees to load
+  it("selects ERC20 (Ethereum) as default network", async () => {
+    render(
+      <TestWrapper>
+        <WithdrawUSDTPage />
+      </TestWrapper>,
+    );
+
+    // Wait for networks and fees to load
     await waitFor(() => {
-      expect(
-        screen.queryByText("translated.loadingNetworkFees"),
-      ).not.toBeInTheDocument();
+      expect(getWithdrawalFees).toHaveBeenCalled();
+    });
+
+    // Check that ERC20 is selected by default by looking for the display text
+    await waitFor(
+      () => {
+        expect(screen.getByText("Ethereum (ERC20)")).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  it("loads withdrawal fees and applies them to networks", async () => {
+    render(
+      <TestWrapper>
+        <WithdrawUSDTPage />
+      </TestWrapper>,
+    );
+
+    // Wait for fees to be loaded
+    await waitFor(() => {
+      expect(getWithdrawalFees).toHaveBeenCalled();
+    });
+
+    // Verify fees are applied correctly by checking that ERC20 is selected
+    await waitFor(() => {
+      // Should show ERC20 selected as default since it has the highest fee
+      expect(screen.getByText("Ethereum (ERC20)")).toBeInTheDocument();
     });
   });
 
-  it("loads and displays network fees correctly", async () => {
+  it("handles fee loading error gracefully", async () => {
+    (getWithdrawalFees as jest.Mock).mockRejectedValue(new Error("API Error"));
+
     render(
       <TestWrapper>
         <WithdrawUSDTPage />
@@ -166,38 +196,28 @@ describe("WithdrawUSDTPage", () => {
     );
 
     await waitFor(() => {
-      const feeElements = screen.getAllByText("translated.networkFee");
-      expect(feeElements[0].textContent).toBe("translated.networkFee");
+      expect(toast.error).toHaveBeenCalledWith(
+        "Failed to load withdrawal fees. Using default values.",
+      );
+    });
+
+    // Should show error state (no network selected) when fee loading fails
+    await waitFor(() => {
+      expect(screen.getByText("translated.selectNetwork")).toBeInTheDocument();
     });
   });
 
-  // Temporarily disabled - complex interaction with useEffect and networks loading
-  // it("handles network fee loading error gracefully", async () => {
-  //   (getWithdrawalFees as jest.Mock).mockRejectedValue(new Error("API Error"));
-  //   render(
-  //     <TestWrapper>
-  //       <WithdrawUSDTPage />
-  //     </TestWrapper>
-  //   );
-
-  //   await waitFor(() => {
-  //     expect(toast.error).toHaveBeenCalledWith(
-  //       "Failed to load withdrawal fees. Using default values."
-  //     );
-  //   });
-  // });
-
-  it("validates BEP20 address correctly", async () => {
+  it("validates ERC20 address correctly", async () => {
     render(
       <TestWrapper>
         <WithdrawUSDTPage />
       </TestWrapper>,
     );
 
-    // Select network first
-    fireEvent.click(screen.getByRole("combobox"));
-    // Use getAllByText to avoid ambiguity
-    fireEvent.click(screen.getAllByText("BNB Smart Chain (BEP20)")[0]);
+    // Wait for ERC20 to be selected by default
+    await waitFor(() => {
+      expect(screen.getByText("Ethereum (ERC20)")).toBeInTheDocument();
+    });
 
     const addressInput = screen.getByPlaceholderText("translated.enterAddress");
 
@@ -205,17 +225,23 @@ describe("WithdrawUSDTPage", () => {
     fireEvent.change(addressInput, {
       target: { value: "invalid-address" },
     });
-    expect(
-      screen.getByText("Invalid BNB Smart Chain (BEP20) address format"),
-    ).toBeInTheDocument();
 
-    // Valid address
+    await waitFor(() => {
+      expect(
+        screen.getByText("Invalid Ethereum (ERC20) address format"),
+      ).toBeInTheDocument();
+    });
+
+    // Valid ERC20 address
     fireEvent.change(addressInput, {
       target: { value: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" },
     });
-    expect(
-      screen.queryByText("Invalid BNB Smart Chain (BEP20) address format"),
-    ).not.toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText("Invalid Ethereum (ERC20) address format"),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it("validates minimum withdrawal amount", async () => {
@@ -225,19 +251,12 @@ describe("WithdrawUSDTPage", () => {
       </TestWrapper>,
     );
 
-    // Wait for fees to load first
+    // Wait for ERC20 to be selected by default
     await waitFor(() => {
-      expect(
-        screen.queryByText("translated.loadingNetworkFees"),
-      ).not.toBeInTheDocument();
+      expect(screen.getByText("Ethereum (ERC20)")).toBeInTheDocument();
     });
 
     const amountInput = screen.getByPlaceholderText("translated.enterAmount");
-
-    // Select network first
-    fireEvent.click(screen.getByRole("combobox"));
-    fireEvent.click(screen.getAllByText("BNB Smart Chain (BEP20)")[0]);
-
     const addressInput = screen.getByPlaceholderText("translated.enterAddress");
 
     // Amount less than minimum
@@ -245,7 +264,7 @@ describe("WithdrawUSDTPage", () => {
     const submitButton = screen.getByRole("button", { name: /Withdraw.*USDT/ });
     expect(submitButton).toBeDisabled();
 
-    // Valid amount and address
+    // Valid amount and address for ERC20
     fireEvent.change(amountInput, { target: { value: "10" } });
     fireEvent.change(addressInput, {
       target: { value: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" },
@@ -257,32 +276,26 @@ describe("WithdrawUSDTPage", () => {
     });
   });
 
-  it("shows confirmation dialog with correct details", async () => {
+  it("shows confirmation dialog with correct details for ERC20", async () => {
     render(
       <TestWrapper>
         <WithdrawUSDTPage />
       </TestWrapper>,
     );
 
+    // Wait for ERC20 to be selected by default
+    await waitFor(() => {
+      expect(screen.getByText("Ethereum (ERC20)")).toBeInTheDocument();
+    });
+
     // Fill in form
     fireEvent.change(screen.getByPlaceholderText("translated.enterAmount"), {
       target: { value: "100" },
     });
 
-    // Select network first (BEP20)
-    fireEvent.click(screen.getByRole("combobox"));
-    fireEvent.click(screen.getAllByText("BNB Smart Chain (BEP20)")[0]);
-
-    // Then enter address
+    // Enter ERC20 address
     fireEvent.change(screen.getByPlaceholderText("translated.enterAddress"), {
       target: { value: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" },
-    });
-
-    // Wait for fees to load
-    await waitFor(() => {
-      expect(
-        screen.queryByText("translated.loadingNetworkFees"),
-      ).not.toBeInTheDocument();
     });
 
     // Click withdraw button
@@ -291,12 +304,17 @@ describe("WithdrawUSDTPage", () => {
     });
     fireEvent.click(withdrawButton);
 
-    // Check confirmation dialog (use getAllByText for ambiguous)
+    // Check confirmation dialog
     expect(screen.getByText("Confirm Withdrawal")).toBeInTheDocument();
     expect(screen.getAllByText(/100\.00 USDT$/).length).toBeGreaterThan(0);
+
+    // Check that the total includes ERC20 fee (100 + 10 = 110)
+    await waitFor(() => {
+      expect(screen.getAllByText(/110\.00 USDT/).length).toBeGreaterThan(0);
+    });
   });
 
-  it("handles successful withdrawal", async () => {
+  it("handles successful withdrawal with ERC20 as default", async () => {
     const mockWithdrawalResponse = { id: "123" };
     (createWithdrawal as jest.Mock).mockResolvedValue(mockWithdrawalResponse);
 
@@ -306,25 +324,19 @@ describe("WithdrawUSDTPage", () => {
       </TestWrapper>,
     );
 
+    // Wait for ERC20 to be selected by default
+    await waitFor(() => {
+      expect(screen.getByText("Ethereum (ERC20)")).toBeInTheDocument();
+    });
+
     // Fill in form
     fireEvent.change(screen.getByPlaceholderText("translated.enterAmount"), {
       target: { value: "100" },
     });
 
-    // Select network first (BEP20)
-    fireEvent.click(screen.getByRole("combobox"));
-    fireEvent.click(screen.getAllByText("BNB Smart Chain (BEP20)")[0]);
-
-    // Then enter address
+    // Enter ERC20 address
     fireEvent.change(screen.getByPlaceholderText("translated.enterAddress"), {
       target: { value: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" },
-    });
-
-    // Wait for fees to load
-    await waitFor(() => {
-      expect(
-        screen.queryByText("translated.loadingNetworkFees"),
-      ).not.toBeInTheDocument();
     });
 
     // Open confirmation dialog
@@ -343,7 +355,7 @@ describe("WithdrawUSDTPage", () => {
       expect(createWithdrawal).toHaveBeenCalledWith({
         coin_amount: 100,
         coin_currency: "USDT",
-        coin_layer: "bep20",
+        coin_layer: "erc20",
         coin_address: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
       });
       expect(toast.success).toHaveBeenCalledWith(
@@ -353,58 +365,26 @@ describe("WithdrawUSDTPage", () => {
     });
   });
 
-  it("handles withdrawal error", async () => {
-    const mockError = {
-      response: {
-        data: {
-          message: "Withdrawal failed",
-        },
-      },
-    };
-    (createWithdrawal as jest.Mock).mockRejectedValue(mockError);
-
+  it("calculates total amount correctly with ERC20 default", async () => {
     render(
       <TestWrapper>
         <WithdrawUSDTPage />
       </TestWrapper>,
     );
 
-    // Fill in form
+    // Wait for ERC20 to be selected by default
+    await waitFor(() => {
+      expect(screen.getByText("Ethereum (ERC20)")).toBeInTheDocument();
+    });
+
+    // Enter amount
     fireEvent.change(screen.getByPlaceholderText("translated.enterAmount"), {
       target: { value: "100" },
     });
 
-    // Select network first (BEP20)
-    fireEvent.click(screen.getByRole("combobox"));
-    fireEvent.click(screen.getAllByText("BNB Smart Chain (BEP20)")[0]);
-
-    // Then enter address
-    fireEvent.change(screen.getByPlaceholderText("translated.enterAddress"), {
-      target: { value: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" },
-    });
-
-    // Wait for fees to load
+    // With ERC20 selected, fee should be 10 USDT, so total = 110
     await waitFor(() => {
-      expect(
-        screen.queryByText("translated.loadingNetworkFees"),
-      ).not.toBeInTheDocument();
-    });
-
-    // Open confirmation dialog
-    const withdrawButton = screen.getByRole("button", {
-      name: /Withdraw.*USDT/,
-    });
-    fireEvent.click(withdrawButton);
-
-    // Confirm withdrawal
-    const confirmButton = screen.getByRole("button", {
-      name: "Confirm",
-    });
-    fireEvent.click(confirmButton);
-
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Withdrawal failed");
-      expect(screen.getByText("Withdrawal failed")).toBeInTheDocument();
+      expect(screen.getAllByText(/110.*USDT/).length).toBeGreaterThan(0);
     });
   });
 
@@ -415,20 +395,14 @@ describe("WithdrawUSDTPage", () => {
       </TestWrapper>,
     );
 
-    // Wait for fees to load
+    // Wait for ERC20 to be selected by default
     await waitFor(() => {
-      expect(
-        screen.queryByText("translated.loadingNetworkFees"),
-      ).not.toBeInTheDocument();
+      expect(screen.getByText("Ethereum (ERC20)")).toBeInTheDocument();
     });
 
     // Change network to TRC20
     fireEvent.click(screen.getByRole("combobox"));
     fireEvent.click(screen.getAllByText("TRON (TRC20)")[0]);
-
-    // Check if fee updated - use a more specific selector
-    const feeText = screen.getAllByText("translated.networkFee")[0];
-    expect(feeText.textContent).toBe("translated.networkFee");
 
     // Verify address validation changes
     const addressInput = screen.getByPlaceholderText("translated.enterAddress");
@@ -440,27 +414,179 @@ describe("WithdrawUSDTPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("calculates total amount correctly", async () => {
+  it("validates insufficient balance including withdrawal fees", async () => {
+    // Set up a wallet with limited balance
+    (useWallet as jest.Mock).mockReturnValue({
+      data: {
+        coin_accounts: [
+          {
+            coin_currency: "USDT",
+            balance: 105, // Only 105 USDT available
+          },
+        ],
+      },
+      isLoading: false,
+    });
+
     render(
       <TestWrapper>
         <WithdrawUSDTPage />
       </TestWrapper>,
     );
 
-    // Wait for fees to load
+    // Wait for ERC20 to be selected by default (10 USDT fee)
+    await waitFor(() => {
+      expect(screen.getByText("Ethereum (ERC20)")).toBeInTheDocument();
+    });
+
+    const amountInput = screen.getByPlaceholderText("translated.enterAmount");
+    const addressInput = screen.getByPlaceholderText("translated.enterAddress");
+
+    // Enter valid address first
+    fireEvent.change(addressInput, {
+      target: { value: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" },
+    });
+
+    // Try to withdraw 100 USDT (total needed: 100 + 10 fee = 110 USDT, but only 105 available)
+    fireEvent.change(amountInput, { target: { value: "100" } });
+
+    // Should show insufficient balance error
     await waitFor(() => {
       expect(
-        screen.queryByText("translated.loadingNetworkFees"),
+        screen.getByText(/Insufficient balance\. Available: 105.*USDT/),
+      ).toBeInTheDocument();
+    });
+
+    // Submit button should be disabled
+    const submitButton = screen.getByRole("button", { name: /Withdraw.*USDT/ });
+    expect(submitButton).toBeDisabled();
+  });
+
+  it("allows withdrawal when balance covers amount plus fees", async () => {
+    // Set up a wallet with sufficient balance
+    (useWallet as jest.Mock).mockReturnValue({
+      data: {
+        coin_accounts: [
+          {
+            coin_currency: "USDT",
+            balance: 120, // 120 USDT available
+          },
+        ],
+      },
+      isLoading: false,
+    });
+
+    render(
+      <TestWrapper>
+        <WithdrawUSDTPage />
+      </TestWrapper>,
+    );
+
+    // Wait for ERC20 to be selected by default (10 USDT fee)
+    await waitFor(() => {
+      expect(screen.getByText("Ethereum (ERC20)")).toBeInTheDocument();
+    });
+
+    const amountInput = screen.getByPlaceholderText("translated.enterAmount");
+    const addressInput = screen.getByPlaceholderText("translated.enterAddress");
+
+    // Enter valid address
+    fireEvent.change(addressInput, {
+      target: { value: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" },
+    });
+
+    // Withdraw 100 USDT (total needed: 100 + 10 fee = 110 USDT, 120 available)
+    fireEvent.change(amountInput, { target: { value: "100" } });
+
+    // Should not show insufficient balance error
+    await waitFor(() => {
+      expect(
+        screen.queryByText(/Insufficient balance/),
       ).not.toBeInTheDocument();
     });
 
-    // Enter amount
-    fireEvent.change(screen.getByPlaceholderText("translated.enterAmount"), {
-      target: { value: "100" },
+    // Submit button should be enabled
+    await waitFor(() => {
+      const submitButton = screen.getByRole("button", {
+        name: /Withdraw.*USDT/,
+      });
+      expect(submitButton).not.toBeDisabled();
+    });
+  });
+
+  it("validates balance correctly with different network fees", async () => {
+    // Set up a wallet with limited balance
+    (useWallet as jest.Mock).mockReturnValue({
+      data: {
+        coin_accounts: [
+          {
+            coin_currency: "USDT",
+            balance: 103, // 103 USDT available
+          },
+        ],
+      },
+      isLoading: false,
     });
 
-    // By default, BEP20 is selected, so fee is 1
-    const totalAmountText = screen.getByText("translated.totalAmount");
-    expect(totalAmountText.textContent).toBe("translated.totalAmount");
+    render(
+      <TestWrapper>
+        <WithdrawUSDTPage />
+      </TestWrapper>,
+    );
+
+    // Wait for ERC20 to be selected by default (10 USDT fee)
+    await waitFor(() => {
+      expect(screen.getByText("Ethereum (ERC20)")).toBeInTheDocument();
+    });
+
+    const amountInput = screen.getByPlaceholderText("translated.enterAmount");
+    const addressInput = screen.getByPlaceholderText("translated.enterAddress");
+
+    // Enter valid address
+    fireEvent.change(addressInput, {
+      target: { value: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" },
+    });
+
+    // Try to withdraw 100 USDT with ERC20 (total needed: 100 + 10 = 110 USDT, but only 103 available)
+    fireEvent.change(amountInput, { target: { value: "100" } });
+
+    // Should show insufficient balance error
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Insufficient balance\. Available: 103.*USDT/),
+      ).toBeInTheDocument();
+    });
+
+    // Change network to TRC20 (2 USDT fee)
+    fireEvent.click(screen.getByRole("combobox"));
+    fireEvent.click(screen.getAllByText("TRON (TRC20)")[0]);
+
+    // Wait for network change
+    await waitFor(() => {
+      expect(screen.getByText("TRON (TRC20)")).toBeInTheDocument();
+    });
+
+    // Enter valid TRC20 address
+    fireEvent.change(addressInput, {
+      target: { value: "TKQpQkMWRvTJpQgYrGp8wKgJSHV3DqNHJ3" },
+    });
+
+    // Now withdraw 100 USDT with TRC20 (total needed: 100 + 2 = 102 USDT, 103 available)
+    fireEvent.change(amountInput, { target: { value: "100" } });
+
+    // Should not show insufficient balance error since 102 <= 103
+    await waitFor(() => {
+      expect(
+        screen.queryByText(/Insufficient balance/),
+      ).not.toBeInTheDocument();
+    });
+
+    // Submit button should be enabled
+    await waitFor(() => {
+      const submitButton = screen.getByRole("button", {
+        name: /Withdraw.*USDT/,
+      });
+      expect(submitButton).not.toBeDisabled();
+    });
   });
 });

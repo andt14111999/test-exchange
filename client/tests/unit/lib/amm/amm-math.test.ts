@@ -622,4 +622,312 @@ describe("AMM Math Functions", () => {
       });
     });
   });
+
+  describe("Exact Output Mode (exactOutput = true)", () => {
+    describe("USDT -> VND (zeroForOne = true)", () => {
+      it("should correctly calculate required input for desired output", () => {
+        const desiredOutput = 2000; // Want 2000 VND
+        const result = estimateSwapV3(
+          mockPoolData,
+          desiredOutput,
+          true,
+          [],
+          true,
+        );
+
+        // Check structure - exact output should return amountIn as the calculation result
+        expect(result).toHaveProperty("amountIn");
+        expect(result).toHaveProperty("amountOut");
+        expect(result).toHaveProperty("fee");
+        expect(result).toHaveProperty("priceAfter");
+        expect(result).toHaveProperty("priceImpact");
+        expect(result).toHaveProperty("originalPrice");
+
+        // In exact output mode, amountOut should match the desired output
+        expect(result.amountOut).toBe(desiredOutput);
+
+        // amountIn should be calculated based on price and fees
+        expect(result.amountIn).toBeGreaterThan(0);
+
+        // Fee should be calculated based on amountIn
+        expect(result.fee).toBeGreaterThan(0);
+        expect(result.fee).toBeCloseTo(result.amountIn * 0.003, 5);
+      });
+
+      it("should handle real-world USDT-VND exact output calculation", () => {
+        const desiredVnd = 1500000; // Want 1.5M VND
+        const result = estimateSwapV3(
+          mockUsdtVndPoolData,
+          desiredVnd,
+          true,
+          mockUsdtVndTicks,
+          true,
+        );
+
+        // Should calculate required USDT input
+        expect(result.amountOut).toBe(desiredVnd);
+        expect(result.amountIn).toBeGreaterThan(0);
+
+        // Required input should be approximately desiredVnd / price with fees
+        const expectedInput =
+          desiredVnd / parseFloat(mockUsdtVndPoolData.price) / 0.997;
+        expect(result.amountIn).toBeCloseTo(expectedInput, 2);
+      });
+
+      it("should handle exact output with ticks", () => {
+        const desiredOutput = 2000;
+        const result = estimateSwapV3(
+          mockPoolDataWithTickIndex,
+          desiredOutput,
+          true,
+          mockTicks,
+          true,
+        );
+
+        expect(result.amountOut).toBe(desiredOutput);
+        expect(result.amountIn).toBeGreaterThan(0);
+        expect(result.fee).toBeGreaterThan(0);
+      });
+
+      it("should handle small desired outputs", () => {
+        const desiredOutput = 0.1; // Very small amount
+        const result = estimateSwapV3(
+          mockPoolData,
+          desiredOutput,
+          true,
+          [],
+          true,
+        );
+
+        expect(result.amountOut).toBe(desiredOutput);
+        expect(result.amountIn).toBeGreaterThan(0);
+        expect(result.amountIn).toBeLessThan(1);
+      });
+
+      it("should handle large desired outputs", () => {
+        const desiredOutput = 1000000; // Large amount
+        const result = estimateSwapV3(
+          mockPoolData,
+          desiredOutput,
+          true,
+          [],
+          true,
+        );
+
+        expect(result.amountOut).toBe(desiredOutput);
+        expect(result.amountIn).toBeGreaterThan(0);
+        expect(result.priceImpact).toBeGreaterThan(0);
+      });
+    });
+
+    describe("VND -> USDT (zeroForOne = false)", () => {
+      it("should correctly calculate required input for desired output", () => {
+        const desiredOutput = 50; // Want 50 USDT
+        const result = estimateSwapV3(
+          mockPoolData,
+          desiredOutput,
+          false,
+          [],
+          true,
+        );
+
+        // Check structure
+        expect(result).toHaveProperty("amountIn");
+        expect(result).toHaveProperty("amountOut");
+        expect(result).toHaveProperty("fee");
+        expect(result).toHaveProperty("priceAfter");
+        expect(result).toHaveProperty("priceImpact");
+        expect(result).toHaveProperty("originalPrice");
+
+        // In exact output mode, amountOut should match the desired output
+        expect(result.amountOut).toBe(desiredOutput);
+
+        // amountIn should be calculated based on price and fees
+        expect(result.amountIn).toBeGreaterThan(0);
+
+        // Fee should be calculated based on amountIn
+        expect(result.fee).toBeGreaterThan(0);
+        expect(result.fee).toBeCloseTo(result.amountIn * 0.003, 5);
+      });
+
+      it("should handle real-world VND-USDT exact output calculation", () => {
+        const desiredUsdt = 50; // Want 50 USDT
+        const result = estimateSwapV3(
+          mockUsdtVndPoolData,
+          desiredUsdt,
+          false,
+          mockUsdtVndTicks,
+          true,
+        );
+
+        // Should calculate required VND input
+        expect(result.amountOut).toBe(desiredUsdt);
+        expect(result.amountIn).toBeGreaterThan(0);
+
+        // Required input should be approximately desiredUsdt * price with fees
+        const expectedInput =
+          (desiredUsdt * parseFloat(mockUsdtVndPoolData.price)) / 0.997;
+        // Allow reasonable tolerance for price impact and tick processing
+        const tolerance = expectedInput * 0.01; // 1% tolerance
+        expect(Math.abs(result.amountIn - expectedInput)).toBeLessThan(
+          tolerance,
+        );
+      });
+
+      it("should handle exact output with ticks", () => {
+        const desiredOutput = 10;
+        const result = estimateSwapV3(
+          mockPoolDataWithTickIndex,
+          desiredOutput,
+          false,
+          mockTicks,
+          true,
+        );
+
+        expect(result.amountOut).toBe(desiredOutput);
+        expect(result.amountIn).toBeGreaterThan(0);
+        expect(result.fee).toBeGreaterThan(0);
+      });
+
+      it("should handle small desired USDT outputs", () => {
+        const desiredOutput = 0.001; // Very small USDT amount
+        const result = estimateSwapV3(
+          mockUsdtVndPoolData,
+          desiredOutput,
+          false,
+          [],
+          true,
+        );
+
+        expect(result.amountOut).toBe(desiredOutput);
+        expect(result.amountIn).toBeGreaterThan(0);
+      });
+    });
+
+    describe("Exact Output Error Handling", () => {
+      it("should handle zero desired output", () => {
+        const result = estimateSwapV3(mockPoolData, 0, true, [], true);
+
+        expect(result.amountIn).toBe(0);
+        expect(result.amountOut).toBe(0);
+        expect(result.fee).toBe(0);
+        expect(result.originalPrice).toBeGreaterThan(0);
+      });
+
+      it("should detect insufficient liquidity in exact output mode", () => {
+        const badPoolData = {
+          ...mockPoolData,
+          tvl_in_token0: "0",
+          tvl_in_token1: "0",
+        };
+
+        const result = estimateSwapV3(
+          badPoolData,
+          1000,
+          true,
+          [],
+          true,
+        ) as SwapResult;
+
+        expect(result).toHaveProperty("error");
+        expect(result.error).toContain("liquidity");
+        expect(result.amountIn).toBe(0);
+      });
+
+      it("should handle unrealistic desired outputs gracefully", () => {
+        // Try to get more tokens than available in the pool
+        const unrealisticOutput = parseFloat(mockPoolData.tvl_in_token1) * 2;
+        const result = estimateSwapV3(
+          mockPoolData,
+          unrealisticOutput,
+          true,
+          [],
+          true,
+        ) as SwapResult;
+
+        // Should either succeed with high price impact or fail with error
+        if (result.error) {
+          expect(result.error).toBeDefined();
+          expect(result.amountIn).toBe(0);
+        } else {
+          expect(result.priceImpact).toBeGreaterThan(0.5); // >50% price impact
+        }
+      });
+    });
+
+    describe("Exact Input vs Exact Output Consistency", () => {
+      it("should have consistent pricing between exact input and exact output", () => {
+        // Test exact input first
+        const inputAmount = 100;
+        const exactInputResult = estimateSwapV3(
+          mockPoolData,
+          inputAmount,
+          true,
+          [],
+          false,
+        );
+
+        // Then test exact output with the result from exact input
+        const exactOutputResult = estimateSwapV3(
+          mockPoolData,
+          exactInputResult.amountOut,
+          true,
+          [],
+          true,
+        );
+
+        // The required input for exact output should be close to original input
+        // Allow some tolerance due to price impact and rounding
+        expect(exactOutputResult.amountIn).toBeCloseTo(inputAmount, 0);
+        expect(exactOutputResult.amountOut).toBeCloseTo(
+          exactInputResult.amountOut,
+          2,
+        );
+      });
+
+      it("should have consistent USDT-VND pricing", () => {
+        const inputUsdt = 50;
+        const exactInputResult = estimateSwapV3(
+          mockUsdtVndPoolData,
+          inputUsdt,
+          true,
+          mockUsdtVndTicks,
+          false,
+        );
+
+        const exactOutputResult = estimateSwapV3(
+          mockUsdtVndPoolData,
+          exactInputResult.amountOut,
+          true,
+          mockUsdtVndTicks,
+          true,
+        );
+
+        // Should be close but not exact due to price impact
+        expect(exactOutputResult.amountIn).toBeCloseTo(inputUsdt, 1);
+      });
+
+      it("should have consistent VND-USDT pricing", () => {
+        const inputVnd = 1000000;
+        const exactInputResult = estimateSwapV3(
+          mockUsdtVndPoolData,
+          inputVnd,
+          false,
+          mockUsdtVndTicks,
+          false,
+        );
+
+        const exactOutputResult = estimateSwapV3(
+          mockUsdtVndPoolData,
+          exactInputResult.amountOut,
+          false,
+          mockUsdtVndTicks,
+          true,
+        );
+
+        // Should be close but not exact due to price impact
+        expect(exactOutputResult.amountIn).toBeCloseTo(inputVnd, 0);
+      });
+    });
+  });
 });

@@ -5,19 +5,18 @@ module KafkaService
     class Consumer
       def initialize(group_id:, topics:)
         @logger = Rails.env.production? ? Rails.logger : Logger.new('log/kafka_consumer.log')
-        @kafka = ::Kafka.new(
-          seed_brokers: KafkaService::Config::Brokers::BROKERS,
-          **kafka_config(group_id)
-        )
-        @consumer = initialize_consumer(group_id)
-        subscribe_to_topics(topics)
+        @group_id = group_id
+        @topics = Array(topics)
+        @consumer = initialize_consumer
         @running = false
+        @logger.info("RdKafka Consumer initialized for group: #{group_id}, topics: #{@topics.join(', ')}")
       end
 
       def start(&)
         @running = true
         @logger.info('Starting to consume messages...')
 
+        subscribe_to_topics
         consume_messages(&)
       rescue StandardError => e
         @logger.error("Consumer error: #{e.message}")
@@ -27,18 +26,23 @@ module KafkaService
 
       def stop
         @running = false
-        @consumer.stop
-        @logger.info('Kafka Consumer stopped')
+        @consumer&.close
+        @logger.info('RdKafka Consumer stopped')
       end
 
       private
 
-      def kafka_config(group_id)
+      def rdkafka_config
         config = {
-          client_id: "#{Rails.env}_#{group_id}",
-          logger: @logger,
-          socket_timeout: 20,
-          connect_timeout: 20
+          'bootstrap.servers': KafkaService::Config::Brokers::BROKERS.join(','),
+          'group.id': @group_id,
+          'client.id': "#{Rails.env}_#{@group_id}",
+          'auto.offset.reset': 'latest',
+          'enable.auto.commit': true,
+          'auto.commit.interval.ms': 5000,
+          'session.timeout.ms': 30000,
+          'heartbeat.interval.ms': 10000,
+          'max.poll.records': 100
         }
 
         if ssl_enabled?
@@ -54,34 +58,23 @@ module KafkaService
 
       def ssl_config
         {
-          ssl_ca_cert_file_path: '/etc/ssl/certs/ca-certificates.crt', # Default CA bundle for AWS MSK
-          ssl_client_cert: nil, # Not needed for TLS-only (no client cert auth)
-          ssl_client_cert_key: nil, # Not needed for TLS-only (no client cert auth)
-          ssl_verify_hostname: false
+          'security.protocol': 'SSL',
+          'ssl.ca.location': '/etc/ssl/certs/ca-certificates.crt',
+          'ssl.verify.hostname': 'false'
         }
       end
 
-      def initialize_consumer(group_id)
-        @kafka.consumer(
-          group_id: group_id,
-          offset_commit_interval: 5,
-          offset_commit_threshold: 100,
-          offset_retention_time: 7_200, # 2 hours
-          fetcher_max_queue_size: 100,
-          session_timeout: 30,
-          heartbeat_interval: 10
-        )
+      def initialize_consumer
+        Rdkafka::Config.new(rdkafka_config).consumer
       end
 
-      def subscribe_to_topics(topics)
-        Array(topics).each do |topic|
-          @consumer.subscribe(topic, start_from_beginning: false)
-        end
-        @logger.info("Subscribed to topics: #{topics.join(', ')}")
+      def subscribe_to_topics
+        @consumer.subscribe(*@topics)
+        @logger.info("Subscribed to topics: #{@topics.join(', ')}")
       end
 
       def consume_messages(&block)
-        @consumer.each_message do |message|
+        @consumer.each do |message|
           break unless @running
 
           process_message(message, &block)
@@ -89,7 +82,7 @@ module KafkaService
       end
 
       def process_message(message)
-        payload = JSON.parse(message.value)
+        payload = JSON.parse(message.payload)
         yield(message.topic, payload)
       rescue JSON::ParserError => e
         @logger.error("Failed to parse message: #{e.message}")

@@ -21,6 +21,8 @@ import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @ExtendWith(MockitoExtension.class)
 public class CoinDepositEventTest {
 
@@ -304,5 +306,84 @@ public class CoinDepositEventTest {
     Exception exception = assertThrows(IllegalStateException.class,
         () -> depositEvent.toOperationObjectMessageJson());
     assertTrue(exception.getMessage().contains("CoinDeposit not found identifier"));
+  }
+
+  @Test
+  @DisplayName("Test parse data with exact amount 21.21 - floating point precision fix")
+  public void testParserDataWithExactAmount21_21() throws Exception {
+    // Given - JSON string để test floating point precision
+    String jsonString = "{"
+        + "\"eventId\":\"test-event-id\","
+        + "\"identifier\":\"100\","
+        + "\"actionType\":\"CoinTransaction\","
+        + "\"actionId\":\"deposit-action-id\","
+        + "\"operationType\":\"coin_deposit_create\","
+        + "\"accountKey\":\"15-coin-200\","
+        + "\"amount\":\"21.21\","
+        + "\"coin\":\"usdt\","
+        + "\"txHash\":\"tx-deposit-hash\","
+        + "\"layer\":\"L1\","
+        + "\"depositAddress\":\"address-deposit\","
+        + "\"status\":\"pending\","
+        + "\"statusExplanation\":\"Processing deposit\""
+        + "}";
+
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode jsonNode = mapper.readTree(jsonString);
+
+    // When
+    CoinDepositEvent depositEvent = new CoinDepositEvent();
+    depositEvent.parserData(jsonNode);
+
+    // Then
+    // Sau khi fix: amount phải chính xác 100%
+    String actualAmountString = depositEvent.getAmount().toString();
+    System.out.println("Deposit - Expected amount: 21.21");
+    System.out.println("Deposit - Actual amount: " + actualAmountString);
+    
+    // Với implementation đã fix (sử dụng asText()), amount phải chính xác
+    assertEquals(new BigDecimal("21.21"), depositEvent.getAmount(), 
+        "Deposit amount should be exactly 21.21 after fixing floating point precision issue");
+    
+    // Verify các field khác đúng
+    assertEquals("100", depositEvent.getIdentifier());
+    assertEquals("15-coin-200", depositEvent.getAccountKey());
+    assertEquals("usdt", depositEvent.getCoin());
+  }
+
+  @Test
+  @DisplayName("Test parse data preserves exact decimal precision for deposits")
+  public void testParserDataPreservesExactDecimalPrecisionForDeposits() throws Exception {
+    // Given - Test với nhiều decimal places khác nhau
+    String[] testAmounts = {"21.21", "100.50", "0.01", "999.99", "1000000.123456"};
+    
+    for (String expectedAmount : testAmounts) {
+      String jsonString = "{"
+          + "\"eventId\":\"test-event-id\","
+          + "\"identifier\":\"test-id\","
+          + "\"actionType\":\"CoinTransaction\","
+          + "\"actionId\":\"test-action-id\","
+          + "\"operationType\":\"coin_deposit_create\","
+          + "\"accountKey\":\"test-account\","
+          + "\"amount\":\"" + expectedAmount + "\","
+          + "\"coin\":\"usdt\","
+          + "\"txHash\":\"tx123\","
+          + "\"layer\":\"L1\","
+          + "\"depositAddress\":\"addr123\","
+          + "\"status\":\"pending\","
+          + "\"statusExplanation\":\"Processing\""
+          + "}";
+
+      ObjectMapper mapper = new ObjectMapper();
+      JsonNode jsonNode = mapper.readTree(jsonString);
+
+      // When
+      CoinDepositEvent depositEvent = new CoinDepositEvent();
+      depositEvent.parserData(jsonNode);
+
+      // Then - Sau khi fix, amount phải chính xác 100%
+      assertEquals(new BigDecimal(expectedAmount), depositEvent.getAmount(), 
+          "Deposit amount should be exact for input: " + expectedAmount);
+    }
   }
 }

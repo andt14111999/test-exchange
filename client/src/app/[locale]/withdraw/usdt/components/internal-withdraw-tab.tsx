@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { formatNumber } from "@/lib/utils/index";
 import { useTranslations } from "next-intl";
+import { MINIMUM_WITHDRAWAL_USDT } from "@/lib/constants/withdrawal";
 
 interface InternalWithdrawTabProps {
   username: string;
@@ -95,7 +96,7 @@ export function InternalWithdrawTab({
       <div className="text-sm text-muted-foreground">
         <p>Important:</p>
         <ul className="list-disc list-inside space-y-1">
-          <li>{t("minTransfer")}</li>
+          <li>{t("minTransfer", { amount: MINIMUM_WITHDRAWAL_USDT })}</li>
           <li>{t("noNetworkFees")}</li>
           <li>{t("instantTransfers")}</li>
           {!isCheckingDevice && !(userHas2FA && isDeviceTrusted) && (
