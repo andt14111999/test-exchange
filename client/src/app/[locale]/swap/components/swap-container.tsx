@@ -15,7 +15,7 @@ import { executeSwap } from "@/lib/api/amm-orders";
 import { fetchTicks } from "@/lib/api/amm-ticks";
 import { useWallet } from "@/hooks/use-wallet";
 import { formatCurrency } from "@/lib/utils/format";
-import { LiquidityCalculator } from "@/lib/amm/liquidity_calculator";
+import { getTokenDecimals } from "@/lib/amm/constants";
 import { estimateSwapV3 } from "@/lib/amm/amm-math";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -125,6 +125,8 @@ export function SwapContainer() {
 
       // Tìm pool mới nếu cần
       let newPoolPair = prev.poolPair;
+      let newZeroForOne = !prev.zeroForOne; // Default fallback
+
       if (activePools && tempOutputToken && tempInputToken) {
         const newPair = findPoolPair(
           activePools,
@@ -133,7 +135,14 @@ export function SwapContainer() {
         );
         if (newPair) {
           newPoolPair = newPair.pair;
+          // Xác định zeroForOne đúng dựa trên pool mới
+          newZeroForOne =
+            tempOutputToken.toLowerCase() === newPair.token0.toLowerCase();
         }
+      } else if (poolDetail) {
+        // Nếu pool không đổi, tính zeroForOne dựa trên poolDetail hiện tại
+        newZeroForOne =
+          tempOutputToken.toLowerCase() === poolDetail.token0.toLowerCase();
       }
 
       return {
@@ -142,7 +151,7 @@ export function SwapContainer() {
         outputToken: tempInputToken,
         inputAmount: tempOutputAmount, // Đổi giá trị vào/ra
         outputAmount: tempInputAmount,
-        zeroForOne: !prev.zeroForOne, // Đảo chiều zero for one
+        zeroForOne: newZeroForOne, // Tính toán lại zero for one đúng cách
         poolPair: newPoolPair,
         error: null,
       };
@@ -152,7 +161,7 @@ export function SwapContainer() {
     if (exchangeRate && !exchangeRate.isZero()) {
       setExchangeRate(new BigNumber(1).div(exchangeRate));
     }
-  }, [exchangeRate, activePools]);
+  }, [exchangeRate, activePools, poolDetail]);
 
   // Set default pool when active pools are loaded
   useEffect(() => {
@@ -263,8 +272,8 @@ export function SwapContainer() {
         const numBalance = new BigNumber(balance);
         if (numBalance.isNaN()) return "0";
 
-        // Sử dụng getDecimalScale từ LiquidityCalculator
-        const decimals = LiquidityCalculator.getDecimalScale(token);
+        // Sử dụng getTokenDecimals từ constants
+        const decimals = getTokenDecimals(token);
 
         // Sử dụng formatCurrency từ utils
         return formatCurrency(numBalance, token.toUpperCase(), {
@@ -277,6 +286,32 @@ export function SwapContainer() {
       }
     },
     [],
+  );
+
+  // Hàm lấy max balance cho token (làm tròn hợp lý)
+  const getMaxBalance = useCallback(
+    (token: string): string => {
+      if (!token || !walletData) return "0";
+
+      try {
+        const balance = getTokenBalance(token);
+        const numBalance = new BigNumber(balance);
+
+        if (numBalance.isNaN() || numBalance.isLessThanOrEqualTo(0)) {
+          return "0";
+        }
+
+        // Lấy số thập phân cho token
+        const decimals = getTokenDecimals(token);
+
+        // Làm tròn theo decimal của token (không trừ gì cả)
+        return numBalance.toFixed(decimals);
+      } catch (error) {
+        console.error(`Error getting max balance for ${token}:`, error);
+        return "0";
+      }
+    },
+    [walletData, getTokenBalance],
   );
 
   // Hàm xử lý khi thay đổi token đầu vào
@@ -393,9 +428,7 @@ export function SwapContainer() {
 
       try {
         // Lấy số thập phân cho token đầu ra
-        const outputDecimals = LiquidityCalculator.getDecimalScale(
-          state.outputToken,
-        );
+        const outputDecimals = getTokenDecimals(state.outputToken);
 
         // Điều chỉnh input amount theo decimal
         const inputAmountAdjusted = new BigNumber(amount);
@@ -406,7 +439,7 @@ export function SwapContainer() {
           Math.floor(Math.log(poolDetail.price.toNumber()) / Math.log(1.0001));
 
         // Tính giá thực tế từ tick index
-        const actualPrice = Math.pow(1.0001, currentTickIndex);
+        const actualPrice = poolDetail.price.toNumber();
 
         const result = estimateSwapV3(
           {
@@ -424,6 +457,7 @@ export function SwapContainer() {
           inputAmountAdjusted.toNumber(),
           state.zeroForOne,
           ticks, // Truyền dữ liệu ticks vào hàm estimateSwapV3
+          false, // exactOutput = false (exact input mode)
         );
 
         // Làm tròn dựa trên decimal của token output
@@ -478,13 +512,10 @@ export function SwapContainer() {
 
       try {
         // Lấy số thập phân cho token đầu vào
-        const inputDecimals = LiquidityCalculator.getDecimalScale(
-          state.inputToken,
-        );
+        const inputDecimals = getTokenDecimals(state.inputToken);
 
-        // Khi người dùng nhập output amount, chúng ta cần ước tính input amount
-        // Tuy nhiên, estimateSwapV3 chỉ có thể tính từ input -> output
-        // Vì vậy, chúng ta sẽ sử dụng cách tiếp cận đơn giản với giá hiện tại
+        // Điều chỉnh output amount theo decimal
+        const outputAmountAdjusted = new BigNumber(amount);
 
         // Sử dụng current_tick từ pool data nếu có
         const currentTickIndex =
@@ -492,41 +523,44 @@ export function SwapContainer() {
           Math.floor(Math.log(poolDetail.price.toNumber()) / Math.log(1.0001));
 
         // Tính giá thực tế từ tick index
-        const actualPrice = Math.pow(1.0001, currentTickIndex);
+        const actualPrice = poolDetail.price.toNumber();
 
-        // Lấy giá hiện tại từ pool detail (sử dụng giá thực tế từ tick)
-        const currentPrice = state.zeroForOne
-          ? new BigNumber(actualPrice)
-          : new BigNumber(1).div(actualPrice);
-
-        let inputAmount;
-        // Tính toán input amount dựa trên giá và loại swap
-        if (state.zeroForOne) {
-          // Token0 -> Token1: amount0 = amount1 / price
-          inputAmount = new BigNumber(amount).div(currentPrice);
-        } else {
-          // Token1 -> Token0: amount1 = amount0 * price
-          inputAmount = new BigNumber(amount).multipliedBy(currentPrice);
-        }
-
-        // Cộng thêm phí giao dịch vào input
-        inputAmount = inputAmount.div(1 - poolDetail.fee);
+        // Sử dụng estimateSwapV3 với exact output mode
+        const result = estimateSwapV3(
+          {
+            sqrt_price: poolDetail.sqrtPriceX96.toString(),
+            fee_percentage: poolDetail.fee.toString(),
+            tick_spacing: poolDetail.tickSpacing,
+            tvl_in_token0: poolDetail.liquidity.toString(),
+            tvl_in_token1: poolDetail.price
+              .multipliedBy(poolDetail.liquidity)
+              .toString(),
+            // Sử dụng giá thực tế từ tick index
+            price: actualPrice.toString(),
+            current_tick_index: currentTickIndex,
+          },
+          outputAmountAdjusted.toNumber(),
+          state.zeroForOne,
+          ticks, // Truyền dữ liệu ticks vào hàm estimateSwapV3
+          true, // exactOutput = true
+        );
 
         // Làm tròn dựa trên decimal của token input
-        const formattedInput = inputAmount.toFixed(inputDecimals);
+        const formattedInput = result.amountIn.toFixed(inputDecimals);
 
         setState((prev) => ({
           ...prev,
           inputAmount: formattedInput,
-          error: null,
+          error: result.error || null,
         }));
 
-        // Ước tính price impact (giả định 1%)
-        setPriceImpact(1);
+        // Cập nhật price impact từ kết quả
+        setPriceImpact(result.priceImpact * 100);
 
         // Cập nhật tỷ giá
-        if (new BigNumber(amount).gt(0) && inputAmount.gt(0)) {
-          setExchangeRate(new BigNumber(amount).div(inputAmount));
+        if (outputAmountAdjusted.toNumber() > 0 && result.amountIn > 0) {
+          // Tỷ giá thực tế là số lượng token nhận được chia cho số lượng token đầu vào
+          setExchangeRate(outputAmountAdjusted.div(result.amountIn));
         }
       } catch (error) {
         console.error("Error calculating input from output:", error);
@@ -535,10 +569,32 @@ export function SwapContainer() {
           inputAmount: "",
           error: "Lỗi khi tính toán đầu vào",
         }));
+        setPriceImpact(0);
       }
     },
-    [state.poolPair, state.zeroForOne, state.inputToken, poolDetail],
+    [state.poolPair, state.zeroForOne, state.inputToken, poolDetail, ticks],
   );
+
+  // Hàm xử lý khi user click nút Max cho input amount
+  const handleInputMaxClick = useCallback(() => {
+    if (!state.inputToken) return;
+
+    const maxAmount = getMaxBalance(state.inputToken);
+    if (maxAmount && parseFloat(maxAmount) > 0) {
+      handleInputChange(maxAmount);
+    }
+  }, [state.inputToken, getMaxBalance, handleInputChange]);
+
+  // Hàm xử lý khi user click nút Max cho output amount
+  const handleOutputMaxClick = useCallback(() => {
+    if (!state.outputToken) return;
+
+    // Dùng max balance của output token, không tính toán gì
+    const maxAmount = getMaxBalance(state.outputToken);
+    if (maxAmount && parseFloat(maxAmount) > 0) {
+      handleOutputChange(maxAmount);
+    }
+  }, [state.outputToken, getMaxBalance, handleOutputChange]);
 
   // Hàm xử lý khi bấm nút swap
   const handleSwap = useCallback(async () => {
@@ -658,6 +714,7 @@ export function SwapContainer() {
                 getTokenBalance(state.inputToken),
                 state.inputToken,
               )}
+              onMaxClick={handleInputMaxClick}
             />
 
             <div className="flex justify-center">
@@ -684,6 +741,7 @@ export function SwapContainer() {
                 getTokenBalance(state.outputToken),
                 state.outputToken,
               )}
+              onMaxClick={handleOutputMaxClick}
             />
 
             <SwapSummary
@@ -701,6 +759,7 @@ export function SwapContainer() {
               buttonText={t("title")}
               errorMessage={errorMessage}
               priceImpact={priceImpact}
+              poolFee={poolDetail?.fee}
             />
 
             {!isSwapEnabled && (

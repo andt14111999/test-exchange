@@ -515,6 +515,7 @@
     "outputAmount": "Bạn nhận",
     "exchangeRate": "Tỷ giá",
     "priceImpact": "Ảnh hưởng đến giá",
+    "poolFee": "Phí Pool",
     "balance": "Số dư",
     "loading": "Đang tải pool...",
     "error": "Không thể tải pool",

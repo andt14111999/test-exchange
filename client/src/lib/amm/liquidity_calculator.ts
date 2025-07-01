@@ -1,4 +1,5 @@
 import Decimal from "decimal.js";
+import { getTokenDecimals } from "./constants";
 
 const BigDecimal = Decimal;
 
@@ -15,13 +16,7 @@ export class LiquidityCalculator {
   }
 
   static getDecimalScale(symbol: string): number {
-    const SUPPORTED_COINS: Record<string, number> = {
-      USDT: 6,
-      VND: 2,
-      PHP: 2,
-      NGN: 2,
-    };
-    return SUPPORTED_COINS[symbol.toUpperCase()] ?? 6;
+    return getTokenDecimals(symbol);
   }
 
   static calculateAmounts(params: {
