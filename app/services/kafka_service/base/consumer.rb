@@ -41,8 +41,7 @@ module KafkaService
           'enable.auto.commit': true,
           'auto.commit.interval.ms': 5000,
           'session.timeout.ms': 30000,
-          'heartbeat.interval.ms': 10000,
-          'max.poll.records': 100
+          'heartbeat.interval.ms': 10000
         }
 
         if ssl_enabled?

@@ -34,8 +34,7 @@ RSpec.describe KafkaService::Base::Consumer, type: :service do
         'enable.auto.commit': true,
         'auto.commit.interval.ms': 5000,
         'session.timeout.ms': 30000,
-        'heartbeat.interval.ms': 10000,
-        'max.poll.records': 100
+        'heartbeat.interval.ms': 10000
       }
 
       described_class.new(group_id: group_id, topics: topics)
