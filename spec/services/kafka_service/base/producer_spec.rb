@@ -7,14 +7,14 @@ RSpec.describe KafkaService::Base::Producer, type: :service do
 
   before do
     allow(Logger).to receive(:new).and_return(logger)
-    
+
     # Mock the Rdkafka::Config.new call to return a double that responds to producer
     allow(Rdkafka::Config).to receive(:new) do |config|
       config_double = double('Rdkafka::Config')
       allow(config_double).to receive(:producer).and_return(producer)
       config_double
     end
-    
+
     allow(producer).to receive(:produce)
     allow(producer).to receive(:flush)
     allow(producer).to receive(:close)

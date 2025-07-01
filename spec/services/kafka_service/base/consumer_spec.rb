@@ -9,14 +9,14 @@ RSpec.describe KafkaService::Base::Consumer, type: :service do
 
   before do
     allow(Logger).to receive(:new).and_return(logger)
-    
+
     # Mock the Rdkafka::Config.new call to return a double that responds to consumer
     allow(Rdkafka::Config).to receive(:new) do |config|
       config_double = double('Rdkafka::Config')
       allow(config_double).to receive(:consumer).and_return(consumer)
       config_double
     end
-    
+
     allow(consumer).to receive(:subscribe)
     allow(consumer).to receive(:close)
     allow(consumer).to receive(:each)
