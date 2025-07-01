@@ -1,38 +1,42 @@
 # rubocop:disable RSpec/VerifiedDoubles
 require 'rails_helper'
-require 'kafka'
+require 'rdkafka'
 
 RSpec.describe KafkaService::Base::Producer, type: :service do
-  let(:kafka_class) { class_double(Kafka).as_stubbed_const }
-  let(:kafka) { double('Kafka') }
-  let(:producer) { double('Kafka::Producer') }
+  let(:rdkafka_config_class) { class_double(Rdkafka::Config).as_stubbed_const }
+  let(:rdkafka_config) { double('Rdkafka::Config') }
+  let(:producer) { double('Rdkafka::Producer') }
   let(:logger) { instance_double(Logger).as_null_object }
 
   before do
     allow(Logger).to receive(:new).and_return(logger)
-    allow(kafka_class).to receive(:new).and_return(kafka)
-    allow(kafka).to receive(:producer).and_return(producer)
+    allow(rdkafka_config_class).to receive(:new).and_return(rdkafka_config)
+    allow(rdkafka_config).to receive(:producer).and_return(producer)
     allow(producer).to receive(:produce)
-    allow(producer).to receive(:deliver_messages)
-    allow(producer).to receive(:shutdown)
-    # Mock Kafka::DeliveryFailed
-    stub_const('Kafka::DeliveryFailed', StandardError)
+    allow(producer).to receive(:flush)
+    allow(producer).to receive(:close)
+    # Mock Rdkafka::RdkafkaError
+    stub_const('Rdkafka::RdkafkaError', StandardError)
   end
 
   describe '#initialize' do
     it 'initializes with correct configuration' do
       described_class.new
 
-      expect(kafka_class).to have_received(:new).with(
-        KafkaService::Config::Brokers::BROKERS,
-        client_id: "base_portal_#{Rails.env}",
-        logger: logger,
-        socket_timeout: 20,
-        connect_timeout: 20
-      )
+      expected_config = {
+        'bootstrap.servers': KafkaService::Config::Brokers::BROKERS.join(','),
+        'client.id': "base_portal_#{Rails.env}",
+        'enable.idempotence': true,
+        'retries': 3,
+        'retry.backoff.ms': 1000,
+        'compression.type': 'snappy',
+        'batch.size': 16384,
+        'linger.ms': 5
+      }
 
-      expect(kafka).to have_received(:producer).with(**KafkaService::Config::Config::PRODUCER_CONFIG)
-      expect(logger).to have_received(:info).with("Kafka Producer initialized with brokers: #{KafkaService::Config::Brokers::BROKERS}")
+      expect(rdkafka_config_class).to have_received(:new).with(expected_config)
+      expect(rdkafka_config).to have_received(:producer)
+      expect(logger).to have_received(:info).with("RdKafka Producer initialized with brokers: #{KafkaService::Config::Brokers::BROKERS}")
     end
   end
 
@@ -45,12 +49,16 @@ RSpec.describe KafkaService::Base::Producer, type: :service do
     it 'sends message successfully' do
       producer_instance.send_message(topic: topic, key: key, payload: payload)
 
-      expect(producer).to have_received(:produce).with(payload.to_json, topic: topic, key: key)
-      expect(producer).to have_received(:deliver_messages)
+      expect(producer).to have_received(:produce).with(
+        topic: topic,
+        payload: payload.to_json,
+        key: key
+      )
+      expect(producer).to have_received(:flush)
     end
 
     it 'raises error when message delivery fails' do
-      allow(producer).to receive(:deliver_messages).and_raise(StandardError.new('Delivery failed'))
+      allow(producer).to receive(:flush).and_raise(StandardError.new('Delivery failed'))
 
       expect { producer_instance.send_message(topic: topic, key: key, payload: payload) }
         .to raise_error(StandardError)
@@ -71,23 +79,27 @@ RSpec.describe KafkaService::Base::Producer, type: :service do
       producer_instance.send_messages_batch(messages, 1)
 
       messages.each do |msg|
-        expect(producer).to have_received(:produce).with(msg[:payload].to_json, topic: msg[:topic], key: msg[:key])
+        expect(producer).to have_received(:produce).with(
+          topic: msg[:topic],
+          payload: msg[:payload].to_json,
+          key: msg[:key]
+        )
       end
-      expect(producer).to have_received(:deliver_messages).twice
+      expect(producer).to have_received(:flush).twice
       expect(logger).to have_received(:info).with('Sending 2 messages in 2 batches')
       expect(logger).to have_received(:info).with('Batch 1/2 sent successfully')
       expect(logger).to have_received(:info).with('Batch 2/2 sent successfully')
     end
 
     context 'when delivery fails' do
-      let(:delivery_error) { Kafka::DeliveryFailed.new('Failed') }
+      let(:delivery_error) { Rdkafka::RdkafkaError.new('Failed') }
 
       it 'retries with smaller batch size on delivery failure' do
         messages_sent = 0
         retry_attempted = false
 
         # First attempt fails, second attempt succeeds
-        allow(producer).to receive(:deliver_messages) do
+        allow(producer).to receive(:flush) do
           messages_sent += 1
           if messages_sent == 1
             raise delivery_error
@@ -120,7 +132,7 @@ RSpec.describe KafkaService::Base::Producer, type: :service do
         expect(logger).to receive(:error).with('Could not deliver messages even with small batch size').ordered
 
         # Always fail delivery
-        allow(producer).to receive(:deliver_messages).and_raise(delivery_error)
+        allow(producer).to receive(:flush).and_raise(delivery_error)
 
         # Fire the test - should raise StandardError
         expect { producer_instance.send_messages_batch(messages, 1) }.to raise_error(StandardError)
@@ -129,12 +141,12 @@ RSpec.describe KafkaService::Base::Producer, type: :service do
   end
 
   describe '#close' do
-    it 'shuts down the producer' do
+    it 'closes the producer' do
       producer_instance = described_class.new
       producer_instance.close
 
-      expect(producer).to have_received(:shutdown)
-      expect(logger).to have_received(:info).with('Kafka Producer closed')
+      expect(producer).to have_received(:close)
+      expect(logger).to have_received(:info).with('RdKafka Producer closed')
     end
   end
 end
