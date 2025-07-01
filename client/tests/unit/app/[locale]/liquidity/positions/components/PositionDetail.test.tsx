@@ -24,6 +24,30 @@ jest.mock("@/lib/amm/tick-math", () => ({
   },
 }));
 
+// Mock ConfirmCloseDialog
+jest.mock(
+  "@/app/[locale]/liquidity/positions/components/ConfirmCloseDialog",
+  () => {
+    return function ConfirmCloseDialog({
+      isOpen,
+      onConfirm,
+      onClose,
+    }: {
+      isOpen: boolean;
+      onConfirm: () => void;
+      onClose: () => void;
+    }) {
+      if (!isOpen) return null;
+      return (
+        <div data-testid="confirm-close-dialog">
+          <button onClick={onConfirm}>Confirm Close</button>
+          <button onClick={onClose}>Cancel</button>
+        </div>
+      );
+    };
+  },
+);
+
 describe("PositionDetail", () => {
   const mockPosition: AmmPosition = {
     id: 1,
@@ -124,11 +148,48 @@ describe("PositionDetail", () => {
     expect(claimButton).toBeDisabled();
   });
 
-  it("handles close position button click", () => {
+  it("handles close position button click with confirmation", () => {
     render(<PositionDetail {...defaultProps} />);
+
+    // Click the close button - should open confirmation dialog
     const closePositionButton = screen.getByText("close");
     fireEvent.click(closePositionButton);
+
+    // Confirm dialog should appear
+    expect(screen.getByTestId("confirm-close-dialog")).toBeInTheDocument();
+
+    // onClosePosition should not be called yet
+    expect(defaultProps.onClosePosition).not.toHaveBeenCalled();
+
+    // Click confirm in the dialog
+    const confirmButton = screen.getByText("Confirm Close");
+    fireEvent.click(confirmButton);
+
+    // Now onClosePosition should be called
     expect(defaultProps.onClosePosition).toHaveBeenCalledWith(mockPosition);
+  });
+
+  it("handles close position dialog cancellation", () => {
+    render(<PositionDetail {...defaultProps} />);
+
+    // Click the close button - should open confirmation dialog
+    const closePositionButton = screen.getByText("close");
+    fireEvent.click(closePositionButton);
+
+    // Confirm dialog should appear
+    expect(screen.getByTestId("confirm-close-dialog")).toBeInTheDocument();
+
+    // Click cancel in the dialog
+    const cancelButton = screen.getByText("Cancel");
+    fireEvent.click(cancelButton);
+
+    // onClosePosition should not be called
+    expect(defaultProps.onClosePosition).not.toHaveBeenCalled();
+
+    // Dialog should be closed
+    expect(
+      screen.queryByTestId("confirm-close-dialog"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders different status badges correctly", () => {

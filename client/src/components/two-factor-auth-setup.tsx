@@ -68,7 +68,7 @@ export function TwoFactorAuthSetup({ onComplete }: TwoFactorAuthSetupProps) {
     };
 
     initializeSetup();
-  }, []);
+  }, [t]);
 
   const handleVerifyCode = async () => {
     if (!verificationCode || verificationCode.length !== 6) {
