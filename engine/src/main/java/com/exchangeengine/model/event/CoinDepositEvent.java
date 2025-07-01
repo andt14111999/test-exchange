@@ -81,7 +81,7 @@ public class CoinDepositEvent extends BaseEvent {
     OperationType tmpOperationType = OperationType.fromValue(messageJson.path("operationType").asText());
     String tmpAccountKey = messageJson.path("accountKey").asText();
     String tmpCoin = messageJson.path("coin").asText();
-    BigDecimal tmpAmount = new BigDecimal(messageJson.path("amount").asDouble());
+    BigDecimal tmpAmount = new BigDecimal(messageJson.path("amount").asText());
     String tmpTxHash = messageJson.path("txHash").asText();
     String tmpLayer = messageJson.path("layer").asText();
     String tmpDepositAddress = messageJson.path("depositAddress").asText();
