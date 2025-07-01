@@ -7,6 +7,8 @@ module KafkaService
     end
 
     module Config
+      # Legacy configuration kept for backward compatibility
+      # rdkafka uses different configuration keys in the producer/consumer classes
       CONSUMER_CONFIG = {
         offset_commit_interval: 5,
         offset_commit_threshold: 100,
