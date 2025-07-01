@@ -82,10 +82,8 @@ const AlertDescription = ({ children }: { children: React.ReactNode }) => (
 // List of country codes and names
 const countries = [
   { code: "VN", name: "Vietnam" },
-  { code: "US", name: "United States" },
-  { code: "SG", name: "Singapore" },
-  { code: "JP", name: "Japan" },
-  { code: "KR", name: "South Korea" },
+  { code: "NG", name: "Nigeria" },
+  { code: "GH", name: "Ghana" },
 ];
 
 interface BankAccountSelectorProps {
@@ -132,7 +130,6 @@ export function BankAccountSelector({
     bank_code: "",
     account_name: "",
     account_number: "",
-    branch: "",
     country_code: "",
     is_primary: false,
   });
@@ -267,7 +264,6 @@ export function BankAccountSelector({
           bank_name: formData.bank_name,
           account_name: formData.account_name,
           account_number: formData.account_number,
-          branch: formData.branch,
           country_code: formData.country_code,
           is_primary: formData.is_primary,
         });
@@ -339,7 +335,6 @@ export function BankAccountSelector({
       bank_code: "",
       account_name: "",
       account_number: "",
-      branch: "",
       country_code: "",
       is_primary: false,
     });
@@ -426,7 +421,6 @@ export function BankAccountSelector({
                           bank_code: selectedAccount.bank_code || "",
                           account_name: selectedAccount.account_name,
                           account_number: selectedAccount.account_number,
-                          branch: selectedAccount.branch || "",
                           country_code: selectedAccount.country_code,
                           is_primary: selectedAccount.is_primary,
                         });
@@ -513,6 +507,7 @@ export function BankAccountSelector({
             <div className="space-y-2">
               <Label htmlFor="bank_name">{t("bankName")}</Label>
               <BankSelector
+                countryCode={formData.country_code}
                 value={formData.bank_code || ""}
                 onChange={(code, bank) => {
                   setFormData({
@@ -546,17 +541,6 @@ export function BankAccountSelector({
                 }
                 placeholder={t("enterAccountNumber")}
                 required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="branch">{t("branch")}</Label>
-              <Input
-                id="branch"
-                value={formData.branch}
-                onChange={(e) =>
-                  setFormData({ ...formData, branch: e.target.value })
-                }
-                placeholder={t("enterBranch")}
               />
             </div>
             {!isEditing && (

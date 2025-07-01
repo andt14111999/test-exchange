@@ -47,7 +47,6 @@ describe("Bank Account Hooks", () => {
     bank_name: "Test Bank",
     account_name: "John Doe",
     account_number: "1234567890",
-    branch: "Main Branch",
     country_code: "US",
     is_primary: true,
     verified: true,
@@ -194,7 +193,6 @@ describe("Bank Account Hooks", () => {
         bank_name: "Test Bank",
         account_name: "John Doe",
         account_number: "1234567890",
-        branch: "Main Branch",
         country_code: "US",
         is_primary: true,
       });

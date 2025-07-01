@@ -146,7 +146,6 @@ jest.mock("@/components/bank-account-selector", () => ({
             bank_name: "Test Bank",
             account_name: "Test Account",
             account_number: "12345678",
-            branch: "Test Branch",
             country_code: "VN",
             is_primary: true,
             verified: true,
