@@ -83,10 +83,33 @@ rails runner script/bootstrap/ngn/setup_amm_pool.rb
 - AMM price range: 950 - 1,050 NGN per USDT
 - AMM initial price: 1,000 NGN per USDT
 
+## Troubleshooting
+
+### dyld: missing symbol called Error
+
+If you encounter `dyld[xxxxx]: missing symbol called` errors when running the scripts, this is typically caused by the `ruby-kafka` gem having compatibility issues on macOS (especially Apple Silicon).
+
+**Solution**: The merchant user creation scripts have been patched to temporarily bypass Kafka notifications during development. The scripts override the `AccountCreationService` methods to skip Kafka calls:
+
+```ruby
+class AccountCreationService
+  def notify_coin_kafka_service(account)
+    Rails.logger.info "Skipping Kafka notification for coin account #{account.id} in development"
+  end
+
+  def notify_fiat_kafka_service(account)
+    Rails.logger.info "Skipping Kafka notification for fiat account #{account.id} in development"
+  end
+end
+```
+
+This allows user creation to proceed without triggering the native library issues in the Kafka client.
+
 ## Notes
 
 - All USDT deposits use fake transaction hashes for testing
 - The merchant users can access escrow functionality due to merchant role
 - AMM positions provide liquidity in tight price ranges for efficient trading
 - Offers are set to automatic and online for immediate availability
-- Each currency market is completely independent with separate users and pools 
+- Each currency market is completely independent with separate users and pools
+- Kafka notifications are bypassed in development environment to avoid native library issues 

@@ -1,15 +1,15 @@
 def create_amm_position
-  # Calculate tick indices for price range 26000-26500
-  # Using Uniswap V3 tick calculation: tick = log(price) * 2^96 / log(1.0001)
+  # Calculate tick indices for price range 950-1050
+# Using Uniswap V3 tick calculation: tick = log(price) * 2^96 / log(1.0001)
   # We'll use the actual Uniswap V3 formula: tick = log(price) / log(1.0001)
 
   # Admin-provided tick values
-  admin_tick_lower = 101660  # Approximately 26000 VND/USDT
-  admin_tick_upper = 101850  # Approximately 26500 VND/USDT
+  admin_tick_lower = 138420  # Approximately 950 NGN/USDT
+  admin_tick_upper = 138900  # Approximately 1050 NGN/USDT
 
   # Calculate tick values using Uniswap V3 formula: tick = log(price) / log(1.0001)
-  price_lower = 26_000  # VND per USDT
-  price_upper = 26_500  # VND per USDT
+  price_lower = 950   # NGN per USDT
+  price_upper = 1_050 # NGN per USDT
 
   formula_tick_lower = (Math.log(price_lower) / Math.log(1.0001)).round
   formula_tick_upper = (Math.log(price_upper) / Math.log(1.0001)).round
@@ -17,7 +17,7 @@ def create_amm_position
   puts "=" * 60
   puts "AMM POSITION TICK VALIDATION"
   puts "=" * 60
-  puts "Price Range: #{price_lower} - #{price_upper} VND/USDT"
+  puts "Price Range: #{price_lower} - #{price_upper} NGN/USDT"
   puts ""
   puts "LOWER TICK:"
   puts "  Admin provided: #{admin_tick_lower}"
@@ -48,25 +48,25 @@ def create_amm_position
   puts "✅ AMM position tick values validated successfully!"
   puts ""
 
-  user = User.find_by!(email: 'mikevn@example.com')
-  amm_pool = AmmPool.find_by!(pair: 'usdt_vnd')
+  user = User.find_by!(email: 'mikeng@example.com')
+  amm_pool = AmmPool.find_by!(pair: 'usdt_ngn')
 
-  # Create AMM position
-  amm_position = AmmPosition.new(
-    user: user,
-    amm_pool: amm_pool,
+# Create AMM position
+amm_position = AmmPosition.new(
+  user: user,
+  amm_pool: amm_pool,
     tick_lower_index: admin_tick_lower,
     tick_upper_index: admin_tick_upper,
-    amount0_initial: 100_000, # USDT
-    amount1_initial: 2_652_485_667.11, # VND
-    slippage: 1 # 1% slippage
-  )
+  amount0_initial: 100_000, # USDT
+    amount1_initial: 100_000_000, # NGN (100M NGN for 100k USDT)
+  slippage: 1 # 1% slippage
+)
 
-  # Generate identifier before saving
-  amm_position.generate_identifier
-  amm_position.save!
+# Generate identifier before saving
+amm_position.generate_identifier
+amm_position.save!
 
-  puts "Created AMM position: #{amm_position.amount0_initial} USDT / #{amm_position.amount1_initial} VND (ID: #{amm_position.id})"
+  puts "Created AMM position: #{amm_position.amount0_initial} USDT / #{amm_position.amount1_initial} NGN (ID: #{amm_position.id})"
 end
 
 # Execute the method

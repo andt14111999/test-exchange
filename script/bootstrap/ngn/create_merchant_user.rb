@@ -1,4 +1,4 @@
-# Create user mikevn if not exists
+# Create user mikeng if not exists
 # Temporarily patch AccountCreationService to skip Kafka calls
 
 class AccountCreationService
@@ -11,10 +11,10 @@ class AccountCreationService
   end
 end
 
-user = User.find_or_create_by!(email: 'mikevn@example.com') do |u|
-  u.display_name = 'Mike VN'
+user = User.find_or_create_by!(email: 'mikeng@example.com') do |u|
+  u.display_name = 'Mike NG'
   u.role = 'merchant' # Must be merchant to use escrow
   u.status = 'active'
 end
 
-puts "Created/found Vietnamese merchant user: #{user.email} (ID: #{user.id})" 
+puts "Created/found Nigerian merchant user: #{user.email} (ID: #{user.id})" 
