@@ -559,7 +559,8 @@ GEM
     redcarpet (3.6.1)
     redic (1.5.3)
       hiredis
-    redis (4.5.1)
+    redis (5.4.0)
+      redis-client (>= 0.22.0)
     redis-classy (2.4.1)
       redis-namespace (~> 1.0)
     redis-client (0.25.0)
@@ -833,7 +834,7 @@ DEPENDENCIES
   rails (~> 8.0.2)
   rails-settings-cached
   rdkafka
-  redis (< 4.6)
+  redis (< 5.5)
   redis-client
   redis-mutex!
   retriable
