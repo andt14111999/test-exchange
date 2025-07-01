@@ -38,6 +38,19 @@ RSpec.describe Bank, type: :model do
         expect(described_class.by_country('VN')).to eq([ bank_vn ])
         expect(described_class.by_country('NG')).to eq([ bank_ng ])
       end
+
+      it 'returns empty array when country_code is nil' do
+        expect(described_class.by_country(nil)).to eq([])
+      end
+
+      it 'returns empty array when country_code is blank' do
+        expect(described_class.by_country('')).to eq([])
+        expect(described_class.by_country('  ')).to eq([])
+      end
+
+      it 'returns empty array when country_code does not exist' do
+        expect(described_class.by_country('XX')).to eq([])
+      end
     end
 
     describe '.transfer_supported' do

@@ -11,7 +11,10 @@ class Bank < ApplicationRecord
   validates :is_transfer, inclusion: { in: [ true, false ] }
 
   scope :ordered, -> { order(:name) }
-  scope :by_country, ->(country_code) { joins(:country).where(countries: { code: country_code }) }
+  scope :by_country, ->(country_code) {
+    return none if country_code.blank?
+    joins(:country).where(countries: { code: country_code })
+  }
   scope :transfer_supported, -> { where(transfer_supported: true) }
   scope :lookup_supported, -> { where(lookup_supported: true) }
 
@@ -21,5 +24,13 @@ class Bank < ApplicationRecord
 
   def self.ransackable_associations(_auth_object = nil)
     %w[country]
+  end
+
+  def country_name
+    country.name
+  end
+
+  def country_code
+    country.code
   end
 end

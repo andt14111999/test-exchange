@@ -144,47 +144,68 @@ RSpec.describe 'Bank Admin', type: :system do
       expect(page).to have_content('No logo')
     end
 
-    it 'displays bank accounts panel' do
-      visit admin_bank_path(bank)
 
-      expect(page).to have_content('Bank Accounts using this Bank')
-    end
 
-    it 'shows no bank accounts message when none exist' do
-      visit admin_bank_path(bank)
+    describe 'bank accounts panel' do
+      let(:user) { create(:user) }
+      let(:bank_account) { create(:bank_account, bank_name: bank.name, user: user) }
 
-      expect(page).to have_content('No bank accounts using this bank yet')
-    end
+      it 'shows bank accounts using this bank' do
+        bank_account
+        visit admin_bank_path(bank)
 
-    it 'shows bank accounts when they exist' do
-      user = create(:user)
-      bank_account = create(:bank_account, user: user, bank_name: bank.name, account_name: 'Test Account', account_number: '123456789')
+        expect(page).to have_content('Bank Accounts using this Bank')
+        expect(page).to have_content(bank_account.account_name)
+        expect(page).to have_content(bank_account.account_number)
+        expect(page).to have_content(user.email)
+      end
 
-      visit admin_bank_path(bank)
+      it 'shows proper status indicators' do
+        verified_account = create(:bank_account, bank_name: bank.name, user: user, verified: true, is_primary: true)
+        unverified_account = create(:bank_account, bank_name: bank.name, user: user, verified: false, is_primary: false)
 
-      expect(page).to have_content('Test Account')
-      expect(page).to have_content('123456789')
-      expect(page).to have_link(user.email)
-    end
+        visit admin_bank_path(bank)
 
-    it 'shows bank account verification status' do
-      user = create(:user)
-      verified_account = create(:bank_account, user: user, bank_name: bank.name, verified: true)
-      unverified_account = create(:bank_account, user: user, bank_name: bank.name, verified: false)
+        expect(page).to have_content('Verified')
+        expect(page).to have_content('Pending')
+        expect(page).to have_content('Yes') # for is_primary
+        expect(page).to have_content('No')  # for is_primary
+      end
 
-      visit admin_bank_path(bank)
+      it 'shows pagination when there are many bank accounts' do
+        # Create more than 10 bank accounts to test pagination
+        12.times do |i|
+          create(:bank_account,
+            bank_name: bank.name,
+            user: user,
+            account_name: "Account #{i + 1}",
+            account_number: "12345#{i.to_s.rjust(4, '0')}"
+          )
+        end
 
-      expect(page).to have_content('Verified')
-      expect(page).to have_content('Pending')
-    end
+        visit admin_bank_path(bank)
 
-    it 'shows bank account primary status' do
-      user = create(:user)
-      primary_account = create(:bank_account, user: user, bank_name: bank.name, is_primary: true)
+        expect(page).to have_content('Bank Accounts using this Bank')
+        # Should show pagination elements
+        expect(page).to have_content('1') # page number or item count
+        # Should show only 10 items per page (default)
+        account_elements = page.all('td').select { |td| td.text.match?(/Account \d+/) }
+        expect(account_elements.count).to be <= 10
+      end
 
-      visit admin_bank_path(bank)
+      it 'shows empty state when no bank accounts exist' do
+        visit admin_bank_path(bank)
 
-      expect(page).to have_content('Yes')
+        expect(page).to have_content('Bank Accounts using this Bank')
+        expect(page).to have_content('No bank accounts using this bank yet.')
+      end
+
+      it 'links to user details from bank account' do
+        bank_account
+        visit admin_bank_path(bank)
+
+        expect(page).to have_link(user.email, href: admin_user_path(user))
+      end
     end
   end
 

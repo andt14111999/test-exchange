@@ -9,7 +9,7 @@ module V1
           requires :country_code, type: String, desc: 'Country code (VN, NG, GH)'
         end
         get do
-          banks = Bank.by_country(params[:country_code]).ordered
+          banks = Bank.by_country(params[:country_code]).includes(:country).ordered
 
           present :status, 'success'
           present :data, banks, with: V1::Banks::Entity

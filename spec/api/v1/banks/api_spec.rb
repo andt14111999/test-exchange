@@ -43,8 +43,8 @@ RSpec.describe V1::Banks::Api, type: :request do
         expect(first_bank_in_response['logo']).to eq(vietinbank.logo)
         expect(first_bank_in_response['transferSupported']).to eq(vietinbank.transfer_supported)
         expect(first_bank_in_response['lookupSupported']).to eq(vietinbank.lookup_supported)
-        expect(first_bank_in_response['country_code']).to eq('VN')
-        expect(first_bank_in_response['country_name']).to eq('Vietnam')
+        expect(first_bank_in_response['countryCode']).to eq('VN')
+        expect(first_bank_in_response['countryName']).to eq('Vietnam')
       end
 
       it 'returns 400 error when country_code is missing' do

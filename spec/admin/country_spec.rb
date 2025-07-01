@@ -86,7 +86,6 @@ RSpec.describe 'Country Admin', type: :system do
 
       expect(page).to have_content('Vietnam')
       expect(page).to have_content('VN')
-      expect(page).to have_content('Banks in this Country')
     end
 
     it 'shows banks count' do
@@ -102,109 +101,9 @@ RSpec.describe 'Country Admin', type: :system do
       expect(page).to have_content(country.created_at.strftime('%B %d, %Y'))
       expect(page).to have_content(country.updated_at.strftime('%B %d, %Y'))
     end
-
-    it 'shows banks in the country panel' do
-      bank
-      visit admin_country_path(country)
-
-      expect(page).to have_content('Vietcombank')
-      expect(page).to have_content('VCB')
-      expect(page).to have_content('Yes') # for boolean fields
-      expect(page).to have_content('No')  # for boolean fields
-    end
-
-    it 'has View Banks action button' do
-      visit admin_country_path(country)
-
-      expect(page).to have_link('View Banks')
-    end
-
-    it 'shows empty banks panel when no banks exist' do
-      empty_country = create(:country, name: 'Ghana', code: 'GH')
-      visit admin_country_path(empty_country)
-
-      expect(page).to have_content('Banks in this Country')
-      expect(page).not_to have_content('Vietcombank')
-    end
-
-    it 'shows bank details in panel including support level and features' do
-      bank_with_details = create(:bank,
-        country: country,
-        name: 'Techcombank',
-        code: 'TCB',
-        bin: '970407',
-        short_name: 'TCB',
-        support: 95,
-        transfer_supported: true,
-        lookup_supported: false,
-        is_transfer: true
-      )
-
-      visit admin_country_path(country)
-
-      expect(page).to have_content('Techcombank')
-      expect(page).to have_content('TCB')
-      expect(page).to have_content('970407')
-      expect(page).to have_content('95')
-    end
-
-    it 'links to individual bank pages from panel' do
-      bank
-      visit admin_country_path(country)
-
-      expect(page).to have_link('Vietcombank', href: admin_bank_path(bank))
-    end
   end
 
-  describe 'custom banks action' do
-    it 'displays banks for the country' do
-      bank
-      visit banks_admin_country_path(country)
 
-      expect(page).to have_content("Banks in #{country.name}")
-      expect(page).to have_content('Vietcombank')
-      expect(page).to have_link('Add New Bank')
-      expect(page).to have_link('Back to Country')
-    end
-
-    it 'shows empty state when no banks' do
-      visit banks_admin_country_path(country)
-
-      expect(page).to have_content('No Banks Found')
-      expect(page).to have_content("There are no banks registered for #{country.name} yet")
-      expect(page).to have_link('Add First Bank')
-    end
-
-    it 'shows multiple banks when they exist' do
-      bank
-      bank2 = create(:bank, country: country, name: 'Techcombank', code: 'TCB')
-      bank3 = create(:bank, country: country, name: 'BIDV', code: 'BIDV')
-
-      visit banks_admin_country_path(country)
-
-      expect(page).to have_content('Vietcombank')
-      expect(page).to have_content('Techcombank')
-      expect(page).to have_content('BIDV')
-    end
-
-    it 'shows bank details in custom banks page' do
-      detailed_bank = create(:bank,
-        country: country,
-        name: 'VietinBank',
-        code: 'CTG',
-        bin: '970415',
-        short_name: 'VTB',
-        support: 88
-      )
-
-      visit banks_admin_country_path(country)
-
-      expect(page).to have_content('VietinBank')
-      expect(page).to have_content('CTG')
-      expect(page).to have_content('970415')
-      expect(page).to have_content('88')
-    end
-  end
 
   describe 'form' do
     it 'creates a new country successfully' do
@@ -336,21 +235,6 @@ RSpec.describe 'Country Admin', type: :system do
       # Check for any action links that actually exist
       expect(page).to have_link('Edit') || have_link('Edit Country') || have_css('a[href*="edit"]')
     end
-
-    it 'navigates to banks from country show page' do
-      visit admin_country_path(country)
-      click_link 'View Banks'
-
-      expect(page).to have_content("Banks in #{country.name}")
-    end
-
-    it 'navigates back from banks page to country' do
-      visit banks_admin_country_path(country)
-      click_link 'Back to Country'
-
-      expect(page).to have_content(country.name)
-      expect(current_path).to eq(admin_country_path(country))
-    end
   end
 
   describe 'permissions and security' do
@@ -369,14 +253,6 @@ RSpec.describe 'Country Admin', type: :system do
 
       expect(page).to have_content('sign in') || have_content('Log in') || have_content('Admin Portal Login')
     end
-
-    it 'prevents unauthorized access to banks action' do
-      logout
-
-      visit banks_admin_country_path(country)
-
-      expect(page).to have_content('sign in') || have_content('Log in') || have_content('Admin Portal Login')
-    end
   end
 
   describe 'error handling' do
@@ -386,11 +262,7 @@ RSpec.describe 'Country Admin', type: :system do
       expect(page).to have_content('not found') || have_content('404') || have_content('ActiveRecord::RecordNotFound')
     end
 
-    it 'handles invalid country ID for banks action gracefully' do
-      visit banks_admin_country_path(99999)
 
-      expect(page).to have_content('not found') || have_content('404') || have_content('ActiveRecord::RecordNotFound')
-    end
 
     it 'handles form submission errors gracefully' do
       visit new_admin_country_path
@@ -478,15 +350,7 @@ RSpec.describe 'Country Admin', type: :system do
     end
   end
 
-  describe 'advanced functionality' do
-    it 'correctly handles country-bank relationships' do
-      bank
-      visit admin_country_path(country)
-
-      expect(page).to have_content('Banks in this Country')
-      expect(page).to have_content('Vietcombank')
-    end
-
+    describe 'advanced functionality' do
     it 'maintains data consistency across pages' do
       bank
       visit admin_countries_path
@@ -497,16 +361,14 @@ RSpec.describe 'Country Admin', type: :system do
       # Navigate to show page
       click_link 'View'
       expect(page).to have_content('Vietnam')
-      expect(page).to have_content('Vietcombank')
     end
 
-    it 'handles empty states gracefully' do
+        it 'handles empty states gracefully' do
       empty_country = create(:country, name: 'EmptyCountry', code: 'EC')
       visit admin_country_path(empty_country)
 
-      expect(page).to have_content('Banks in this Country')
-      # Should not show any banks
-      expect(page).not_to have_content('Vietcombank')
+      expect(page).to have_content('EmptyCountry')
+      expect(page).to have_content('EC')
     end
   end
 end

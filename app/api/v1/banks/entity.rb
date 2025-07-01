@@ -14,12 +14,8 @@ module V1
       expose :support
       expose :is_transfer, as: :isTransfer
       expose :swift_code, as: :swiftCode
-      expose :country_code do |bank|
-        bank.country&.code
-      end
-      expose :country_name do |bank|
-        bank.country&.name
-      end
+      expose :country_code, as: :countryCode
+      expose :country_name, as: :countryName
     end
   end
 end

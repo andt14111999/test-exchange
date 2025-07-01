@@ -1,5 +1,5 @@
 ActiveAdmin.register Bank do
-  menu priority: 2, parent: 'Settings', label: 'Banks'
+  menu priority: 19, label: 'Banks'
 
   actions :all
 
@@ -16,16 +16,10 @@ ActiveAdmin.register Bank do
     end
     column :bin
     column :short_name
-    column :transfer_supported do |bank|
-      bank.transfer_supported ? 'Yes' : 'No'
-    end
-    column :lookup_supported do |bank|
-      bank.lookup_supported ? 'Yes' : 'No'
-    end
+    column :transfer_supported
+    column :lookup_supported
     column :support
-    column :is_transfer do |bank|
-      bank.is_transfer ? 'Yes' : 'No'
-    end
+    column :is_transfer
     column :created_at
     actions
   end
@@ -63,23 +57,25 @@ ActiveAdmin.register Bank do
     end
 
     panel 'Bank Accounts using this Bank' do
-      bank_accounts = BankAccount.where(bank_name: bank.name)
+      bank_accounts = BankAccount.where(bank_name: bank.name).includes(:user)
 
       if bank_accounts.exists?
-        table_for bank_accounts.includes(:user) do
-          column :id
-          column :user do |account|
-            link_to account.user.email, admin_user_path(account.user) if account.user
+        paginated_collection(bank_accounts.page(params[:page]).per(10), download_links: false) do
+          table_for collection do
+            column :id
+            column :user do |account|
+              link_to account.user.email, admin_user_path(account.user) if account.user
+            end
+            column :account_name
+            column :account_number
+            column :is_primary do |account|
+              account.is_primary ? 'Yes' : 'No'
+            end
+            column :verified do |account|
+              account.verified ? 'Verified' : 'Pending'
+            end
+            column :created_at
           end
-          column :account_name
-          column :account_number
-          column :is_primary do |account|
-            account.is_primary ? 'Yes' : 'No'
-          end
-          column :verified do |account|
-            account.verified ? 'Verified' : 'Pending'
-          end
-          column :created_at
         end
       else
         div 'No bank accounts using this bank yet.'
