@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -23,6 +23,10 @@ import { useUserStore } from "@/lib/store/user-store";
 import { TwoFactorAuthInput } from "@/components/two-factor-auth-input";
 import { useTranslations } from "next-intl";
 import { useDeviceTrust } from "@/hooks/use-device-trust";
+import {
+  MINIMUM_WITHDRAWAL_USDT,
+  MAX_WITHDRAWAL_AMOUNT,
+} from "@/lib/constants/withdrawal";
 
 // Import new components
 import { WithdrawTabs } from "./components/withdraw-tabs";
@@ -57,63 +61,61 @@ export default function WithdrawUSDTPage() {
     useCoinNetworks("usdt");
   const [selectedNetwork, setSelectedNetwork] = useState<Network | null>(null);
   const [networkFees, setNetworkFees] = useState<Record<string, number>>({});
-  const hasInitializedRef = useRef(false);
 
-  // Transform raw networks to include fees
-  const networks: Network[] = rawNetworks.map((network) => ({
-    ...network,
-    fee: networkFees[`usdt_${network.id}`] || 0,
-  }));
+  // Transform raw networks to include fees - make this reactive to networkFees
+  const networks: Network[] = useMemo(() => {
+    return rawNetworks.map((network) => ({
+      ...network,
+      fee: networkFees[`usdt_${network.id}`] || 0,
+    }));
+  }, [rawNetworks, networkFees]);
 
-  // Fetch withdrawal fees and set initial network only once
+  // Initialize when both networks and fees are available
   useEffect(() => {
-    let isMounted = true;
+    // Wait for both networks and fees to be available
+    if (
+      rawNetworks.length > 0 &&
+      Object.keys(networkFees).length > 0 &&
+      !selectedNetwork
+    ) {
+      // First try to find ERC20 (Ethereum)
+      let initialNetwork = rawNetworks.find(
+        (n) => n.id === "erc20" && n.enabled,
+      );
 
-    const initialize = async () => {
-      // Only proceed if we have networks and haven't initialized yet
-      if (!rawNetworks.length || hasInitializedRef.current) return;
-      hasInitializedRef.current = true;
-
-      try {
-        const fees = await getWithdrawalFees();
-
-        if (!isMounted) return;
-        setNetworkFees(fees);
-
-        // Set initial selected network if none is selected
-        if (!selectedNetwork) {
-          const firstEnabled = rawNetworks.find((n) => n.enabled);
-          if (firstEnabled) {
-            setSelectedNetwork({
-              ...firstEnabled,
-              fee: fees[`usdt_${firstEnabled.id}`] || 0,
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching withdrawal fees:", error);
-        if (isMounted) {
-          toast.error("Failed to load withdrawal fees. Using default values.");
-          // Still set initial network even if fees fail
-          if (!selectedNetwork) {
-            const firstEnabled = rawNetworks.find((n) => n.enabled);
-            if (firstEnabled) {
-              setSelectedNetwork({
-                ...firstEnabled,
-                fee: 0,
-              });
-            }
-          }
-        }
+      // If ERC20 not available, fall back to first enabled
+      if (!initialNetwork) {
+        initialNetwork = rawNetworks.find((n) => n.enabled);
       }
-    };
 
-    initialize();
+      if (initialNetwork) {
+        const feeKey = `usdt_${initialNetwork.id}`;
+        const networkFee = networkFees[feeKey] || 0;
 
-    return () => {
-      isMounted = false;
-    };
-  }, [rawNetworks, selectedNetwork]);
+        setSelectedNetwork({
+          ...initialNetwork,
+          fee: networkFee,
+        });
+      }
+    }
+  }, [rawNetworks, networkFees, selectedNetwork]);
+
+  // Load withdrawal fees
+  useEffect(() => {
+    if (rawNetworks.length > 0 && Object.keys(networkFees).length === 0) {
+      const loadFees = async () => {
+        try {
+          const fees = await getWithdrawalFees();
+          setNetworkFees(fees);
+        } catch (error) {
+          console.error("Error fetching withdrawal fees:", error);
+          toast.error("Failed to load withdrawal fees. Using default values.");
+        }
+      };
+
+      loadFees();
+    }
+  }, [rawNetworks, networkFees]);
 
   const [amount, setAmount] = useState("");
   const [address, setAddress] = useState("");
@@ -148,18 +150,26 @@ export default function WithdrawUSDTPage() {
         return false;
       }
 
-      if (parsedAmount < 0.01) {
-        setAmountError("Minimum amount is 0.01 USDT");
+      if (parsedAmount < MINIMUM_WITHDRAWAL_USDT) {
+        setAmountError(`Minimum amount is ${MINIMUM_WITHDRAWAL_USDT} USDT`);
         return false;
       }
 
-      if (parsedAmount > 100000) {
-        setAmountError("Maximum amount is 100,000 USDT");
+      if (parsedAmount > MAX_WITHDRAWAL_AMOUNT) {
+        setAmountError(`Maximum amount is ${MAX_WITHDRAWAL_AMOUNT} USDT`);
         return false;
       }
 
-      // Check if amount exceeds available balance
-      if (parsedAmount > usdtBalance) {
+      // Calculate withdrawal fee based on withdrawal type and selected network
+      const withdrawalFee =
+        withdrawalType === "external"
+          ? parseFloat(selectedNetwork?.fee.toString() || "0")
+          : 0;
+
+      const totalRequired = parsedAmount + withdrawalFee;
+
+      // Check if total amount (amount + fee) exceeds available balance
+      if (totalRequired > usdtBalance) {
         setAmountError(
           `Insufficient balance. Available: ${formatNumber(usdtBalance)} USDT`,
         );
@@ -169,7 +179,7 @@ export default function WithdrawUSDTPage() {
       setAmountError(null);
       return true;
     },
-    [usdtBalance],
+    [usdtBalance, withdrawalType, selectedNetwork],
   );
 
   const validateAddress = useCallback(
@@ -237,9 +247,12 @@ export default function WithdrawUSDTPage() {
   const handleNetworkChange = useCallback(
     (network: Network | null) => {
       if (network) {
+        const feeKey = `usdt_${network.id}`;
+        const networkFee = networkFees[feeKey] || 0;
+
         setSelectedNetwork({
           ...network,
-          fee: networkFees[`usdt_${network.id}`] || 0,
+          fee: networkFee,
         });
         setAddress("");
         setAddressError(null);
@@ -389,8 +402,9 @@ export default function WithdrawUSDTPage() {
       return;
     }
 
-    // Check balance before proceeding
-    if (parsedAmount > usdtBalance) {
+    // Check total required amount (amount + fee) before proceeding
+    const totalRequired = parsedAmount + withdrawalFee;
+    if (totalRequired > usdtBalance) {
       setAmountError(
         `Insufficient balance. Available: ${formatNumber(usdtBalance)} USDT`,
       );
@@ -444,8 +458,9 @@ export default function WithdrawUSDTPage() {
   const isFormValid = () => {
     if (parsedAmount <= 0 || amountError) return false;
 
-    // Check balance for both external and internal withdrawals
-    if (parsedAmount > usdtBalance) return false;
+    // Check total required amount (amount + fee) for both external and internal withdrawals
+    const totalRequired = parsedAmount + withdrawalFee;
+    if (totalRequired > usdtBalance) return false;
 
     if (withdrawalType === "external") {
       return address && !addressError;

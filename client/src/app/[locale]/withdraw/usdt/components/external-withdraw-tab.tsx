@@ -12,6 +12,7 @@ import {
 import { formatNumber } from "@/lib/utils/index";
 import { useTranslations } from "next-intl";
 import { Network } from "./types";
+import { MINIMUM_WITHDRAWAL_USDT } from "@/lib/constants/withdrawal";
 
 interface ExternalWithdrawTabProps {
   networks: Network[];
@@ -168,7 +169,7 @@ export function ExternalWithdrawTab({
       <div className="text-sm text-muted-foreground">
         <p>Important:</p>
         <ul className="list-disc list-inside space-y-1">
-          <li>{t("minWithdrawal")}</li>
+          <li>{t("minWithdrawal", { amount: MINIMUM_WITHDRAWAL_USDT })}</li>
           <li>{t("networkFee", { fee: selectedNetwork?.fee || 0 })}</li>
           <li>
             {t("onlyWithdrawToNetwork", {
