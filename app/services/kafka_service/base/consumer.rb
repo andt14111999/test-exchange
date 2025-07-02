@@ -20,14 +20,21 @@ module KafkaService
         consume_messages(&)
       rescue StandardError => e
         @logger.error("Consumer error: #{e.message}")
+        @logger.error(e.backtrace.join("\n"))
         stop
         raise
       end
 
       def stop
         @running = false
-        @consumer&.close
-        @logger.info('RdKafka Consumer stopped')
+        @logger.info('Stopping RdKafka Consumer...')
+
+        begin
+          @consumer&.close
+          @logger.info('RdKafka Consumer stopped successfully')
+        rescue StandardError => e
+          @logger.error("Error closing consumer: #{e.message}")
+        end
       end
 
       private
@@ -41,7 +48,16 @@ module KafkaService
           'enable.auto.commit': true,
           'auto.commit.interval.ms': 5000,
           'session.timeout.ms': 30000,
-          'heartbeat.interval.ms': 10000
+          'heartbeat.interval.ms': 10000,
+          'max.poll.interval.ms': 300000,
+          'fetch.min.bytes': 1,
+          # Production performance settings
+          'fetch.message.max.bytes': 1048576,  # 1MB max message size
+          'queued.min.messages': 100000,       # Local message queue size
+          'queued.max.messages.kbytes': 65536, # Max queue size in KB
+          'socket.timeout.ms': 60000,          # Socket timeout
+          'reconnect.backoff.ms': 100,         # Reconnection backoff
+          'reconnect.backoff.max.ms': 10000    # Max reconnection backoff
         }
 
         if ssl_enabled?
@@ -76,17 +92,34 @@ module KafkaService
         @consumer.each do |message|
           break unless @running
 
-          process_message(message, &block)
+          begin
+            process_message(message, &block)
+          rescue StandardError => e
+            @logger.error("Error processing individual message: #{e.message}")
+            @logger.error(e.backtrace.join("\n"))
+            # Continue processing other messages
+          end
         end
+      rescue StandardError => e
+        @logger.error("Error in consume_messages loop: #{e.message}")
+        @logger.error(e.backtrace.join("\n"))
+        raise
       end
 
       def process_message(message)
-        payload = JSON.parse(message.payload)
-        yield(message.topic, payload)
-      rescue JSON::ParserError => e
-        @logger.error("Failed to parse message: #{e.message}")
-      rescue StandardError => e
-        @logger.error("Error processing message: #{e.message}")
+        return unless @running
+
+        begin
+          payload = JSON.parse(message.payload)
+          yield(message.topic, payload)
+        rescue JSON::ParserError => e
+          @logger.error("Failed to parse message: #{e.message}")
+          @logger.error("Raw message: #{message.payload}")
+        rescue StandardError => e
+          @logger.error("Error processing message: #{e.message}")
+          @logger.error(e.backtrace.join("\n"))
+          raise
+        end
       end
     end
   end

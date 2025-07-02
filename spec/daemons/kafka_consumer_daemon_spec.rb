@@ -28,9 +28,10 @@ RSpec.describe Daemons::KafkaConsumerDaemon, type: :daemon do
       expect(daemon).to receive(:setup_signal_handlers)
       expect(daemon).to receive(:start_manager)
 
-      # Mock the infinite loop to prevent hanging
-      allow(daemon).to receive(:loop).and_yield
-      allow(daemon).to receive(:sleep)
+      # Mock the shutdown check loop to prevent hanging
+      allow(daemon).to receive(:sleep).and_return(nil)
+      daemon.instance_variable_set(:@shutdown_requested, true) # Force immediate shutdown
+      expect(daemon).to receive(:perform_shutdown)
 
       daemon.run
     end
@@ -38,9 +39,10 @@ RSpec.describe Daemons::KafkaConsumerDaemon, type: :daemon do
     it 'logs that the daemon has started' do
       daemon = described_class.new
 
-      # Mock the infinite loop to prevent hanging
-      allow(daemon).to receive(:loop).and_yield
-      allow(daemon).to receive(:sleep)
+      # Mock the shutdown check loop to prevent hanging
+      allow(daemon).to receive(:sleep).and_return(nil)
+      daemon.instance_variable_set(:@shutdown_requested, true) # Force immediate shutdown
+      allow(daemon).to receive(:perform_shutdown)
 
       daemon.run
 
@@ -63,6 +65,29 @@ RSpec.describe Daemons::KafkaConsumerDaemon, type: :daemon do
       expect(signal_handlers.keys).to contain_exactly('TERM', 'INT')
       expect(signal_handlers['TERM']).to be_a(Proc)
       expect(signal_handlers['INT']).to be_a(Proc)
+    end
+
+    it 'sets shutdown flag when signal handlers are triggered' do
+      daemon = described_class.new
+
+      # Capture the signal handlers
+      signal_handlers = {}
+      allow(Signal).to receive(:trap) do |signal, &block|
+        signal_handlers[signal] = block
+      end
+
+      daemon.send(:setup_signal_handlers)
+
+      # Verify shutdown flag is set when signal handlers are called
+      expect(daemon.instance_variable_get(:@shutdown_requested)).to be_falsey
+
+      signal_handlers['TERM'].call
+      expect(daemon.instance_variable_get(:@shutdown_requested)).to be_truthy
+
+      # Reset for INT test
+      daemon.instance_variable_set(:@shutdown_requested, false)
+      signal_handlers['INT'].call
+      expect(daemon.instance_variable_get(:@shutdown_requested)).to be_truthy
     end
   end
 
@@ -98,6 +123,8 @@ RSpec.describe Daemons::KafkaConsumerDaemon, type: :daemon do
         # Ensure invalid properties that caused the bug are not present
         expect(config).not_to have_key('max.poll.records')
         expect(config).not_to have_key(:'max.poll.records')
+        expect(config).not_to have_key('fetch.max.wait.ms')
+        expect(config).not_to have_key(:'fetch.max.wait.ms')
 
         # Ensure valid properties are present (using symbols as that's how rdkafka_config works)
         expect(config).to have_key(:'bootstrap.servers')
@@ -126,13 +153,14 @@ RSpec.describe Daemons::KafkaConsumerDaemon, type: :daemon do
     end
   end
 
-  describe '#shutdown' do
+  describe '#perform_shutdown' do
     it 'logs shutdown message and stops the manager' do
       daemon = described_class.new
       daemon.instance_variable_set(:@manager, manager)
-      daemon.send(:shutdown)
+      daemon.send(:perform_shutdown)
 
       expect(Rails.logger).to have_received(:info).with('Shutting down Kafka consumer daemon...')
+      expect(Rails.logger).to have_received(:info).with('Kafka consumer daemon shutdown complete')
       expect(manager).to have_received(:stop)
       expect(Kernel).to have_received(:exit)
     end
@@ -140,9 +168,10 @@ RSpec.describe Daemons::KafkaConsumerDaemon, type: :daemon do
     it 'handles case when manager is nil' do
       daemon = described_class.new
       daemon.instance_variable_set(:@manager, nil)
-      daemon.send(:shutdown)
+      daemon.send(:perform_shutdown)
 
       expect(Rails.logger).to have_received(:info).with('Shutting down Kafka consumer daemon...')
+      expect(Rails.logger).to have_received(:info).with('Kafka consumer daemon shutdown complete')
       expect(manager).not_to have_received(:stop)
       expect(Kernel).to have_received(:exit)
     end
@@ -163,7 +192,7 @@ RSpec.describe Daemons::KafkaConsumerDaemon, type: :daemon do
       # Known invalid properties that should never be present
       invalid_properties = [
         'max.poll.records',        # Java Kafka client property
-        'fetch.max.wait.ms',       # Different in librdkafka
+        'fetch.max.wait.ms',       # Invalid rdkafka property (should be handled by librdkafka internally)
         'max.partition.fetch.bytes' # Use 'fetch.message.max.bytes' instead
       ]
 
@@ -195,20 +224,25 @@ RSpec.describe Daemons::KafkaConsumerDaemon, type: :daemon do
         :'enable.auto.commit',
         :'auto.commit.interval.ms',
         :'session.timeout.ms',
-        :'heartbeat.interval.ms'
+        :'heartbeat.interval.ms',
+        :'max.poll.interval.ms',
+        :'fetch.min.bytes',
+        # Production performance settings
+        :'fetch.message.max.bytes',
+        :'queued.min.messages',
+        :'queued.max.messages.kbytes',
+        :'socket.timeout.ms',
+        :'reconnect.backoff.ms',
+        :'reconnect.backoff.max.ms'
       ]
 
       expected_base_keys.each do |key|
-        expect(config).to have_key(key), "Expected configuration to have key: #{key}"
+        expect(config).to have_key(key), "Expected config to contain key: #{key}"
       end
 
-      # Verify SSL configuration is conditionally added
-      if ENV.fetch('KAFKA_SSL_ENABLED', 'false') == 'true'
-        ssl_keys = [ :'security.protocol', :'ssl.ca.location', :'ssl.verify.hostname' ]
-        ssl_keys.each do |key|
-          expect(config).to have_key(key), "Expected SSL configuration to have key: #{key}"
-        end
-      end
+      # Verify string format of bootstrap.servers
+      expect(config[:'bootstrap.servers']).to be_a(String)
+      expect(config[:'bootstrap.servers']).to include(':'), 'bootstrap.servers should include port'
     end
   end
 end

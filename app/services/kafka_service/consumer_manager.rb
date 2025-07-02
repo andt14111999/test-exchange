@@ -18,7 +18,8 @@ module KafkaService
         KafkaService::Config::Topics::TRANSACTION_RESPONSE => KafkaService::Handlers::TransactionResponseHandler.new
       }
       @consumers = []
-      @monitor = Monitor.new
+      @consumer_threads = []
+      @shutdown_requested = false
     end
 
     def start
@@ -28,10 +29,30 @@ module KafkaService
     end
 
     def stop
-      @monitor.synchronize do
-        @consumers.each(&:stop)
-        @consumers.clear
+      Rails.logger.info('Stopping all consumers...')
+      @shutdown_requested = true
+
+      # Stop all consumers (this is thread-safe)
+      @consumers.each do |consumer|
+        begin
+          consumer.stop
+        rescue StandardError => e
+          Rails.logger.error("Error stopping consumer: #{e.message}")
+        end
       end
+
+      # Wait for threads to finish (with timeout)
+      @consumer_threads.each do |thread|
+        begin
+          thread.join(10) # 10 second timeout
+        rescue StandardError => e
+          Rails.logger.error("Error joining thread: #{e.message}")
+        end
+      end
+
+      @consumers.clear
+      @consumer_threads.clear
+      Rails.logger.info('All consumers stopped')
     end
 
     private
@@ -42,21 +63,25 @@ module KafkaService
         topics: [ topic ]
       )
 
-      Thread.new do
+      thread = Thread.new do
         Rails.application.reloader.wrap do
           consumer.start do |_topic, payload|
+            break if @shutdown_requested
             process_message_with_retry(topic, handler, payload)
           end
         rescue StandardError => e
           Rails.logger.error("Failed to start consumer for topic #{topic}: #{e.message}")
-          restart_consumer(topic, handler)
+          restart_consumer(topic, handler) unless @shutdown_requested
         end
       end
 
-      @monitor.synchronize { @consumers << consumer }
+      @consumers << consumer
+      @consumer_threads << thread
     end
 
     def process_message_with_retry(topic, handler, payload)
+      return if @shutdown_requested
+
       Retriable.retriable(
         tries: 3,
         base_interval: 1,
@@ -72,6 +97,8 @@ module KafkaService
     end
 
     def process_message(topic, handler, payload)
+      return if @shutdown_requested
+
       Rails.logger.info("Received message for topic #{topic}: #{payload}")
 
       # Parse payload if it's a string
@@ -111,6 +138,8 @@ module KafkaService
     end
 
     def store_event(topic, event_id, payload)
+      return nil if @shutdown_requested
+
       Rails.logger.info("Storing event: #{event_id}")
       KafkaEvent.create!(
         event_id: event_id,
@@ -125,6 +154,7 @@ module KafkaService
     end
 
     def restart_consumer(topic, handler)
+      return if @shutdown_requested
       sleep 5
       start_consumer_with_monitor(topic, handler)
     end

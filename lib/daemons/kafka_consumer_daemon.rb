@@ -9,20 +9,30 @@ module Daemons
       new.run
     end
 
+    def initialize
+      @shutdown_requested = false
+    end
+
     def run
       setup_signal_handlers
       start_manager
 
       Rails.logger.info('Kafka consumer daemon started')
 
-      loop { sleep }
+      # Main loop with periodic shutdown checks
+      until @shutdown_requested
+        sleep 1
+      end
+
+      perform_shutdown
     end
 
     private
 
     def setup_signal_handlers
-      Signal.trap('TERM') { shutdown }
-      Signal.trap('INT') { shutdown }
+      # Use simple flag setting in signal handlers to avoid trap context issues
+      Signal.trap('TERM') { @shutdown_requested = true }
+      Signal.trap('INT') { @shutdown_requested = true }
     end
 
     def start_manager
@@ -30,9 +40,10 @@ module Daemons
       @manager.start
     end
 
-    def shutdown
+    def perform_shutdown
       Rails.logger.info('Shutting down Kafka consumer daemon...')
       @manager&.stop
+      Rails.logger.info('Kafka consumer daemon shutdown complete')
       Kernel.exit
     end
   end

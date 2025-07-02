@@ -2,14 +2,15 @@ name: Client Build Check
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - "client/**"
   push:
-    branches: [main, develop]
+    branches: [main, staging]
     paths:
       - "client/**"
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   build:
@@ -46,4 +47,4 @@ jobs:
             echo "Build failed: .next directory not found"
             exit 1
           fi
-          echo "Build successful: .next directory exists" 
+          echo "Build successful: .next directory exists"
